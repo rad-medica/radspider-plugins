@@ -28,6 +28,7 @@ Proprietary, all rights reserved (`LICENSE`).
 | `org.radspider.radiomics` | 2 | pyradiomics (from GitHub, compiled: needs git and a C compiler), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [radiomics](docs/plugins/radiomics.md) |
 | `org.radspider.roi-tools` | 2 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
 | `org.radspider.volume-tools` | 3 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
+| `org.radspider.skeletal-radiology` | 2 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [skeletal-radiology](docs/plugins/skeletal-radiology.md) |
 
 Model weights are downloaded on first run (see each plugin's page); none are in this repository. Check each model's licence before shipping it inside a product.
 

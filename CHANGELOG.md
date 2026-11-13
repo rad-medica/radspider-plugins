@@ -13,6 +13,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 - Requirement lint: one exception to "no URLs", `name @ git+https://github.com/<owner>/<repo>@<40-hex commit>`, for a package with no usable PyPI release (pyradiomics on Python >= 3.10). `SECURITY.md` says what it costs.
 - New plugin `org.radspider.cads` 1.0.0: CADS whole-body CT segmentation (167 structures, nine task groups). Run outside the viewer on one public CT with the upstream weights; see its "Verified" row.
 - New plugins, 1.0.0 each, run on synthetic data outside the viewer only (see each page's "Verified" row): `org.radspider.lung-ct-analyzer`, `org.radspider.density-lung-segmentation`, `org.radspider.roi-tools`, `org.radspider.volume-tools`.
+- New plugin `org.radspider.skeletal-radiology` 1.0.0: automatic and hybrid interactive skeletal radiography measurements (spine, lower-limb alignment, hip/pelvis, diaphyseal cortical morphometry, foot/hand goniometry) and bone silhouette segmentation. Not run in radspider; see its "Verified" row.
 - Marketplace: `marketplace/index.json`, `tools/marketplace.py` (deterministic packages, version rules), release workflow publishing `<id>-v<version>` GitHub releases, `docs/MARKETPLACE.md`.
 
 - Marketplace index: optional `second_volume` (bool) and `first_run_download` (text from the new `marketplace/extra.toml`) per plugin; schema stays 1, no plugin version changes.

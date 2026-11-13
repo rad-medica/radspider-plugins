@@ -1,0 +1,3 @@
+numpy>=1.26
+# scipy.ndimage: connected components, morphological filtering and distance transforms for skeletal landmarks.
+scipy>=1.11

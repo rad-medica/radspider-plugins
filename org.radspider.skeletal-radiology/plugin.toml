@@ -1,0 +1,65 @@
+# Skeletal radiology: automatic and hybrid interactive measurements on skeletal radiographs (2D series or active slice).
+# Needs numpy and scipy (installed into the plugin's own environment). Not clinically evaluated.
+# See docs/plugins/skeletal-radiology.md.
+id = "org.radspider.skeletal-radiology"
+name = "Skeletal radiology"
+version = "1.0.0"
+api = 2                        # 2: reads and writes ROIs, reads segments, interactive windows
+description = "Automatic skeletal radiography measurements with interactive refinement: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), lower limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, limb lengths and discrepancy), hip and pelvis (Wiberg LCEA, Tönnis angle, neck-shaft CCD angle, pelvic obliquity), diaphyseal cortical morphometry (Barnett-Nordin index, corticomedullary ratio), and foot/hand goniometry (hallux valgus, intermetatarsal, Böhler, Gissane, metacarpal index)."
+author = "radspider"
+requirements = "requirements.txt"
+
+[[segmentation]]
+name = "bone_silhouette"
+label = "Skeletal bone mask"
+description = "Segments bright osseous structures slice by slice from a local-plus-global intensity percentile threshold, morphological hole closing and minimum area filtering."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 72.0, min = 30.0, max = 98.0 },
+  { name = "closing_mm", label = "Close holes (mm, 0 = off)", default = 3.0, min = 0.0, max = 25.0 },
+  { name = "min_area_mm2", label = "Smallest bone island (mm²)", default = 25.0, min = 1.0, max = 2000.0 },
+]
+
+[[tool]]
+name = "spine"
+label = "Spine morphometry"
+description = "Automatic spine measurements on an AP/PA or lateral radiograph: spinal midline curve, maximally tilted superior and inferior endplates, Cobb angle, coronal/sagittal plumb offset and apical vertebral wedge ratio. Interactive window refines thresholds and endplate levels; two drawn lines on the slice override the endplates."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 75.0, min = 40.0, max = 98.0 },
+  { name = "smooth_mm", label = "Midline smoothing (mm)", default = 8.0, min = 1.0, max = 40.0 },
+]
+
+[[tool]]
+name = "lower_limb"
+label = "Lower limb alignment"
+description = "Automatic full-leg tele-radiography (pangoniometry) for right and/or left lower limb: hip center, femoral knee center, tibial knee center and ankle plafond center; HKA mechanical angle, MAD (mm), mLDFA, MPTA, JLCA, femoral/tibial/total lengths and leg length discrepancy (LLD). Interactive window refines landmarks or uses placed probes/lines."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 72.0, min = 40.0, max = 98.0 },
+  { name = "closing_mm", label = "Close bone contour (mm)", default = 3.0, min = 0.0, max = 20.0 },
+]
+
+[[tool]]
+name = "hip_pelvis"
+label = "Hip and pelvis"
+description = "Automatic AP pelvis and hip goniometry: bilateral femoral head centers and diameters, pelvic horizontal reference line (obliquity in ° and mm), Wiberg lateral center-edge angle (LCEA), Tönnis acetabular index, cervicodiaphyseal neck-shaft angle (CCD) and femoral offset. Interactive window adjusts levels or uses drawn ellipses/probes."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 74.0, min = 40.0, max = 98.0 },
+  { name = "head_radius_mm", label = "Expected femoral head radius (mm, 0 = auto)", default = 0.0, min = 0.0, max = 45.0 },
+]
+
+[[tool]]
+name = "bone_morphometry"
+label = "Bone morphometry"
+description = "Automatic diaphyseal radiogrammetry and cortical morphometry of a tubular bone: bone length, anatomical axis, outer periosteal diameter (D), inner medullary diameter (d), combined cortical thickness (CCT), Barnett-Nordin cortical index (%), corticomedullary ratio and cross-sectional cortical area. Interactive window slides the measurement level along the shaft."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 72.0, min = 40.0, max = 98.0 },
+  { name = "level_frac", label = "Diaphyseal level (0.2–0.8, 0.5 = mid-shaft)", default = 0.5, min = 0.2, max = 0.8 },
+]
+
+[[tool]]
+name = "foot_hand"
+label = "Foot and hand"
+description = "Automatic extremity radiographic goniometry with interactive view selection: Foot AP (hallux valgus angle HVA, 1st–2nd intermetatarsal angle IMA), Foot Lateral (Böhler calcaneal angle, Gissane angle, calcaneal pitch) and Hand/Wrist AP (2nd metacarpal index MCI, radial inclination). Uses drawn lines when present."
+params = [
+  { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 72.0, min = 40.0, max = 98.0 },
+  { name = "view_mode", label = "View (0 auto, 1 foot AP, 2 foot lat, 3 hand AP)", default = 0.0, min = 0.0, max = 3.0 },
+]
