@@ -16,6 +16,10 @@ TL;DR: each plugin carries a semver `version`; `marketplace/index.json` is the c
 | `package.file` / `package.url` | `<id>-<version>.zip`, a GitHub release asset of tag `<id>-v<version>` |
 | `package.sha256` / `package.size` | Of the zip; a client verifies it after download, before installing |
 | `tag` | `<id>-v<version>` |
+| `second_volume` | `true` when any entry of the plugin declares `second_volume` in `plugin.toml` (needs a second series). Always present |
+| `first_run_download` | Optional text: what the plugin downloads the first time it runs. Present only for plugins listed in `marketplace/extra.toml` |
+
+`second_volume` and `first_run_download` are additive: the schema stays 1 and a client ignores keys it does not know. `first_run_download` cannot live in `plugin.toml` (radspider rejects unknown manifest keys), so it is read from `marketplace/extra.toml` (plugin id → text, only by `tools/marketplace.py`). Each text restates what the plugin's page in `docs/plugins/` already says; a plugin without such a statement has no entry.
 
 The index has no timestamp, so regenerating it on an unchanged tree changes nothing.
 
@@ -25,7 +29,7 @@ The plugin folder zipped with `<id>/` as the top-level directory: stored (no com
 
 ## Comparing and updating
 
-Client side: `installed < index` → update available; `installed == index` → current; `installed > index` → local build, leave alone. Order is semver 2.0 precedence (pre-releases such as `1.2.0-rc.1` sort below `1.2.0`; build metadata ignored). `python tools/marketplace.py compare NEW.json OLD.json` prints the same verdicts between two indexes.
+Client side: `installed < index` → update available; `installed == index` → current; `installed > index` → local build, leave alone. Order is semver 2.0 precedence (pre-releases such as `1.2.0-rc.1` sort below `1.2.0`; build metadata ignored). `python tools/marketplace.py compare NEW.json OLD.json` prints the same verdicts between two indexes. The precedence cases (and the strings that must be rejected) are in `tools/semver_vectors.json`; `python -m unittest discover -s tools` checks `version_key` against them, and radspider's `version.rs` tests use the same file.
 
 Download → check `sha256` → install over the old folder (radspider recreates the venv when `requirements` changed).
 
@@ -45,8 +49,31 @@ Choosing the bump: fix → patch; new entry, new param or results that change �
 
 Merging to `main` runs `.github/workflows/release.yml`: it rebuilds the packages, verifies their SHA-256 against the index, and creates the GitHub release `<id>-v<version>` (asset `<id>-<version>.zip`) for every version that has none. Existing releases are never touched: a published version is immutable, a fix is a new version.
 
+## Client contract
+
+What a client (radspider's marketplace window) does against the private repository `rad-medica/radspider-plugins`. A fine-grained read-only token is the credential (see `SECURITY.md`). Send `Authorization: Bearer <token>`, `X-GitHub-Api-Version: <one pinned version>` and a `User-Agent` on every API request.
+
+| Step | Request | Notes |
+|---|---|---|
+| 1. Index | `GET /repos/rad-medica/radspider-plugins/contents/marketplace/index.json?ref=main` with `Accept: application/vnd.github.raw` | Keep the `ETag` of the answer; send it back as `If-None-Match`. `304` = cached copy is current (cheap, and keeps the cache valid). Refresh on open and on an explicit Refresh, never on a timer |
+| 2. Resolve | `GET /repos/rad-medica/radspider-plugins/releases/tags/<tag>` | Pick the asset whose `name` equals `package.file` and take its `id`. No such release (`404`) while the index lists it: the index on `main` can be ahead of `release.yml` by a few minutes, so report "publishing, try again later" |
+| 3. Download | `GET /repos/rad-medica/radspider-plugins/releases/assets/<id>` with `Accept: application/octet-stream` | Answers `302` with a signed URL on another host. Follow it yourself, **without** the `Authorization` header (auto-redirect that forwards headers leaks the token) |
+| 4. Verify | SHA-256 and byte size of the download equal `package.sha256` and `package.size`; the zip has one top-level folder equal to `id`, and its `plugin.toml` `id` and `version` equal the index entry's | Any mismatch: delete the file, install nothing, say which check failed |
+
+`package.url` is a browser link: for a private repository it answers `404` to a token, so a client does not use it; it resolves `tag` and `package.file` through the API as above. The token never goes into a URL, a log line, a config file or an error message.
+
+| Answer | Meaning |
+|---|---|
+| `401` | Token expired, revoked or malformed |
+| `403` | Token lacks the permission, or a rate limit applies (`X-RateLimit-Remaining: 0` or a `Retry-After`) |
+| `404` | No access to the repository (GitHub answers `404` for a private repository it hides), or, in step 2, the release does not exist yet. Tell both causes |
+| `304` | Step 1 only: use the cache |
+| network error | Offline: show the cached index, mark it as such |
+
+Unknown index keys are ignored; a `schema` other than `1` is refused with a clear message.
+
 ## Limits
 
-- The repository is private: unauthenticated clients cannot read the index or the release assets. A marketplace serving it publicly (or with a token) must mirror `marketplace/index.json` and the zips.
+- The repository is private: unauthenticated clients cannot read the index or the release assets. A client authenticates against the GitHub API with a read-only token as described in *Client contract*; it does not mirror anything. If the repository ever becomes public, steps 1 to 3 still work without a token and the package URL could be used directly.
 - The index format is this repository's own; if radspider defines a marketplace schema, `describe()` in `tools/marketplace.py` is the one place to adapt.
 - No signature beyond SHA-256 over HTTPS from the release.

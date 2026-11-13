@@ -1,0 +1,9 @@
+# Facts about a plugin that plugin.toml cannot carry (radspider rejects unknown manifest keys).
+# Read only by tools/marketplace.py and copied into marketplace/index.json.
+# Key = plugin id, value = text for `first_run_download`: what the plugin downloads the first time it runs.
+# Every line restates what the plugin's page in docs/plugins/ already says; add a plugin only with such a statement.
+
+"org.radspider.totalsegmentator" = "Downloads the 135 MB nnU-Net checkpoint on first run and converts it to a 65 MB ONNX file (needs PyTorch once)."
+"org.radspider.monai-wholebody" = "Downloads the model weights on first run: 71 MB per resolution."
+"org.radspider.sam-med3d" = "Downloads the SAM-Med3D turbo checkpoint (about 400 MB) from Hugging Face on first run."
+"org.radspider.sam-slices" = "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."

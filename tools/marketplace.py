@@ -30,11 +30,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 INDEX = ROOT / "marketplace" / "index.json"
+EXTRA = ROOT / "marketplace" / "extra.toml"
 REPO_URL = "https://github.com/rad-medica/radspider-plugins"
 SCHEMA = 1
 EXCLUDED_DIRS = {"__pycache__", ".venv", ".venvs", ".pytest_cache", ".ruff_cache"}
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
-SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$")
+# The official regular expression of semver.org (2.0.0), so that every identifier rule is enforced.
+SEMVER = re.compile(
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?\Z"
+)
 
 
 def version_key(version: str) -> tuple:
@@ -74,7 +80,22 @@ def plugin_dirs(root: Path = ROOT) -> list[Path]:
     return sorted(p for p in root.glob("org.radspider.*") if (p / "plugin.toml").is_file())
 
 
-def describe(plugin: Path) -> dict:
+def load_extra(path: Path = EXTRA) -> dict[str, str]:
+    """``marketplace/extra.toml``: plugin id -> text for ``first_run_download``. Absent file = no extras."""
+    if not path.is_file():
+        return {}
+    extra = tomllib.loads(path.read_text(encoding="utf-8"))
+    for pid, text in extra.items():
+        if not isinstance(text, str) or not text.strip():
+            raise SystemExit(f"{path.name}: {pid!r} must map to a non-empty string")
+    return extra
+
+
+def has_second_volume(manifest: dict) -> bool:
+    return any(e.get("second_volume") is True for k in ("synth_node", "segmentation", "tool") for e in manifest.get(k, []))
+
+
+def describe(plugin: Path, extra: dict[str, str] | None = None) -> dict:
     manifest = tomllib.loads((plugin / "plugin.toml").read_text(encoding="utf-8"))
     if manifest.get("id") != plugin.name:
         raise SystemExit(f"{plugin.name}: id {manifest.get('id')!r} differs from the folder name")
@@ -88,7 +109,7 @@ def describe(plugin: Path) -> dict:
         else []
     )
     tag = f"{plugin.name}-v{version}"
-    return {
+    described = {
         "id": plugin.name,
         "name": manifest["name"],
         "version": version,
@@ -103,11 +124,21 @@ def describe(plugin: Path) -> dict:
             "size": len(package),
         },
         "tag": tag,
+        "second_volume": has_second_volume(manifest),
     }
+    first_run = (extra or {}).get(plugin.name)
+    if first_run:
+        described["first_run_download"] = first_run
+    return described
 
 
 def build_index(root: Path = ROOT) -> dict:
-    return {"schema": SCHEMA, "repository": REPO_URL, "plugins": [describe(p) for p in plugin_dirs(root)]}
+    plugins = plugin_dirs(root)
+    extra = load_extra(root / "marketplace" / "extra.toml")
+    unknown = sorted(extra.keys() - {p.name for p in plugins})
+    if unknown:
+        raise SystemExit(f"extra.toml: unknown plugin id(s): {', '.join(unknown)}")
+    return {"schema": SCHEMA, "repository": REPO_URL, "plugins": [describe(p, extra) for p in plugins]}
 
 
 def render(index: dict) -> str:

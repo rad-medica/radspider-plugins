@@ -13,9 +13,10 @@ python tools/validate_plugins.py   # manifest ↔ module ↔ docs consistency (P
 ruff check .                       # lint (config in pyproject.toml)
 python tools/marketplace.py update # regenerate marketplace/index.json after plugin changes
 python tools/marketplace.py check  # index is current
+python -m unittest discover -s tools  # tests of the tools
 ```
 
-Run both before declaring anything done. Plugin behaviour is tested from the radspider checkout (`cargo test --test plugins`), not here.
+Run all of them before declaring anything done. `marketplace/extra.toml` (id → `first_run_download`) feeds the index; never put such keys in `plugin.toml`. Plugin behaviour is tested from the radspider checkout (`cargo test --test plugins`), not here.
 
 ## Hard rules
 

@@ -5,7 +5,9 @@ Checks, per ``org.radspider.*`` folder:
 
 * ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-3;
 * the module (``module`` key, default ``plugin``) exists and compiles;
-* ``requirements`` points at an existing file, and every requirement line is a bounded or named package;
+* ``requirements`` points at an existing file, and every line is a plain pip requirement (a name, extras, version
+  specifiers, an environment marker): no options (``-r``, ``-e``, ``--index-url``, ``--extra-index-url``,
+  ``--find-links``), no URLs or direct references, no local paths;
 * every ``[[synth_node]]`` / ``[[segmentation]]`` / ``[[tool]]`` has a unique ``name`` and a ``label``, and the
   module registers exactly the same names with ``@rp.<kind>("name")``;
 * parameter ``name`` is unique per entry and ``min <= default <= max`` when bounds are given;
@@ -25,8 +27,16 @@ import tomllib
 from pathlib import Path
 
 KINDS = {"synth_node": "synth_node", "segmentation": "segmentation", "tool": "tool"}
-SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
-REQUIREMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?\s*(?:(?:>=|==|~=|<=|<|>|!=)\s*[^\s#;]+(?:\s*,\s*(?:>=|<=|<|>|!=)\s*[^\s#;]+)*)?\s*(?:;.*)?$")
+SEMVER = re.compile(  # semver.org 2.0.0; same rules as tools/marketplace.py
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?"
+    r"(?:\+[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*)?\Z"
+)
+_SPEC = r"(?:>=|==|~=|<=|<|>|!=)\s*[A-Za-z0-9][A-Za-z0-9.*+!_-]*"
+REQUIREMENT = re.compile(
+    rf"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?\s*(?:{_SPEC}(?:\s*,\s*{_SPEC})*)?\s*(?:;[^@\\]*)?\Z"
+)
+LOCAL_PATH = re.compile(r"^(?:\.{1,2}[/\\]|[/\\~]|[A-Za-z]:[/\\])")
 DOC_OPTIONAL = {"examples", "numpy-demo", "testkit"}
 
 
@@ -69,6 +79,19 @@ def check_params(where: str, entry: dict, errors: list[str]) -> None:
             errors.append(f"{where}: parameter {name!r} default {d} outside [{lo}, {hi}]")
 
 
+def requirement_error(line: str) -> str | None:
+    """Why ``line`` (stripped, not blank, not a comment) is not a plain pip requirement, or None when it is."""
+    if line.startswith("-"):
+        return "pip option (-r, -e, --index-url, --extra-index-url, --find-links, ...) is not allowed"
+    if "://" in line or "@" in line:
+        return "URL or direct reference is not allowed"
+    if LOCAL_PATH.match(line) or "\\" in line or line.endswith((".whl", ".zip", ".tar.gz")):
+        return "local path or archive is not allowed"
+    if not REQUIREMENT.match(line):
+        return "not a plain pip requirement"
+    return None
+
+
 def check_requirements(plugin: Path, manifest: dict, errors: list[str]) -> None:
     req = manifest.get("requirements")
     if req is None:
@@ -79,8 +102,8 @@ def check_requirements(plugin: Path, manifest: dict, errors: list[str]) -> None:
         return
     for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = raw.strip()
-        if line and not line.startswith("#") and not REQUIREMENT.match(line):
-            errors.append(f"{path.name}:{n}: unparsable requirement {line!r}")
+        if line and not line.startswith("#") and (why := requirement_error(line)):
+            errors.append(f"{plugin.name}/{path.name}:{n}: {why}: {line!r}")
 
 
 def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:

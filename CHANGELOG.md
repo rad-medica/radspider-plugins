@@ -11,6 +11,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 
 - Marketplace: `marketplace/index.json`, `tools/marketplace.py` (deterministic packages, version rules), release workflow publishing `<id>-v<version>` GitHub releases, `docs/MARKETPLACE.md`.
 
+- Marketplace index: optional `second_volume` (bool) and `first_run_download` (text from the new `marketplace/extra.toml`) per plugin; schema stays 1, no plugin version changes.
+- `docs/MARKETPLACE.md`: *Client contract* (the four GitHub requests, headers, ETag, redirect without the token, error mapping); *Limits* corrected (a client authenticates against the API, it does not mirror).
+- `tools/validate_plugins.py`: a `requirements.txt` line must be a plain pip requirement; options (`-r`, `-e`, `--index-url`, `--extra-index-url`, `--find-links`), URLs and local paths are rejected. Semver check follows semver.org exactly (no leading zeros).
+- `tools/semver_vectors.json` (precedence cases shared with radspider) and `tools/test_tools.py`, run in CI.
+- `SECURITY.md`: how to create, scope and rotate the read-only fine-grained token for the marketplace.
+- Pending: CI step running radspider's index-contract test against `marketplace/index.json` (waits for that test in radspider).
+
 ### Changed
 - Per-plugin sections moved from `README.md` to `docs/plugins/` (text unchanged).
 

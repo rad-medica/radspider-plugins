@@ -20,7 +20,8 @@
         "sha256": "18306379a1920ef8a4f452d3b2822979075f35b2c2d2778613195812845488ea",
         "size": 2237
       },
-      "tag": "org.radspider.examples-v1.0.0"
+      "tag": "org.radspider.examples-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.monai-wholebody",
@@ -45,7 +46,9 @@
         "sha256": "48da6de66c689f21f4ebe0272589a630614228a9c5e11ce6e9e20e49dcfb1a7c",
         "size": 8232
       },
-      "tag": "org.radspider.monai-wholebody-v1.0.0"
+      "tag": "org.radspider.monai-wholebody-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the model weights on first run: 71 MB per resolution."
     },
     {
       "id": "org.radspider.numpy-demo",
@@ -67,7 +70,8 @@
         "sha256": "d18e7596bffefcf71e4721b8fd89b45b8c0aab14e0bd468ed3e7745aac4b737e",
         "size": 2929
       },
-      "tag": "org.radspider.numpy-demo-v1.0.0"
+      "tag": "org.radspider.numpy-demo-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.registration-demo",
@@ -89,7 +93,8 @@
         "sha256": "68c09d68fb8d1a1fae524e2db967629e03ad3ad9cb0b829f299c5e43ec312821",
         "size": 10382
       },
-      "tag": "org.radspider.registration-demo-v1.0.0"
+      "tag": "org.radspider.registration-demo-v1.0.0",
+      "second_volume": true
     },
     {
       "id": "org.radspider.sam-med3d",
@@ -115,7 +120,9 @@
         "sha256": "fd70be77e7334a558b07ca1d2288bedb3d413e3d6304f07eaf132fec7bbe07f4",
         "size": 10122
       },
-      "tag": "org.radspider.sam-med3d-v1.0.0"
+      "tag": "org.radspider.sam-med3d-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the SAM-Med3D turbo checkpoint (about 400 MB) from Hugging Face on first run."
     },
     {
       "id": "org.radspider.sam-slices",
@@ -139,7 +146,9 @@
         "sha256": "b173fb4f16943833c30cb5e9832c97e9bdf2ec95df34dbcdf09fb51d1718a9b3",
         "size": 14103
       },
-      "tag": "org.radspider.sam-slices-v1.0.0"
+      "tag": "org.radspider.sam-slices-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."
     },
     {
       "id": "org.radspider.testkit",
@@ -161,7 +170,8 @@
         "sha256": "de03082894c5546db4da9478591fd1f929e15a6e5737bad2614a0c784df2ae47",
         "size": 20449
       },
-      "tag": "org.radspider.testkit-v1.0.0"
+      "tag": "org.radspider.testkit-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.totalsegmentator",
@@ -187,7 +197,9 @@
         "sha256": "a7b7d34217719cb81eae7e9936b0b41df4734e59980aa835d6a82194338e9bb3",
         "size": 11483
       },
-      "tag": "org.radspider.totalsegmentator-v1.0.0"
+      "tag": "org.radspider.totalsegmentator-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the 135 MB nnU-Net checkpoint on first run and converts it to a 65 MB ONNX file (needs PyTorch once)."
     }
   ]
 }
