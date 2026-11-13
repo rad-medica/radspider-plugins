@@ -1,6 +1,7 @@
 name: radspider integration
 
-# Runs radspider's own tests/plugins.rs against this checkout (examples, numpy demo, test kit, registration demo).
+# Runs radspider's own tests/plugins.rs against this checkout (examples, numpy demo, test kit, registration demo),
+# then tests/marketplace_index.rs: radspider's parser must read marketplace/index.json and agree with each plugin folder.
 # Needs a read-only token for the private radspider repository in the secret RADSPIDER_READ_TOKEN.
 # Without the secret the job is skipped, not failed.
 
@@ -75,3 +76,11 @@ jobs:
           RADSPIDER_PLUGIN_EXAMPLES: ${{ github.workspace }}/radspider-plugins
           RADSPIDER_PLUGIN_PIP: "1"
         run: cargo test --test plugins
+
+      - name: Index contract (radspider's parser reads marketplace/index.json)
+        if: steps.gate.outputs.run == 'true'
+        working-directory: radspider
+        env:
+          RADSPIDER_PLUGIN_EXAMPLES: ${{ github.workspace }}/radspider-plugins
+          RADSPIDER_REQUIRE_INDEX: "1"
+        run: cargo test --test marketplace_index
