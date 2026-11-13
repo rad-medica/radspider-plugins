@@ -11,6 +11,7 @@ Proprietary repository (see `LICENSE`): contributions come from people with a wr
 ```bash
 python tools/validate_plugins.py
 ruff check .
+python tools/marketplace.py update   # when any file inside a plugin folder changed; commit marketplace/index.json
 ```
 
 4. Open the PR; CI must be green. Fill the PR template: it asks what you ran and on what, because that is what the docs' "Verified" rows are made of.
@@ -24,6 +25,7 @@ ruff check .
 | No model weights, data or secrets in git | Size, licences, patient data. `.gitignore` is not a safety net |
 | Pin a SHA-256 for every downloaded pickle/checkpoint | Loading a pickle is code execution |
 | Manifest and module declare the same entries | The validator fails the build otherwise |
+| Any change inside a plugin folder bumps its `version`; CI compares against the base branch and fails otherwise | The marketplace updates clients by version, so identical versions must mean identical files |
 | Behaviour changes bump the plugin's `version` and add a `CHANGELOG.md` line | Users install from folders; the version is how they tell |
 | Claims in docs are things you ran. Say what you did not run | A "Verified" row that is wrong is worse than none |
 | Code, comments, commits and docs in English | Shared with the radspider repository |

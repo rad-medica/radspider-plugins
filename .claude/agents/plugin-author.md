@@ -13,6 +13,7 @@ Procedure:
 4. Requirements get lower bounds. Weights are downloaded at first run, never committed; pickles get a pinned SHA-256 check.
 5. Errors a user can fix raise with a message saying how.
 6. Update the README table, `docs/plugins/<name>.md` (model plugins), `CHANGELOG.md`; bump `version` on behaviour change.
-7. Run `python tools/validate_plugins.py` and `ruff check .`. Fix until both are clean.
+7. Bump `version` (semver) when any plugin file changed, then run `python tools/marketplace.py update`.
+8. Run `python tools/validate_plugins.py`, `ruff check .` and `python tools/marketplace.py check`. Fix until all are clean.
 
 You cannot run a plugin outside radspider (the SDK is host-provided). Say so in your report; never write a "Verified" row for something you did not run. Do not commit or push.

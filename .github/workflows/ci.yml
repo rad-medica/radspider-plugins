@@ -44,6 +44,30 @@ jobs:
           big=$(git ls-files -z | xargs -0 du -k | awk '$1 > 512 {print}')
           if [ -n "$big" ]; then echo "Files over 512 KiB:"; echo "$big"; exit 1; fi
 
+  marketplace:
+    name: Index and version rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Index is current; changed plugins have a higher version
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -eu
+          : > base-index.json
+          if [ -n "${BASE_SHA:-}" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            git show "$BASE_SHA:marketplace/index.json" > base-index.json 2>/dev/null || : > base-index.json
+          fi
+          python tools/marketplace.py check --base base-index.json
+
   requirements:
     name: Requirements resolve (${{ matrix.plugin }})
     runs-on: ubuntu-latest

@@ -11,6 +11,8 @@ Plugins for [radspider](https://github.com/rad-medica/radspider), a medical imag
 ```bash
 python tools/validate_plugins.py   # manifest ↔ module ↔ docs consistency (Python ≥ 3.11)
 ruff check .                       # lint (config in pyproject.toml)
+python tools/marketplace.py update # regenerate marketplace/index.json after plugin changes
+python tools/marketplace.py check  # index is current
 ```
 
 Run both before declaring anything done. Plugin behaviour is tested from the radspider checkout (`cargo test --test plugins`), not here.
@@ -22,7 +24,7 @@ Run both before declaring anything done. Plugin behaviour is tested from the rad
 3. Never commit weights, datasets, patient data, secrets.
 4. Downloaded pickles/checkpoints: verify a pinned SHA-256 first; plain state dicts load with `weights_only=True`.
 5. Do not invent verification. A "Verified" row in `docs/plugins/*.md` states what was actually run. If behaviour changed and was not rerun, say so in the row.
-6. Changing a plugin's behaviour: bump `version` in `plugin.toml`, add a line to `CHANGELOG.md`, update its `docs/plugins/` page and the README table if the summary changed.
+6. Any change to a file inside a plugin folder: bump `version` in `plugin.toml` (semver), run `python tools/marketplace.py update` and commit `marketplace/index.json`. Behaviour changes also: add a line to `CHANGELOG.md`, update its `docs/plugins/` page and the README table if the summary changed.
 7. Keep existing plugin code style; do not mass-reformat plugin modules (they were copied byte-for-byte from radspider).
 8. Code, comments, commit messages and docs in English.
 9. Git: commit and push only when asked.
@@ -34,6 +36,7 @@ Run both before declaring anything done. Plugin behaviour is tested from the rad
 | How the host runs plugins, entry kinds, API levels | `docs/ARCHITECTURE.md` |
 | New plugin checklist, style, versioning | `docs/DEVELOPING.md` |
 | One plugin's model, limits, licence, verification | `docs/plugins/<name>.md` |
+| Versions, index, releases | `docs/MARKETPLACE.md` |
 | Every feature in one plugin | `org.radspider.testkit/testkit.py` |
 | Smallest plugin to copy | `org.radspider.examples/` |
 

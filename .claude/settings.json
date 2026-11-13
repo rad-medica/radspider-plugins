@@ -3,6 +3,7 @@
     "allow": [
       "Bash(python tools/validate_plugins.py:*)",
       "Bash(ruff check:*)",
+      "Bash(python tools/marketplace.py:*)",
       "Bash(git status:*)"
     ]
   }

@@ -1,0 +1,68 @@
+name: Release
+
+# Publishes every plugin version that has no GitHub release yet: tag <id>-v<version>, asset <id>-<version>.zip.
+# The package bytes are deterministic, so the SHA-256 in marketplace/index.json must match the uploaded asset.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "org.radspider.*/**"
+      - "marketplace/index.json"
+      - "tools/marketplace.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Index is current
+        run: python tools/marketplace.py check
+
+      - name: Build packages
+        run: python tools/marketplace.py build dist
+
+      - name: Packages match the index
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, sys
+          bad = 0
+          for p in json.loads(pathlib.Path("marketplace/index.json").read_text(encoding="utf-8"))["plugins"]:
+              got = hashlib.sha256(pathlib.Path("dist", p["package"]["file"]).read_bytes()).hexdigest()
+              if got != p["package"]["sha256"]:
+                  print(f"mismatch {p['id']}: {got} != {p['package']['sha256']}"); bad = 1
+          sys.exit(bad)
+          PY
+
+      - name: Create missing releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          python - <<'PY' > releases.tsv
+          import json, pathlib
+          for p in json.loads(pathlib.Path("marketplace/index.json").read_text(encoding="utf-8"))["plugins"]:
+              print(p["tag"], p["package"]["file"], p["name"], p["version"], sep="\t")
+          PY
+          while IFS=$'\t' read -r tag file name version; do
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag exists"
+            else
+              gh release create "$tag" "dist/$file" --target "$GITHUB_SHA" \
+                --title "$name $version" --notes "Plugin package. See CHANGELOG.md and docs/plugins/."
+            fi
+          done < releases.tsv

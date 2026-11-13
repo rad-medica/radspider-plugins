@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/rad-medica/radspider-plugins",
+  "plugins": [
+    {
+      "id": "org.radspider.examples",
+      "name": "Examples",
+      "version": "1.0.0",
+      "api": 1,
+      "description": "One entry of each kind, standard library only.",
+      "entries": {
+        "synth_node": 1,
+        "segmentation": 1,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.examples-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.examples-v1.0.0/org.radspider.examples-1.0.0.zip",
+        "sha256": "18306379a1920ef8a4f452d3b2822979075f35b2c2d2778613195812845488ea",
+        "size": 2237
+      },
+      "tag": "org.radspider.examples-v1.0.0"
+    },
+    {
+      "id": "org.radspider.monai-wholebody",
+      "name": "MONAI whole body CT",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "104 anatomical structures on CT with the MONAI wholeBody_ct_segmentation bundle.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 1,
+        "tool": 0
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "torch>=2.4",
+        "monai>=1.3",
+        "huggingface_hub"
+      ],
+      "package": {
+        "file": "org.radspider.monai-wholebody-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.monai-wholebody-v1.0.0/org.radspider.monai-wholebody-1.0.0.zip",
+        "sha256": "48da6de66c689f21f4ebe0272589a630614228a9c5e11ce6e9e20e49dcfb1a7c",
+        "size": 8232
+      },
+      "tag": "org.radspider.monai-wholebody-v1.0.0"
+    },
+    {
+      "id": "org.radspider.numpy-demo",
+      "name": "NumPy demo",
+      "version": "1.0.0",
+      "api": 1,
+      "description": "Vectorised entries with numpy.",
+      "entries": {
+        "synth_node": 1,
+        "segmentation": 1,
+        "tool": 1
+      },
+      "requirements": [
+        "numpy>=1.26"
+      ],
+      "package": {
+        "file": "org.radspider.numpy-demo-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.numpy-demo-v1.0.0/org.radspider.numpy-demo-1.0.0.zip",
+        "sha256": "d18e7596bffefcf71e4721b8fd89b45b8c0aab14e0bd468ed3e7745aac4b737e",
+        "size": 2929
+      },
+      "tag": "org.radspider.numpy-demo-v1.0.0"
+    },
+    {
+      "id": "org.radspider.registration-demo",
+      "name": "Registration demo",
+      "version": "1.0.0",
+      "api": 3,
+      "description": "Translation-only registration of a second series onto the active one (numpy, cross-correlation).",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [
+        "numpy>=1.26"
+      ],
+      "package": {
+        "file": "org.radspider.registration-demo-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.registration-demo-v1.0.0/org.radspider.registration-demo-1.0.0.zip",
+        "sha256": "68c09d68fb8d1a1fae524e2db967629e03ad3ad9cb0b829f299c5e43ec312821",
+        "size": 10382
+      },
+      "tag": "org.radspider.registration-demo-v1.0.0"
+    },
+    {
+      "id": "org.radspider.sam-med3d",
+      "name": "SAM-Med3D",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "Click-prompted 3D segmentation: place Probe measurements on the object, run, get a segment.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 1,
+        "tool": 0
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "torch>=2.4",
+        "medim>=0.1.2",
+        "huggingface_hub",
+        "requests"
+      ],
+      "package": {
+        "file": "org.radspider.sam-med3d-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-med3d-v1.0.0/org.radspider.sam-med3d-1.0.0.zip",
+        "sha256": "fd70be77e7334a558b07ca1d2288bedb3d413e3d6304f07eaf132fec7bbe07f4",
+        "size": 10122
+      },
+      "tag": "org.radspider.sam-med3d-v1.0.0"
+    },
+    {
+      "id": "org.radspider.sam-slices",
+      "name": "SAM slices",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 2,
+        "tool": 1
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "onnxruntime>=1.18",
+        "huggingface_hub"
+      ],
+      "package": {
+        "file": "org.radspider.sam-slices-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-slices-v1.0.0/org.radspider.sam-slices-1.0.0.zip",
+        "sha256": "b173fb4f16943833c30cb5e9832c97e9bdf2ec95df34dbcdf09fb51d1718a9b3",
+        "size": 14103
+      },
+      "tag": "org.radspider.sam-slices-v1.0.0"
+    },
+    {
+      "id": "org.radspider.testkit",
+      "name": "Test kit",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window.",
+      "entries": {
+        "synth_node": 4,
+        "segmentation": 4,
+        "tool": 7
+      },
+      "requirements": [
+        "numpy>=1.26"
+      ],
+      "package": {
+        "file": "org.radspider.testkit-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.testkit-v1.0.0/org.radspider.testkit-1.0.0.zip",
+        "sha256": "de03082894c5546db4da9478591fd1f929e15a6e5737bad2614a0c784df2ae47",
+        "size": 20449
+      },
+      "tag": "org.radspider.testkit-v1.0.0"
+    },
+    {
+      "id": "org.radspider.totalsegmentator",
+      "name": "TotalSegmentator",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "117 anatomical structures on CT (TotalSegmentator v2, 3 mm model), run with ONNX Runtime.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 1,
+        "tool": 0
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "scipy>=1.11",
+        "onnxruntime>=1.18",
+        "torch>=2.5",
+        "dynamic-network-architectures>=0.4"
+      ],
+      "package": {
+        "file": "org.radspider.totalsegmentator-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.totalsegmentator-v1.0.0/org.radspider.totalsegmentator-1.0.0.zip",
+        "sha256": "a7b7d34217719cb81eae7e9936b0b41df4734e59980aa835d6a82194338e9bb3",
+        "size": 11483
+      },
+      "tag": "org.radspider.totalsegmentator-v1.0.0"
+    }
+  ]
+}

@@ -25,6 +25,10 @@ Proprietary, all rights reserved (`LICENSE`).
 
 Model weights are downloaded on first run (see each plugin's page); none are in this repository. Check each model's licence before shipping it inside a product.
 
+## Versions and marketplace
+
+Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.json` lists every plugin with its version, `api`, requirements and a package (`<id>-<version>.zip`, GitHub release `<id>-v<version>`) with its SHA-256. A client compares the installed version with the index and updates when the index is higher; the SHA-256 is what it verifies after download. Details and rules: [docs/MARKETPLACE.md](docs/MARKETPLACE.md).
+
 ## Repository map
 
 | Path | What |
@@ -32,6 +36,7 @@ Model weights are downloaded on first run (see each plugin's page); none are in 
 | `org.radspider.*/` | The plugins. Installable as-is |
 | `docs/` | Architecture, development guide, one page per model plugin (limits, licences, "Verified" rows) |
 | `tools/validate_plugins.py` | Static checks of every manifest against its module (stdlib only) |
+| `tools/marketplace.py`, `marketplace/index.json` | Package builder and the version index |
 | `.github/workflows/` | CI: lint + validation on every push; radspider integration tests when a token is configured |
 | `.claude/`, `AGENTS.md` | Instructions and agents for AI coding assistants |
 
@@ -39,6 +44,8 @@ Model weights are downloaded on first run (see each plugin's page); none are in 
 
 ```bash
 python tools/validate_plugins.py      # manifests vs modules, requirements, docs (Python ≥ 3.11)
+python tools/marketplace.py update    # after any plugin file change: regenerate the index, then commit it
+python tools/marketplace.py check     # index is current
 pip install ruff && ruff check .      # lint
 ```
 

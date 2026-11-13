@@ -12,6 +12,8 @@ radspider-plugins/
 │   └── requirements.txt       optional; installed into the plugin's own venv
 ├── docs/                      this documentation
 ├── tools/validate_plugins.py  manifest ↔ module consistency checks
+├── tools/marketplace.py       packages and version index builder
+├── marketplace/index.json     versions, package URLs and SHA-256 per plugin
 └── .github/workflows/         CI
 ```
 
