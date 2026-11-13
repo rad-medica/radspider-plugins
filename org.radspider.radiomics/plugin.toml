@@ -1,0 +1,15 @@
+# pyradiomics feature extraction per segment: the counterpart of 3D Slicer's SlicerRadiomics extension.
+# Install: Settings → Modules → Install folder… → this folder. pyradiomics is built from source at install time
+# (see requirements.txt): the machine needs git and a C compiler.
+id = "org.radspider.radiomics"
+name = "Radiomics (pyradiomics)"
+version = "1.0.0"
+api = 2                        # 2: reads the segments, interactive window
+description = "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics."
+author = "radspider"
+requirements = "requirements.txt"
+
+[[tool]]
+name = "radiomics"
+label = "Radiomics (pyradiomics)"
+description = "Opens a window with the feature classes, the segment and the pyradiomics options; Extract computes the features of each segment: one row per feature, one column per segment, with the pyradiomics diagnostics rows. Needs at least one segment."

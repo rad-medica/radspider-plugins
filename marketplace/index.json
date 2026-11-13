@@ -149,6 +149,32 @@
       "second_volume": false
     },
     {
+      "id": "org.radspider.radiomics",
+      "name": "Radiomics (pyradiomics)",
+      "version": "1.0.0",
+      "api": 2,
+      "description": "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [
+        "pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics@67d1f268c67c2caffdbe043362f3f7333472af0f",
+        "numpy>=2.0",
+        "SimpleITK>=2.4.0",
+        "PyWavelets>=1.6.0"
+      ],
+      "package": {
+        "file": "org.radspider.radiomics-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.radiomics-v1.0.0/org.radspider.radiomics-1.0.0.zip",
+        "sha256": "438eee03ff306c7c7242acf8d2b268c14fe0a2defab5874f58253f89d09dc8fa",
+        "size": 11693
+      },
+      "tag": "org.radspider.radiomics-v1.0.0",
+      "second_volume": false
+    },
+    {
       "id": "org.radspider.registration-demo",
       "name": "Registration demo",
       "version": "1.0.0",

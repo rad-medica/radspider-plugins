@@ -25,6 +25,7 @@ Proprietary, all rights reserved (`LICENSE`).
 | `org.radspider.cads` | 3 | torch, numpy, scipy | 167 CT structures in nine task groups, CADS nnU-Net models (open weights by default). After Slicer's CADSWholeBodyCTSeg | [cads](docs/plugins/cads.md) |
 | `org.radspider.lung-ct-analyzer` | 2 | numpy, scipy | Lung CT analysis by HU range (emphysema, inflated, infiltrated, collapsed) per lung, and a threshold lung segmentation. After Slicer's LungCTAnalyzer | [lung-ct-analyzer](docs/plugins/lung-ct-analyzer.md) |
 | `org.radspider.density-lung-segmentation` | 2 | numpy, scipy | Lung density classes from a 5-component Gaussian mixture, and their volumes. After Slicer's DensityLungSegmentation | [density-lung-segmentation](docs/plugins/density-lung-segmentation.md) |
+| `org.radspider.radiomics` | 2 | pyradiomics (from GitHub, compiled: needs git and a C compiler), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [radiomics](docs/plugins/radiomics.md) |
 | `org.radspider.roi-tools` | 2 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
 | `org.radspider.volume-tools` | 3 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
 

@@ -1,0 +1,9 @@
+# pyradiomics has no usable release on PyPI for Python >= 3.10 (what radspider runs): 3.1.0 ships wheels for
+# CPython 3.7-3.9 only and its sdist fails to build (setup.py imports numpy before it is installed). The upstream
+# repository builds with scikit-build-core, so it is installed from there, pinned to the commit of tag v3.1.1a3
+# (a commit cannot be moved, a tag can). One-time cost: pip clones the repository and compiles two small C
+# extensions, so the machine needs git and a C compiler.
+pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics@67d1f268c67c2caffdbe043362f3f7333472af0f
+numpy>=2.0
+SimpleITK>=2.4.0
+PyWavelets>=1.6.0

@@ -5,7 +5,7 @@ Plugins run arbitrary Python on a workstation that may hold patient data. Treat 
 - Report a vulnerability privately to the repository owner; do not open a public issue.
 - Network access in this repository is limited to first-run model downloads (Hugging Face, GitHub releases). Anything else needs a justification in the PR.
 - Downloaded checkpoints that are pickles must be verified against a pinned SHA-256 before loading (`totalsegmentator` does this); plain state dicts load with `weights_only=True`.
-- Plugin requirements are plain pip requirements (name, extras, version specifiers, markers). `validate_plugins.py` rejects `-r`, `-e`, `--index-url`, `--extra-index-url`, `--find-links`, URLs and local paths: pip runs those lines on the user's machine, and an extra index is a supply-chain hole.
+- Plugin requirements are plain pip requirements (name, extras, version specifiers, markers). `validate_plugins.py` rejects `-r`, `-e`, `--index-url`, `--extra-index-url`, `--find-links`, URLs and local paths: pip runs those lines on the user's machine, and an extra index is a supply-chain hole. One exception, for a package with no usable release on PyPI: `name @ git+https://github.com/<owner>/<repo>@<40-hex commit>`. A full commit cannot be moved the way a tag or a branch can; pip then clones and builds that source on the user's machine, so the plugin's page must say so.
 - No patient data in git, issues, logs or test fixtures. Tests use synthetic volumes.
 
 ## Token for the marketplace

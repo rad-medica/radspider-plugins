@@ -36,6 +36,11 @@ _SPEC = r"(?:>=|==|~=|<=|<|>|!=)\s*[A-Za-z0-9][A-Za-z0-9.*+!_-]*"
 REQUIREMENT = re.compile(
     rf"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?\s*(?:{_SPEC}(?:\s*,\s*{_SPEC})*)?\s*(?:;[^@\\]*)?\Z"
 )
+# The one direct reference allowed: a GitHub repository over https, pinned to a full commit (a tag or a branch can
+# move, a commit cannot). For a package with no usable release on PyPI; no extras, markers, options or fragments.
+PINNED_GIT = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9._-]*\s*@\s*git\+https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+@[0-9a-f]{40}\Z"
+)
 LOCAL_PATH = re.compile(r"^(?:\.{1,2}[/\\]|[/\\~]|[A-Za-z]:[/\\])")
 DOC_OPTIONAL = {"examples", "numpy-demo", "testkit"}
 
@@ -83,8 +88,10 @@ def requirement_error(line: str) -> str | None:
     """Why ``line`` (stripped, not blank, not a comment) is not a plain pip requirement, or None when it is."""
     if line.startswith("-"):
         return "pip option (-r, -e, --index-url, --extra-index-url, --find-links, ...) is not allowed"
+    if PINNED_GIT.match(line):
+        return None
     if "://" in line or "@" in line:
-        return "URL or direct reference is not allowed"
+        return "URL or direct reference is not allowed (except name @ git+https://github.com/<owner>/<repo>@<40-hex commit>)"
     if LOCAL_PATH.match(line) or "\\" in line or line.endswith((".whl", ".zip", ".tar.gz")):
         return "local path or archive is not allowed"
     if not REQUIREMENT.match(line):
