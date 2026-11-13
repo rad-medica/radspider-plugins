@@ -1,0 +1,85 @@
+# ROI tools: ten tools that work on the measurements the user drew (lines, probes, notes, polygons, ellipses).
+# Needs numpy and scipy (installed into the plugin's own environment). See docs/plugins/roi-tools.md.
+# Install: Settings → Modules → Install folder… → this folder.
+id = "org.radspider.roi-tools"
+name = "ROI tools"
+version = "1.0.0"
+api = 2                        # 2: reads and edits ROIs, reads segments
+description = "Ten measurement tools: Cobb angle, ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score."
+author = "radspider"
+requirements = "requirements.txt"
+
+# The five everyday tools get a ribbon button; the other five (button = false) are in the Plugin tools window,
+# where their parameters are set anyway.
+
+[[tool]]
+name = "cobb_angle"
+label = "Cobb angle"
+description = "The angle between the two most recent lines on the slice on screen (0–90° and its supplement), added as a Cobb measurement."
+
+[[tool]]
+name = "export_rois"
+label = "Export ROIs"
+description = "Every measurement of the series as one table: kind, image, points in voxels and patient mm, length, area, perimeter and, for polygons and ellipses, mean, SD, min, max of the pixels inside. Save as CSV… writes it."
+
+[[tool]]
+name = "rotate_roi"
+button = false                # needs an angle: run from the Plugin tools window
+label = "Rotate ROI"
+description = "Rotates the most recent polygon or line on the slice on screen (or all of them) about its centroid, in mm. Positive = counter-clockwise on screen."
+params = [
+  { name = "angle_deg", label = "Angle (°)", default = 90.0, min = -360.0, max = 360.0 },
+  { name = "all_on_slice", label = "All on the slice (0 / 1)", default = 0.0, min = 0.0, max = 1.0 },
+]
+
+[[tool]]
+name = "points_to_line"
+button = false
+label = "Points to line"
+description = "Joins the probes placed on different slices, in slice order: every slice in between gets a probe at the linearly interpolated position."
+
+[[tool]]
+name = "sphere_volumes"
+label = "Sphere volumes"
+description = "The two most recent lines as diameters of spheres (π·d³/6): both volumes in ml, the change in ml and %, and the ratio."
+
+[[tool]]
+name = "rois_to_labels"
+label = "ROIs to segments"
+description = "Rasterises the polygons and ellipses of all slices into segments, one per name (a text note inside a shape names it; otherwise by kind), with voxel counts and ml."
+
+[[tool]]
+name = "sector_statistics"
+button = false
+label = "Sector statistics"
+description = "The wall between two polygons on the slice on screen (larger = epicardial, smaller = endocardial) split into angular sectors and radial layers about the endocardial centroid: mean, SD, min, max, area of each, a chart, and the sector outlines."
+params = [
+  { name = "sectors", label = "Sectors", default = 6.0, min = 2.0, max = 36.0 },
+  { name = "layers", label = "Layers", default = 1.0, min = 1.0, max = 4.0 },
+  { name = "reference_deg", label = "Reference angle (°)", default = 0.0, min = -360.0, max = 360.0 },
+  { name = "outlines", label = "Add outlines (0 / 1)", default = 1.0, min = 0.0, max = 1.0 },
+]
+
+[[tool]]
+name = "count_points"
+button = false
+label = "Count points"
+description = "Counts probes and text notes by type (a note's text), per image and in total, with the density per mm of the lines drawn on the image."
+
+[[tool]]
+name = "grow_from_seed"
+label = "Grow from probe"
+description = "3D region growing (6-connected) from the most recent probe. Mode 0: seed value − Lower … + Upper; 1: Lower … Upper as absolute values; 2: Lower % of the maximum within the search box … that maximum. One segment, with its volume."
+params = [
+  { name = "mode", label = "Mode (0 seed ±, 1 absolute, 2 % of max)", default = 0.0, min = 0.0, max = 2.0 },
+  { name = "lower", label = "Lower", default = 50.0 },
+  { name = "upper", label = "Upper", default = 50.0 },
+  { name = "search_mm", label = "Search box (mm, mode 2)", default = 70.0, min = 1.0, max = 500.0 },
+]
+
+[[tool]]
+name = "calcium_score"
+button = false                # radspider has a native calcium tool; this is the plugin equivalent
+label = "Calcium score"
+description = "Agatston score of a non-contrast cardiac CT (HU only): lesions ≥ 130 HU per slice, weighted by peak HU, scaled by slice spacing / 3 mm; volume score and lesion count. Inside the existing segments when there are any, else the whole volume (bone is counted)."
+params = [{ name = "min_area_mm2", label = "Smallest lesion (mm²)", default = 1.0, min = 0.0, max = 10.0 }]

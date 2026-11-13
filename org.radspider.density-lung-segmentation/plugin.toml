@@ -1,0 +1,38 @@
+# Density lung segmentation: the Lung CT GMM Segmentation module of the 3D Slicer extension DensityLungSegmentation
+# (Apache-2.0), re-implemented with numpy and scipy. CT in Hounsfield units only. Not clinically evaluated.
+# See docs/plugins/density-lung-segmentation.md.
+id = "org.radspider.density-lung-segmentation"
+name = "Density lung segmentation"
+version = "1.0.0"
+api = 2                        # 2: the tool returns charts and segments, which the API table does not promise at 1
+description = "Lung tissue on CT by density with a fixed 5-class Gaussian mixture: air, healthy lung, ground glass opacity, consolidation, other denser tissues."
+requirements = "requirements.txt"
+
+[[segmentation]]
+name = "gmm"
+label = "Lung density classes (per voxel)"
+description = """CT in HU only. Lung mask by threshold, islands and closing; each voxel inside gets the most likely of five density \
+classes of a Gaussian mixture fitted on COVID-19 CTs."""
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", default = 500000.0, min = 1.0, max = 100000000.0 },
+]
+
+[[segmentation]]
+name = "gmm_averaged"
+label = "Lung density classes (averaged)"
+description = "The same, followed by a 4 x 4 x 4 voxel median filter of the labels: fewer isolated voxels."
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", default = 500000.0, min = 1.0, max = 100000000.0 },
+]
+
+[[tool]]
+name = "volumes"
+label = "Lung density volumes"
+description = "CT in HU only. The same segmentation with a table of volume in ml, share and mean HU per class, a bar chart and the segments."
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", default = 500000.0, min = 1.0, max = 100000000.0 },
+  { name = "averaged", label = "Averaged labels (0 / 1)", default = 0.0, min = 0.0, max = 1.0 },
+]

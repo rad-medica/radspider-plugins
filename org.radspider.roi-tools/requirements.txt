@@ -1,0 +1,3 @@
+numpy>=1.26
+# scipy.ndimage.label: connected regions for grow_from_seed and calcium_score.
+scipy>=1.11

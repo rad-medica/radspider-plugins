@@ -1,0 +1,63 @@
+# Volume tools: voxel arithmetic, two-series maps and a rigid registration (numpy + scipy). See docs/plugins/volume-tools.md.
+id = "org.radspider.volume-tools"
+name = "Volume tools"
+version = "1.0.0"
+api = 3
+description = "Invert, scale / normalize to a region, ΔR2 map of two series, tag grid from two tagged series, rigid mutual-information registration."
+requirements = "requirements.txt"
+
+[[synth_node]]
+name = "invert"
+label = "Invert Data"
+description = "Negates every voxel (x → −x). No data stays no data."
+unit = "none"
+
+[[synth_node]]
+name = "scale"
+label = "Scale"
+description = "Multiplies every voxel by a factor: the second step of Normalize (the tool reports the factor)."
+unit = "none"
+params = [{ name = "factor", label = "Factor", default = 1.0 }]
+
+[[tool]]
+name = "normalize"
+label = "Normalize"
+description = "Mean inside a closed measurement (polygon, ellipse) or a segment, and the factor that brings it to the target. Apply the factor with the Scale node of the series builder."
+params = [
+    { name = "target", label = "Target mean", default = 100.0 },
+    { name = "segment", label = "Segment number (0 = measurement)", default = 0.0, min = 0.0, max = 4096.0 },
+]
+
+[[tool]]
+name = "delta_r2_map"
+label = "T2 Ratio Map"
+description = "ΔR2 = −(factor / TE) · ln(second / active) per voxel: active series = pre-contrast, second series = post-contrast. Returns the map, its statistics and a histogram."
+second_volume = true
+unit = "none"
+params = [
+    { name = "te_ms", label = "TE (ms)", default = 20.0, min = 0.001, max = 10000.0 },
+    { name = "threshold", label = "Intensity threshold", default = 1.0, min = 0.0 },
+    { name = "factor", label = "Multiplication factor", default = 1000.0 },
+    { name = "region", label = "Region (0 = auto, −1 = whole volume, n = segment n)", default = 0.0, min = -1.0, max = 4096.0 },
+]
+
+[[tool]]
+name = "merge_tag_grids"
+label = "Cardiac Tagging MRI"
+description = "Multiplies two tagged series (horizontal and vertical tag lines) into one grid-tagged series."
+second_volume = true
+unit = "none"
+params = [{ name = "equalize", label = "Equalize slice maxima (0 / 1)", default = 1.0, min = 0.0, max = 1.0 }]
+
+[[tool]]
+name = "rigid_register"
+label = "PetSpectFusion"
+description = "Rigid registration (3 rotations, 3 translations) of the second series onto the active one by mutual information on a multi-resolution pyramid; returns it on the active series' grid."
+second_volume = true
+unit = "keep"
+params = [
+    { name = "levels", label = "Pyramid levels", default = 3.0, min = 1.0, max = 5.0 },
+    { name = "bins", label = "Histogram bins", default = 48.0, min = 8.0, max = 128.0 },
+    { name = "samples", label = "Samples per level (thousands)", default = 150.0, min = 5.0, max = 2000.0 },
+    { name = "start", label = "Start (0 = auto, 1 = centres of mass)", default = 0.0, min = 0.0, max = 1.0 },
+]

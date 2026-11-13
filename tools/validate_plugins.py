@@ -27,6 +27,8 @@ from pathlib import Path
 KINDS = {"synth_node": "synth_node", "segmentation": "segmentation", "tool": "tool"}
 SEMVER = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$")
 REQUIREMENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*(\[[A-Za-z0-9,._-]+\])?\s*(?:(?:>=|==|~=|<=|<|>|!=)\s*[^\s#;]+(?:\s*,\s*(?:>=|<=|<|>|!=)\s*[^\s#;]+)*)?\s*(?:;.*)?$")
+# A package pip cannot take from PyPI: a git URL pinned to a full commit (a tag or a branch can move, a commit cannot).
+PINNED_GIT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\s*@\s*git\+https://[^\s@#;]+@[0-9a-f]{40}\s*(?:;.*)?$")
 DOC_OPTIONAL = {"examples", "numpy-demo", "testkit"}
 
 
@@ -79,7 +81,7 @@ def check_requirements(plugin: Path, manifest: dict, errors: list[str]) -> None:
         return
     for n, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = raw.strip()
-        if line and not line.startswith("#") and not REQUIREMENT.match(line):
+        if line and not line.startswith("#") and not REQUIREMENT.match(line) and not PINNED_GIT.match(line):
             errors.append(f"{path.name}:{n}: unparsable requirement {line!r}")
 
 

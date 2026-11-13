@@ -1,0 +1,33 @@
+# Lung CT analyzer: the analysis of the 3D Slicer extension LungCTAnalyzer (Apache-2.0), re-implemented with numpy
+# and scipy. CT in Hounsfield units only. Not clinically evaluated. See docs/plugins/lung-ct-analyzer.md.
+id = "org.radspider.lung-ct-analyzer"
+name = "Lung CT analyzer"
+version = "1.0.0"
+api = 2                        # 2: reads the series' segments (lung masks), interactive window
+description = "Lung volumes by density on CT: emphysema, inflated, infiltrated, collapsed, vessels per lung, functional and affected volume. Lung masks without AI."
+requirements = "requirements.txt"
+
+[[segmentation]]
+name = "lungs"
+label = "Lungs (threshold, no AI)"
+description = """CT in HU only. Right lung, left lung and trachea from the air inside the body below the threshold: connected \
+components, airway tracked down from the top slices, lungs split, holes closed, outline smoothed."""
+params = [
+  { name = "upper_hu", label = "Lung threshold (HU, below = air)", default = -400.0, min = -1000.0, max = 0.0 },
+  { name = "closing_mm", label = "Close holes: kernel (mm, 0 = off)", default = 12.0, min = 0.0, max = 40.0 },
+  { name = "smooth_mm", label = "Smooth outline: Gaussian SD (mm, 0 = off)", default = 2.0, min = 0.0, max = 10.0 },
+  { name = "trachea", label = "Trachea segment (0 / 1)", default = 1.0, min = 0.0, max = 1.0 },
+]
+
+[[tool]]
+name = "analyze"
+label = "Lung CT analysis"
+description = """CT in HU only. Uses the segments named right / left lung (or lung lobes) when the series has them, otherwise makes \
+the lung masks by thresholding. Table of volumes in ml and % per lung, bar chart, one segment per class and lung. \
+The four parameters are the HU limits between the classes; they can be changed in the window."""
+params = [
+  { name = "emphysema_max", label = "Emphysema below (HU)", default = -950.0, min = -1100.0, max = 3000.0 },
+  { name = "inflated_max", label = "Inflated below (HU)", default = -750.0, min = -1100.0, max = 3000.0 },
+  { name = "infiltrated_max", label = "Infiltrated below (HU)", default = -400.0, min = -1100.0, max = 3000.0 },
+  { name = "collapsed_max", label = "Collapsed below (HU), vessels from", default = 0.0, min = -1100.0, max = 3000.0 },
+]
