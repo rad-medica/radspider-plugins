@@ -1,0 +1,117 @@
+# Test kit: one plugin that exercises every plugin feature. Needs numpy (installed into its own environment when
+# the plugin is installed): pure-Python loops take minutes on a real CT.
+# Install: Settings → Modules → Install folder… → this folder.
+id = "org.radspider.testkit"
+name = "Test kit"
+version = "1.0.0"
+api = 2                        # 2: reads and edits ROIs and segments, interactive windows
+description = "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window."
+author = "radspider"
+module = "testkit"            # a module name other than the default plugin.py
+requirements = "requirements.txt"
+
+# ---- series builder nodes: volume in, volume out ---------------------------------------------------------------
+
+[[synth_node]]
+name = "scale_offset"
+label = "Scale + offset"
+description = "x · gain + offset. Keeps the unit: HU stay HU."
+unit = "keep"
+params = [
+  { name = "gain", label = "Gain", default = 1.0, min = -10.0, max = 10.0 },
+  { name = "offset", label = "Offset", default = 0.0 },
+]
+
+[[synth_node]]
+name = "normalize"
+label = "Normalize 0–1"
+description = "(x − min) / (max − min) over the voxels with data. No unit: the result is a plain number."
+unit = "none"
+
+[[synth_node]]
+name = "smooth"
+label = "Box smooth"
+description = "Mean over a box of the given radius in mm (uses the voxel spacing). Voxels without data stay without."
+unit = "keep"
+params = [{ name = "radius_mm", label = "Radius (mm)", default = 2.0, min = 0.0, max = 20.0 }]
+
+[[synth_node]]
+name = "checkerboard"
+label = "Checkerboard"
+description = "Alternating blocks of the input and of no data (NaN): shows how no-data is drawn. Four parameters, the most a node takes."
+unit = "keep"
+params = [
+  { name = "block_x_mm", default = 20.0, min = 1.0, max = 500.0 },
+  { name = "block_y_mm", default = 20.0, min = 1.0, max = 500.0 },
+  { name = "block_z_mm", default = 20.0, min = 1.0, max = 500.0 },
+  { name = "invert", label = "Invert (0 / 1)", default = 0.0, min = 0.0, max = 1.0 },
+]
+
+# ---- segmentations: volume in, labels out ----------------------------------------------------------------------
+
+[[segmentation]]
+name = "bands"
+label = "Three bands"
+description = "Three named segments from two cut values: below, between, above. Reports progress per slice."
+params = [
+  { name = "low", label = "Low cut", default = -200.0 },
+  { name = "high", label = "High cut", default = 200.0 },
+]
+
+[[segmentation]]
+name = "largest_island"
+label = "Largest island"
+description = "The largest 6-connected region at or above the threshold: one segment."
+params = [{ name = "threshold", default = 200.0 }]
+
+[[segmentation]]
+name = "outside_segments"
+label = "Outside the segments"
+description = "Reads the existing segments: one new segment of every voxel with data that no segment holds yet."
+
+[[segmentation]]
+name = "nothing"
+label = "Nothing (empty result)"
+description = "Returns no labelled voxel: the viewer must say so and add no segment."
+
+# ---- tools: volume in, table out -------------------------------------------------------------------------------
+
+[[tool]]
+name = "summary"
+label = "Summary"
+description = "Count, mean, SD, percentiles and the volume of the voxels with data, with the series' unit. Sets a status message."
+
+[[tool]]
+name = "report"
+label = "Slice report"
+description = "Everything a tool can show: a chart (histogram of the slice on screen), a picture (that slice, windowed), ROIs added to the image (a box around the bright region, its centre, a note) and a segment (the bright region of the slice)."
+params = [{ name = "threshold", label = "Bright above", default = 200.0 }]
+
+[[tool]]
+name = "histogram"
+button = false                # no ribbon button: only in the Plugin tools window
+label = "Histogram"
+description = "Value histogram as a table: a long result to scroll, copy and save as CSV."
+params = [{ name = "bins", label = "Bins", default = 32.0, min = 2.0, max = 512.0 }]
+
+[[tool]]
+name = "slow"
+label = "Slow (try Cancel)"
+description = "Counts for the given seconds, reporting progress: press Cancel to see the process stop."
+params = [{ name = "seconds", default = 20.0, min = 1.0, max = 300.0 }]
+
+[[tool]]
+name = "fail"
+label = "Fail on purpose"
+description = "Raises an error: the viewer must show its message and stay up."
+
+[[tool]]
+name = "study"
+label = "Read and edit the study"
+description = "Lists the series' measurements and segments, then edits them: moves the first measurement one voxel right, deletes the last, adds a note; grows the first unlocked segment by one voxel in-plane, renames and recolours it; tries to rename the locked ones (the viewer refuses and says so). Delete last = 1 also deletes the last unlocked segment."
+params = [{ name = "delete_last", label = "Delete last (0 / 1)", default = 0.0, min = 0.0, max = 1.0 }]
+
+[[tool]]
+name = "explorer"
+label = "Slice explorer"
+description = "An interactive window: pick a slice, a threshold, bins, log scale and a profile; the chart and picture follow. Mark adds a note on the slice."

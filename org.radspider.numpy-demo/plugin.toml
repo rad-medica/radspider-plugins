@@ -1,0 +1,24 @@
+# Example plugin with a requirement: numpy is installed into the plugin's own venv on first use.
+id = "org.radspider.numpy-demo"
+name = "NumPy demo"
+version = "1.0.0"
+api = 1
+description = "Vectorised entries with numpy."
+requirements = "requirements.txt"
+
+[[synth_node]]
+name = "zscore"
+label = "Z-score"
+description = "(x - mean) / standard deviation over the voxels with data."
+unit = "none"
+
+[[segmentation]]
+name = "largest_above"
+label = "Largest region above"
+description = "Largest 6-connected region at or above the threshold (scipy-free flood fill)."
+params = [{ name = "threshold", default = 200.0 }]
+
+[[tool]]
+name = "percentiles"
+label = "Percentiles"
+description = "5th, 25th, 50th, 75th and 95th percentile of the voxels with data."

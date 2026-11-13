@@ -1,0 +1,6 @@
+numpy>=1.26
+scipy>=1.11
+onnxruntime>=1.18
+# Only for the one-time conversion of the official nnU-Net checkpoint to ONNX:
+torch>=2.5
+dynamic-network-architectures>=0.4
