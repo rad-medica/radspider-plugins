@@ -36,12 +36,12 @@ jobs:
           if [ -n "$RADSPIDER_READ_TOKEN" ]; then echo "run=true" >> "$GITHUB_OUTPUT"
           else echo "::notice::RADSPIDER_READ_TOKEN not set: integration tests skipped"; echo "run=false" >> "$GITHUB_OUTPUT"; fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.run == 'true'
         with:
           path: radspider-plugins
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.gate.outputs.run == 'true'
         with:
           repository: rad-medica/radspider
