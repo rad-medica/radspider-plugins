@@ -23,7 +23,8 @@
         "sha256": "9f9d095919ddea9f88eb5f697ce009ba6cb58dd42a363252c421a85a673524ca",
         "size": 10397
       },
-      "tag": "org.radspider.density-lung-segmentation-v1.0.0"
+      "tag": "org.radspider.density-lung-segmentation-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.examples",
@@ -43,7 +44,8 @@
         "sha256": "a56cd415ac5851f777cfc2c500aebc5e40086cb1b2322456e613fa8ab78060ce",
         "size": 2237
       },
-      "tag": "org.radspider.examples-v1.0.0"
+      "tag": "org.radspider.examples-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.lung-ct-analyzer",
@@ -66,7 +68,8 @@
         "sha256": "b131dee59fee2c9a9251f6fb6b188e5ffbd57b1d2cbc74a0bd09ec311ff99416",
         "size": 22728
       },
-      "tag": "org.radspider.lung-ct-analyzer-v1.0.0"
+      "tag": "org.radspider.lung-ct-analyzer-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.monai-wholebody",
@@ -91,7 +94,9 @@
         "sha256": "3391942ac4f2dec21041353ec23c322789b45eddbbb9f6d2ab536c17b03fce0f",
         "size": 8232
       },
-      "tag": "org.radspider.monai-wholebody-v1.0.0"
+      "tag": "org.radspider.monai-wholebody-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the model weights on first run: 71 MB per resolution."
     },
     {
       "id": "org.radspider.numpy-demo",
@@ -113,32 +118,8 @@
         "sha256": "270d6aeb41d953def129395f5f23adb64a30c6f54679859d735279cd12c8b863",
         "size": 2929
       },
-      "tag": "org.radspider.numpy-demo-v1.0.0"
-    },
-    {
-      "id": "org.radspider.radiomics",
-      "name": "Radiomics (pyradiomics)",
-      "version": "1.0.0",
-      "api": 2,
-      "description": "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics.",
-      "entries": {
-        "synth_node": 0,
-        "segmentation": 0,
-        "tool": 1
-      },
-      "requirements": [
-        "pyradiomics @ git+https://github.com/AIM-Harvard/pyradiomics@67d1f268c67c2caffdbe043362f3f7333472af0f",
-        "numpy>=2.0",
-        "SimpleITK>=2.4.0",
-        "PyWavelets>=1.6.0"
-      ],
-      "package": {
-        "file": "org.radspider.radiomics-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.radiomics-v1.0.0/org.radspider.radiomics-1.0.0.zip",
-        "sha256": "438eee03ff306c7c7242acf8d2b268c14fe0a2defab5874f58253f89d09dc8fa",
-        "size": 11693
-      },
-      "tag": "org.radspider.radiomics-v1.0.0"
+      "tag": "org.radspider.numpy-demo-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.registration-demo",
@@ -160,7 +141,8 @@
         "sha256": "26b414262a525e2590ef673ef9342efd7699dc24004b16e8a96d6ccbd1d25202",
         "size": 10382
       },
-      "tag": "org.radspider.registration-demo-v1.0.0"
+      "tag": "org.radspider.registration-demo-v1.0.0",
+      "second_volume": true
     },
     {
       "id": "org.radspider.roi-tools",
@@ -183,7 +165,8 @@
         "sha256": "3ef22edec995ea8adbef204438c32980a825ddc03fad33a22edd94d5947d4d4b",
         "size": 37338
       },
-      "tag": "org.radspider.roi-tools-v1.0.0"
+      "tag": "org.radspider.roi-tools-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.sam-med3d",
@@ -209,7 +192,9 @@
         "sha256": "e5799321eae37b63c1ca6c0ec61701ef1f80137babe882580a962101a473c9d8",
         "size": 10122
       },
-      "tag": "org.radspider.sam-med3d-v1.0.0"
+      "tag": "org.radspider.sam-med3d-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the SAM-Med3D turbo checkpoint (about 400 MB) from Hugging Face on first run."
     },
     {
       "id": "org.radspider.sam-slices",
@@ -233,7 +218,9 @@
         "sha256": "d7d1d7b2f36492000ff8d588763c7c96e1092dd355a0d059f742d852658dca29",
         "size": 14103
       },
-      "tag": "org.radspider.sam-slices-v1.0.0"
+      "tag": "org.radspider.sam-slices-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."
     },
     {
       "id": "org.radspider.testkit",
@@ -255,7 +242,8 @@
         "sha256": "3a8a77d98fdab87aea25e6e1b40270a7aa94fb281eccb2efa58b0c6c5da51a8b",
         "size": 20449
       },
-      "tag": "org.radspider.testkit-v1.0.0"
+      "tag": "org.radspider.testkit-v1.0.0",
+      "second_volume": false
     },
     {
       "id": "org.radspider.totalsegmentator",
@@ -281,7 +269,9 @@
         "sha256": "e34c319e851fd3bff4200e8202d0537318c12d18a469ff6757c8152aff149422",
         "size": 11483
       },
-      "tag": "org.radspider.totalsegmentator-v1.0.0"
+      "tag": "org.radspider.totalsegmentator-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the 135 MB nnU-Net checkpoint on first run and converts it to a 65 MB ONNX file (needs PyTorch once)."
     },
     {
       "id": "org.radspider.volume-tools",
@@ -304,7 +294,8 @@
         "sha256": "bb0ab56b64cd9b3aefa2cf9f17cc3a6084ecefc0ed7b6af79456ca9c1482f070",
         "size": 34672
       },
-      "tag": "org.radspider.volume-tools-v1.0.0"
+      "tag": "org.radspider.volume-tools-v1.0.0",
+      "second_volume": true
     }
   ]
 }

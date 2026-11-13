@@ -33,6 +33,9 @@ jobs:
       - name: Lint
         run: ruff check .
 
+      - name: Tests of the tools
+        run: python -m unittest discover -s tools -v
+
       - name: Byte-compile every plugin
         run: python -m compileall -q org.radspider.* tools
 

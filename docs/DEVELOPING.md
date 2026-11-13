@@ -13,7 +13,7 @@
 2. `plugin.toml`: `id`, `name`, `version = "1.0.0"`, `api` (lowest that has what you use), `description`, `requirements` if any.
 3. Declare every entry with `name`, `label`, `description` and `params` (each with a `default`; bounds when they mean something).
 4. Register the same names in the module with `@rp.<kind>("name")`.
-5. `requirements.txt`: lower-bound every package (`numpy>=1.26`). Heavy one-time dependencies get a comment saying so. A package with no usable PyPI release may be a git URL pinned to a full commit (`name @ git+https://…@<40 hex>`), with a comment saying why.
+5. `requirements.txt`: lower-bound every package (`numpy>=1.26`). Heavy one-time dependencies get a comment saying so.
 6. Model plugin: add `docs/plugins/<name>.md` (copy the structure of `sam-slices.md`). No weights in git; pin a SHA-256 for anything unpickled.
 7. Add the row to the README table and a line to `CHANGELOG.md`.
 8. Run the checks and regenerate the index:

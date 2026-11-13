@@ -24,7 +24,6 @@ Proprietary, all rights reserved (`LICENSE`).
 | `org.radspider.registration-demo` | 3 | numpy | The smallest two-volume tool: translation-only registration | [registration-demo](docs/plugins/registration-demo.md) |
 | `org.radspider.lung-ct-analyzer` | 2 | numpy, scipy | Lung CT analysis by HU range (emphysema, inflated, infiltrated, collapsed) per lung, and a threshold lung segmentation. After Slicer's LungCTAnalyzer | [lung-ct-analyzer](docs/plugins/lung-ct-analyzer.md) |
 | `org.radspider.density-lung-segmentation` | 2 | numpy, scipy | Lung density classes from a 5-component Gaussian mixture, and their volumes. After Slicer's DensityLungSegmentation | [density-lung-segmentation](docs/plugins/density-lung-segmentation.md) |
-| `org.radspider.radiomics` | 2 | pyradiomics (git, compiled), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [radiomics](docs/plugins/radiomics.md) |
 | `org.radspider.roi-tools` | 2 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
 | `org.radspider.volume-tools` | 3 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
 
@@ -32,7 +31,7 @@ Model weights are downloaded on first run (see each plugin's page); none are in 
 
 ## Versions and marketplace
 
-Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.json` lists every plugin with its version, `api`, requirements and a package (`<id>-<version>.zip`, GitHub release `<id>-v<version>`) with its SHA-256. A client compares the installed version with the index and updates when the index is higher; the SHA-256 is what it verifies after download. Details and rules: [docs/MARKETPLACE.md](docs/MARKETPLACE.md).
+Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.json` lists every plugin with its version, `api`, requirements and a package (`<id>-<version>.zip`, GitHub release `<id>-v<version>`) with its SHA-256. A client compares the installed version with the index and updates when the index is higher; the SHA-256 is what it verifies after download. Details, rules and the contract a client follows: [docs/MARKETPLACE.md](docs/MARKETPLACE.md). The repository is private: a client reads it with a read-only fine-grained token, created as described in [SECURITY.md](SECURITY.md#token-for-the-marketplace).
 
 ## Repository map
 
@@ -41,7 +40,8 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 | `org.radspider.*/` | The plugins. Installable as-is |
 | `docs/` | Architecture, development guide, one page per model plugin (limits, licences, "Verified" rows) |
 | `tools/validate_plugins.py` | Static checks of every manifest against its module (stdlib only) |
-| `tools/marketplace.py`, `marketplace/index.json` | Package builder and the version index |
+| `tools/marketplace.py`, `marketplace/index.json`, `marketplace/extra.toml` | Package builder, the version index, and the index facts `plugin.toml` cannot carry (`first_run_download`) |
+| `tools/semver_vectors.json`, `tools/test_tools.py` | Semver precedence cases shared with radspider, and the tests of the tools |
 | `.github/workflows/` | CI: lint + validation on every push; radspider integration tests when a token is configured |
 | `.claude/`, `AGENTS.md` | Instructions and agents for AI coding assistants |
 
@@ -51,6 +51,7 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 python tools/validate_plugins.py      # manifests vs modules, requirements, docs (Python ≥ 3.11)
 python tools/marketplace.py update    # after any plugin file change: regenerate the index, then commit it
 python tools/marketplace.py check     # index is current
+python -m unittest discover -s tools  # tests of the tools (semver vectors, requirements lint, index fields)
 pip install ruff && ruff check .      # lint
 ```
 
