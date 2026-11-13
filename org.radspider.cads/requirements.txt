@@ -1,0 +1,7 @@
+numpy>=1.26
+scipy>=1.11
+# Heavy one-time install. On Linux the default wheel carries CUDA; on 4 CPU cores one window of the network takes
+# about 20 s and the run needs 9 GB of RAM.
+torch>=2.5
+# ResidualEncoderUNet, the network class of nnU-Net's ResEnc plans (nnunetv2 itself is not needed):
+dynamic-network-architectures>=0.4

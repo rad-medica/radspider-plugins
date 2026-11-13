@@ -3,6 +3,33 @@
   "repository": "https://github.com/rad-medica/radspider-plugins",
   "plugins": [
     {
+      "id": "org.radspider.cads",
+      "name": "CADS whole body CT",
+      "version": "1.0.0",
+      "api": 3,
+      "description": "167 anatomical structures on CT in nine groups (CADS-model, nnU-Net ResEnc L at 1.5 mm), run with PyTorch.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 9,
+        "tool": 0
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "scipy>=1.11",
+        "torch>=2.5",
+        "dynamic-network-architectures>=0.4"
+      ],
+      "package": {
+        "file": "org.radspider.cads-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.cads-v1.0.0/org.radspider.cads-1.0.0.zip",
+        "sha256": "70e0aac4be2921333329d176eb37a5dac21d8c6eb36283f2fd11c989d5b0d670",
+        "size": 36098
+      },
+      "tag": "org.radspider.cads-v1.0.0",
+      "second_volume": false,
+      "first_run_download": "Downloads the model weights of a task group the first time that group runs: about 762 MB per group and weight set, from the CADS GitHub releases."
+    },
+    {
       "id": "org.radspider.density-lung-segmentation",
       "name": "Density lung segmentation",
       "version": "1.0.0",
