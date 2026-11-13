@@ -1,0 +1,9 @@
+# Tooling configuration only: this repository is not a Python package. Plugins carry their own requirements.txt.
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = [".venv", ".venvs"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+ignore = ["E731"]  # sam-slices uses a local lambda for a two-line geometry helper

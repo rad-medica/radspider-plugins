@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Validate and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: python -m pip install "ruff>=0.6"
+
+      - name: Manifests, modules, requirements, docs
+        run: python tools/validate_plugins.py
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Byte-compile every plugin
+        run: python -m compileall -q org.radspider.* tools
+
+      - name: No weights or oversized files in git
+        run: |
+          set -eu
+          bad=$(git ls-files | grep -Ei '\.(onnx|pt|pth|ckpt|safetensors|bin|npz|npy|nii|nii\.gz|dcm)$' || true)
+          if [ -n "$bad" ]; then echo "Model or data files are not allowed in git:"; echo "$bad"; exit 1; fi
+          big=$(git ls-files -z | xargs -0 du -k | awk '$1 > 512 {print}')
+          if [ -n "$big" ]; then echo "Files over 512 KiB:"; echo "$big"; exit 1; fi
+
+  requirements:
+    name: Requirements resolve (${{ matrix.plugin }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # Light plugins only: torch / onnxruntime plugins are checked by hand (see docs/plugins/).
+        plugin:
+          - org.radspider.numpy-demo
+          - org.radspider.testkit
+          - org.radspider.registration-demo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve requirements without installing
+        run: python -m pip install --dry-run -r "${{ matrix.plugin }}/requirements.txt"

@@ -1,0 +1,77 @@
+name: radspider integration
+
+# Runs radspider's own tests/plugins.rs against this checkout (examples, numpy demo, test kit, registration demo).
+# Needs a read-only token for the private radspider repository in the secret RADSPIDER_READ_TOKEN.
+# Without the secret the job is skipped, not failed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      radspider_ref:
+        description: radspider branch, tag or commit to test against
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: radspider-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  plugins:
+    name: cargo test --test plugins
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RADSPIDER_READ_TOKEN: ${{ secrets.RADSPIDER_READ_TOKEN }}
+    steps:
+      - name: Token present?
+        id: gate
+        run: |
+          if [ -n "$RADSPIDER_READ_TOKEN" ]; then echo "run=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::RADSPIDER_READ_TOKEN not set: integration tests skipped"; echo "run=false" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          path: radspider-plugins
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+        with:
+          repository: rad-medica/radspider
+          ref: ${{ inputs.radspider_ref || 'main' }}
+          token: ${{ secrets.RADSPIDER_READ_TOKEN }}
+          path: radspider
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: Swatinem/rust-cache@v2
+        if: steps.gate.outputs.run == 'true'
+        with:
+          workspaces: radspider
+
+      - name: Linux build dependencies
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libgl1-mesa-dev
+
+      - name: Plugin tests (numpy plugins, test kit and registration demo need pip)
+        if: steps.gate.outputs.run == 'true'
+        working-directory: radspider
+        env:
+          RADSPIDER_PLUGIN_EXAMPLES: ${{ github.workspace }}/radspider-plugins
+          RADSPIDER_PLUGIN_PIP: "1"
+        run: cargo test --test plugins

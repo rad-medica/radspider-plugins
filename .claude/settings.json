@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tools/validate_plugins.py:*)",
+      "Bash(ruff check:*)",
+      "Bash(git status:*)"
+    ]
+  }
+}
