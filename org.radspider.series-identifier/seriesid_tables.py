@@ -45,7 +45,7 @@ TAGS = {
 
 ITEMS = ("series", "plane", "projection", "region", "laterality", "contrast", "model")
 
-# Modality codes handled by the projection-radiography rules (DICOM PS3.3 C.7.3.1.1.1 Modality defined terms).
+# Modality codes handled by the projection-radiography rules (DICOM Modality codes; section not fetched).
 XR_MODALITIES = {
     "CR": "Radiograph",
     "DX": "Radiograph",
@@ -84,7 +84,7 @@ CT_PHASE_WORDS = (
 CT_PHASE_UNSTATED = "Contrast-enhanced CT, phase not stated"
 
 # Derived reconstructions: searched in Image Type and the description, only when Image Type value 1 is DERIVED
-# (DICOM PS3.3 C.7.6.1.1.2). HEURISTIC keyword list.
+# (DICOM Image Type value 1; section not fetched). HEURISTIC keyword list.
 CT_DERIVED_WORDS = (
     (r"MIN ?-?IP", "CT minimum intensity projection (MinIP)"),
     (r"MIP", "CT maximum intensity projection (MIP)"),
@@ -92,7 +92,9 @@ CT_DERIVED_WORDS = (
     (r"MPR|REFORMAT\w*|MPR\w*", "CT multiplanar reformat (MPR)"),
 )
 CT_LOCALIZER = "CT localizer (scout)"
-CT_DUAL_ENERGY_WORDS = r"DE|DUAL ?-?ENERGY|DUAL|SPECTRAL|MONOE\w*|VMI"
+# HEURISTIC. "DE" is only read in Image Type values: in descriptions it is the Spanish "of" ("TC DE TORAX").
+CT_DUAL_ENERGY_IMAGE_TYPE = r"DE|DUAL|DUAL ?-?ENERGY|SPECTRAL|MONOE\w*|VMI"
+CT_DUAL_ENERGY_WORDS = r"DUAL ?-?ENERGY|SPECTRAL|MONOENERGETIC|MONOE\w*|VMI"
 CT_DUAL_ENERGY = "Dual-energy (spectral) reconstruction"
 CT_KEV = r"(\d{2,3}) ?KEV"
 CT_MONO = "Virtual monoenergetic image, {kev} keV"
@@ -142,16 +144,17 @@ POST_CONTRAST_WORDS = r"POST|POSTGAD|\+C|C\+|GD|GAD\w*|KM|CONTRAST|CONTRASTE|CON
 
 # MR timing thresholds (ms). Source for the scheme: short TR + short TE = T1-weighted, long TR + short TE = proton
 # density, long TR + long TE = T2-weighted, with "the exact reference ranges ... not generally specified"
-# (mriquestions.com, "TR and TE"). The numbers below are therefore HEURISTIC cut-offs; the spec's own example
-# (TR < 800 ms and TE < 30 ms -> T1-like) sets the first two.
+# (https://mriquestions.com/image-contrast-trte.html). The numbers below are therefore HEURISTIC cut-offs; the
+# spec's own example (TR < 800 ms and TE < 30 ms -> T1-like) sets the first two.
 TR_SHORT_MAX = 800.0
 TE_SHORT_MAX = 30.0
 TR_LONG_MIN = 2000.0
 TE_LONG_MIN = 80.0
-# Inversion recovery: the TI that nulls a tissue is TI = ln(2) * T1 of that tissue (Wikipedia, "Fluid-attenuated
-# inversion recovery"). With approximate textbook T1 values (fat about 250 ms, CSF about 4000 ms at 1.5-3 T) that
-# gives about 170 ms (STIR) and about 2800 ms (FLAIR). The cut-offs below sit well clear of both and are HEURISTIC;
-# anything between is an IR-prepared T1 sequence (MPRAGE-like, T1-FLAIR).
+# Inversion recovery: the TI that nulls a tissue is TI = ln(2) * T1 of that tissue
+# (https://en.wikipedia.org/wiki/Fluid-attenuated_inversion_recovery). With approximate textbook T1 values (not
+# fetched: fat about 250 ms, CSF about 4000 ms at 1.5-3 T) that gives about 170 ms (STIR) and about 2800 ms (FLAIR).
+# The cut-offs below sit well clear of both and are HEURISTIC; anything between is an IR-prepared T1 sequence
+# (MPRAGE-like, T1-FLAIR).
 STIR_TI_MAX = 300.0
 FLAIR_TI_MIN = 1500.0
 # Gradient echo: a TE of 15 ms or more is read as T2*-weighted, shorter as T1-weighted. HEURISTIC.
@@ -170,7 +173,7 @@ MR_WORDS = {
     "diffusion": r"DWI|DIFFUSION|DTI|DIFF|EP2D DIFF|TRACEW|DW",
     "perfusion": r"PERFUSION|PERF|DSC|DCE|ASL|PCASL|PASL",
     "tof": r"TOF|TIME OF FLIGHT|FL3D TOF|INFLOW",
-    "pc": r"PC|PCA|PHASE ?-?CONTRAST|FLOW|QFLOW",
+    "pc": r"PC|PCA|PHASE ?-?CONTRAST|QFLOW|FLOW ?-?QUANT\w*|VENC",  # not bare FLOW: "FLOW COMP" is not PC
     "mra": r"MRA|ANGIO\w*|CE ?-?MRA",
     "swi": r"SWI|SWAN|SWIP|VENBOLD|SUSCEPT\w*",
     "ssfp": r"TRUFI|TRUE ?-?FISP|FIESTA|B-?FFE|BSSFP|SSFP|BALANCED",
@@ -229,7 +232,7 @@ PET_UNITS_AC = {"BQML", "GML", "CM2ML", "MGMINML", "UMOLMINML", "MLMING", "MLG",
 PET_UNITS_NAC = {"CNTS", "CPS", "PROPCNTS", "PROPCPS"}
 PET_UNITS = {
     "BQML": "Values in Bq/mL (activity concentration)",
-    "GML": "Values in g/mL (body-weight SUV)",
+    "GML": "Values in g/mL (SUV)",
     "CNTS": "Values in counts",
 }
 PET_UNITS_OTHER = "Values in {units}"
@@ -256,8 +259,9 @@ NM_KINDS = {
     "RECON GATED TOMO": "NM reconstructed gated tomography (gated SPECT)",
 }
 NM_KIND_UNKNOWN = "NM acquisition type not in the tables ({kind})"
-# HEURISTIC: planar NM view words in the description.
-NM_VIEW_WORDS = ((r"ANT|ANTERIOR", "Anterior view"), (r"POST|POSTERIOR", "Posterior view"),
+# HEURISTIC: planar NM view words in the description. "POST" followed by VOID / STRESS / ... is time, not a view.
+NM_VIEW_WORDS = ((r"ANT|ANTERIOR", "Anterior view"),
+                 (r"POSTERIOR|POST(?! ?(VOID|STRESS|REST|INJ\w*|THERAPY|TX|MICT\w*))", "Posterior view"),
                  (r"LAT|LATERAL|LLAT|RLAT", "Lateral view"))
 NM_VIEW_UNKNOWN = "not determined: no view in Patient Orientation or the description"
 
@@ -435,8 +439,8 @@ EXPLAIN = {
     "frontal": "The localizer was taken from the front, like a frontal radiograph.",
     "lateral": "The localizer was taken from the side, like a lateral radiograph.",
     ND_LOCALIZER: "The localizer orientation is neither front-on nor side-on within 10 degrees. " + _ND,
-    CT_NATIVE: "A CT acquired without intravenous contrast. It shows calcium, fresh blood and density without the "
-               "effect of contrast.",
+    CT_NATIVE: "A CT acquired without intravenous contrast. It shows tissue density without the effect of contrast and "
+               "is often the reference for later contrast phases.",
     "Contrast-enhanced CT, angiographic phase (CTA)": "A CT timed for contrast in the arteries (CT angiography). It "
                                                       "is used to show blood vessels.",
     "Contrast-enhanced CT, arterial phase": "A CT taken shortly after contrast injection, while contrast is mainly "
@@ -503,13 +507,13 @@ EXPLAIN = {
                 "the heart, fetal imaging and fluid-filled structures.",
     MR["dwi"]: "Diffusion-weighted images show how freely water molecules move in tissue.",
     MR["trace"]: "Trace diffusion-weighted images combine three diffusion directions into one image of how freely "
-                 "water moves. Areas of restricted movement appear bright.",
+                 "water moves.",
     MR["dti"]: "Diffusion images acquired in many directions (diffusion tensor imaging). They are used to compute "
                "maps such as fractional anisotropy and to trace white matter tracts.",
     MR["b0"]: "The b = 0 image of a diffusion series has no diffusion weighting and looks like a T2-weighted image. "
               "It is the reference for the diffusion maps.",
     MR["adc"]: "The apparent diffusion coefficient (ADC) map is computed from diffusion images and shows water "
-               "mobility as a number per pixel. Restricted diffusion appears dark on it.",
+               "mobility as a number per pixel.",
     MR["eadc"]: "The exponential ADC map is computed from diffusion images. It removes the T2 contribution from the "
                 "diffusion-weighted image.",
     MR["fa"]: "The fractional anisotropy map is computed from diffusion tensor data and shows how directional water "
@@ -535,8 +539,8 @@ EXPLAIN = {
                      "applied. " + _ND,
     PET_UNITS["BQML"]: "Pixel values are activity concentration in becquerels per millilitre, from which SUV can be "
                        "computed.",
-    PET_UNITS["GML"]: "Pixel values are in grams per millilitre, the unit of the standardized uptake value "
-                      "normalised to body weight.",
+    PET_UNITS["GML"]: "Pixel values are in grams per millilitre, the unit used for standardized uptake values "
+                      "(SUV).",
     PET_UNITS["CNTS"]: "Pixel values are detected counts, not calibrated to activity.",
     PET_UNITS_OTHER: "Pixel values are in the unit shown, as recorded in the Units field.",
     PET_SERIES_TYPES["STATIC"]: "A static acquisition records one image of the tracer distribution over the "

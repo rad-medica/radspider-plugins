@@ -9,9 +9,11 @@ import re
 from dataclasses import dataclass
 
 import seriesid_tables as T
-from seriesid_tables import EXPLAIN, ITEMS, TAGS, all_result_ids, word_re
+from seriesid_tables import (CT_KERNELS, CT_PHASE_WORDS, EXPLAIN, ITEMS, MG_VIEWS, MR_WORDS, NM_KINDS, TAGS,
+                             XR_VIEWS, all_result_ids, word_re)
 
-__all__ = ["EXPLAIN", "ITEMS", "TAGS", "Finding", "all_result_ids", "identify", "kernel_family", "number",
+__all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "EXPLAIN", "ITEMS", "MG_VIEWS", "MR_WORDS", "NM_KINDS", "TAGS",
+           "XR_VIEWS", "Finding", "all_result_ids", "identify", "kernel_family", "number",
            "numbers", "plane", "text"]
 
 AXIS_TOLERANCE_DEG = 10.0
@@ -348,7 +350,7 @@ def _ct(t, desc, row, col):
         out.append(_f("series", T.CT_PHASE_UNSTATED, f"{t.ev(CONTRAST)}; no phase word in the description"))
     else:
         out.append(_f("series", T.ND_CONTRAST, f"{t.ev(CONTRAST)}; no phase word in the description"))
-    if _search(T.CT_DUAL_ENERGY_WORDS, search):
+    if _search(T.CT_DUAL_ENERGY_IMAGE_TYPE, " ".join(words)) or _search(T.CT_DUAL_ENERGY_WORDS, desc):
         out.append(_f("series", T.CT_DUAL_ENERGY, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
     kev = re.search(T.CT_KEV, desc or "")
     if kev:

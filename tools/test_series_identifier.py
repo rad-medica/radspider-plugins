@@ -129,6 +129,13 @@ CASES = {
     "nm_wholebody": ({"0008,0008": "ORIGINAL\\PRIMARY\\WHOLE BODY\\EMISSION"}, {"modality": "NM"}, NONE, False),
     "nm_spect": ({"0008,0008": "ORIGINAL\\PRIMARY\\RECON TOMO\\EMISSION"}, {"modality": "NM"}, AXIAL, False),
     "other_modality": ({}, {"modality": "SR"}, NONE, False),
+    "ct_spanish_de": ({"0008,103E": "TC DE TORAX SIN CONTRASTE"}, {"modality": "CT"}, AXIAL, False),
+    "nm_post_void": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,103E": "PELVIS POST VOID"},
+                     {"modality": "NM"}, NONE, False),
+    "nm_posterior": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,103E": "THYROID POST"},
+                     {"modality": "NM"}, NONE, False),
+    "mr_flow_comp": ({"0018,0080": 4000.0, "0018,0081": 100.0, "0018,0020": "SE", "0008,103E": "T2 FLOW COMP"},
+                     {"modality": "MR"}, AXIAL, False),
     "inferred_mr": ({"0018,0080": 500.0, "0018,0081": 10.0}, None, AXIAL, False),
     "inferred_dx": ({"0018,5101": "AP"}, {"modality": None}, NONE, False),
     "inferred_mg": ({"0018,5101": "cc", "0020,0062": "R"}, {"modality": ""}, NONE, False),
@@ -274,6 +281,18 @@ class IdentifyTests(unittest.TestCase):
 
     def test_other_modality(self):
         self.assertHas("other_modality", "series", "No rules for modality SR")
+
+    def test_keyword_false_positives(self):
+        self.assertNotIn("Dual-energy (spectral) reconstruction", texts(run("ct_spanish_de"), "series"))
+        self.assertHas("ct_spanish_de", "series", "Non-contrast CT")
+        self.assertNotIn("Posterior view", texts(run("nm_post_void"), "projection"))
+        self.assertHas("nm_posterior", "projection", "Posterior view")
+        self.assertHas("mr_flow_comp", "series", "T2-weighted")
+        self.assertNotIn("Contrast-enhanced CT, arterial phase", texts(run("ct_portal"), "series"))
+
+    def test_tables_are_module_constants(self):
+        for name in ("CT_KERNELS", "CT_PHASE_WORDS", "MR_WORDS", "XR_VIEWS", "MG_VIEWS", "NM_KINDS"):
+            self.assertTrue(getattr(R, name), name)
 
     def test_all_tags_missing(self):
         for m in ALL_MODALITIES:
