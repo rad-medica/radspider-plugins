@@ -304,8 +304,8 @@
       "package": {
         "file": "org.radspider.series-identifier-1.0.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.series-identifier-v1.0.0/org.radspider.series-identifier-1.0.0.zip",
-        "sha256": "041250dc80a66aff1e503a57400d6be024d38bcfd38c0a275662329e63826e35",
-        "size": 189220
+        "sha256": "94157abccb6a50e93081b96a5edeabf55048949dbbd79cc4a43b59ef8d1469d8",
+        "size": 200227
       },
       "tag": "org.radspider.series-identifier-v1.0.0",
       "second_volume": false,

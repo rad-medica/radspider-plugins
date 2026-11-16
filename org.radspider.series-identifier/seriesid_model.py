@@ -11,6 +11,7 @@ numpy and onnxruntime are imported when the model is first used, so this module 
 import hashlib
 import http.client
 import os
+import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -21,6 +22,7 @@ URL = (
 )
 SHA256 = "808fcd58e237ecc3fa657942d325c12ddbbaaf496cc1f849913e99248cba13e0"
 FILE = "ova_rf_classifier.onnx"
+MAX_BYTES = 1 << 20  # the pinned file is 312 427 bytes: anything above 1 MiB is not it, stop before hashing
 ENV_MODEL, ENV_DIR = "RADSPIDER_SERIES_ID_MODEL", "RADSPIDER_SERIES_ID_DIR"
 
 # image_type_inference.py:37-48 imagetype_to_integer_mapping, by class index.
@@ -87,22 +89,32 @@ def model_path(progress):
             _remove(path)  # damaged or stale: fetched again below
     except OSError as e:
         raise Unavailable("Cannot use the model folder (%s). Set %s to a writable folder" % (e, ENV_DIR)) from e
-    part = path + ".part"
+    # A temporary file of its own, so two runs downloading at once never write the same file.
+    try:
+        fd, part = tempfile.mkstemp(prefix=FILE + ".", suffix=".part", dir=d)
+    except OSError as e:
+        raise Unavailable("Cannot use the model folder (%s). Set %s to a writable folder" % (e, ENV_DIR)) from e
     h = hashlib.sha256()
     try:
-        with urllib.request.urlopen(URL, timeout=60) as r, open(part, "wb") as f:
+        with os.fdopen(fd, "wb") as f, urllib.request.urlopen(URL, timeout=60) as r:
             total, done = int(r.headers.get("Content-Length") or 0), 0
+            if total > MAX_BYTES:
+                raise ValueError("the server announces %d bytes, more than the %d expected" % (total, MAX_BYTES))
             while True:
                 chunk = r.read(1 << 16)
                 if not chunk:
                     break
+                done += len(chunk)
+                # Counted, not trusted from Content-Length: it can be absent or wrong.
+                if done > MAX_BYTES:
+                    raise ValueError("the download exceeds %d bytes, more than expected" % MAX_BYTES)
                 h.update(chunk)
                 f.write(chunk)
-                done += len(chunk)
                 if progress and total:
                     progress(min(1.0, done / total))
     except BaseException as e:
-        # Never leave a partial file, whatever stopped the download (KeyboardInterrupt included).
+        # Never leave a partial file, whatever stopped the download (KeyboardInterrupt included). The file is
+        # closed by the with block before it is removed (Windows refuses to remove an open file).
         _remove(part)
         # URLError, timeouts and disk errors are OSError; a truncated body is an http.client.HTTPException.
         if isinstance(e, (OSError, ValueError, http.client.HTTPException)):
@@ -117,6 +129,13 @@ def model_path(progress):
         os.replace(part, path)
     except OSError as e:
         _remove(part)
+        # Another run may have stored the same verified file in the meantime (Windows refuses to replace a file
+        # that is open): use it.
+        try:
+            if os.path.isfile(path) and sha256_of(path) == SHA256:
+                return path
+        except OSError:
+            pass
         raise Unavailable("Could not store the model as %s (%s). %s" % (path, e, _offline_hint())) from e
     return path
 

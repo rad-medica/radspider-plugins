@@ -198,6 +198,109 @@ CASES = {
     "odd_xr": ({"0018,5101": math.inf, "0020,0020": True, "0018,0015": {"x": 1}}, {"modality": "DX"}, NONE, False),
     "odd_mr": ({"0018,0080": "4000", "0018,0081": [100.0, 200.0], "0018,0020": b"SE", "0008,0008": 7},
                {"modality": "MR", "b_values": "junk", "gradient_directions": "x"}, AXIAL, False),
+    # Final review fix wave: vendor-shaped headers (as the scanners write them).
+    "ct_agent_none": ({"0008,0008": "ORIGINAL\\PRIMARY\\AXIAL", "0008,0070": "SIEMENS", "0008,103E": "Head 5.0 H31s",
+                       "0018,1210": "H31s", "0018,0010": "NONE", "0018,0015": "HEAD", "0018,0050": 5.0},
+                      {"modality": "CT"}, AXIAL, False),
+    "mr_agent_no": ({"0008,0008": "ORIGINAL\\PRIMARY\\M_SE\\M\\SE", "0008,0070": "Philips Medical Systems",
+                     "0008,103E": "T1W_SE SAG", "0018,0020": "SE", "0018,0021": "SK", "0018,0024": "SE",
+                     "0018,0023": "2D", "0018,0080": 550.0, "0018,0081": 12.0, "0018,1314": 90.0, "0018,0010": "No"},
+                    {"modality": "MR"}, SAGITTAL, False),
+    "xa_agent_dash": ({"0008,0070": "Siemens", "0008,103E": "Coro LCA", "0018,1510": -30.0, "0018,1511": 20.0,
+                       "0018,0010": "-"}, {"modality": "XA"}, NONE, False),
+    "mr_lge_psir_siemens": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                             "0008,103E": "tfl_LGE_PSIR_SAX", "0018,0020": "GR\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
+                             "0018,0024": "*tfl2d1_12", "0018,0023": "2D", "0018,0080": 700.0, "0018,0081": 3.2,
+                             "0018,0082": 280.0, "0018,1314": 25.0, "0018,0010": "Gadovist"},
+                            {"modality": "MR"}, AXIAL, False),
+    "mr_lge_psir_philips": ({"0008,0008": "ORIGINAL\\PRIMARY\\M_IR\\M\\IR", "0008,0070": "Philips Medical Systems",
+                             "0008,103E": "LGE_PSIR_SA", "0018,0020": "GR\\IR", "0018,0021": "SK\\MP",
+                             "0018,0024": "T1TFE", "0018,0023": "2D", "0018,0080": 6.1, "0018,0081": 3.0,
+                             "0018,0082": 300.0, "0018,1314": 25.0, "0018,0010": "DOTAREM"},
+                            {"modality": "MR"}, AXIAL, False),
+    "mr_lge_no_agent": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                         "0008,103E": "tfl_LGE_SAX", "0018,0020": "GR\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
+                         "0018,0024": "*tfl2d1_12", "0018,0080": 700.0, "0018,0081": 3.2, "0018,0082": 280.0,
+                         "0018,1314": 25.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_tirm_siemens": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                         "0008,103E": "t2_tirm_cor", "0018,0020": "SE\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
+                         "0018,0024": "*tir2d1_13", "0018,0080": 5000.0, "0018,0081": 60.0, "0018,0082": 150.0,
+                         "0018,1314": 150.0}, {"modality": "MR"}, CORONAL, False),
+    "mr_stir_agent_stamped": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                               "0008,103E": "t2_tirm_cor", "0018,0020": "SE\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
+                               "0018,0024": "*tir2d1_13", "0018,0080": 5000.0, "0018,0081": 60.0,
+                               "0018,0082": 150.0, "0018,1314": 150.0, "0018,0010": "Gadovist"},
+                              {"modality": "MR"}, CORONAL, False),
+    "mr_cine_siemens": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\RETRO\\DIS2D", "0008,0070": "SIEMENS",
+                         "0008,103E": "cine_sax", "0018,0020": "GR", "0018,0021": "SK\\SS",
+                         "0018,0024": "*tfi2d1_12", "0018,0023": "2D", "0018,0080": 40.0, "0018,0081": 1.4,
+                         "0018,1314": 60.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_cine_philips": ({"0008,0008": "ORIGINAL\\PRIMARY\\M_FFE\\M\\FFE", "0008,0070": "Philips Medical Systems",
+                         "0008,103E": "sBTFE_SA", "0018,0020": "GR", "0018,0021": "SS", "0018,0023": "2D",
+                         "0018,0080": 3.0, "0018,0081": 1.5, "0018,1314": 60.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_survey_philips": ({"0008,0008": "ORIGINAL\\PRIMARY\\M_FFE\\M\\FFE", "0008,0070": "Philips Medical Systems",
+                           "0008,103E": "Survey", "0018,0020": "GR", "0018,0021": "SS", "0018,0023": "2D",
+                           "0018,0080": 4.5, "0018,0081": 2.2, "0018,1314": 50.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_vibe_siemens": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                         "0008,103E": "t1_vibe_fs_tra", "0018,0020": "GR", "0018,0021": "SK\\SP\\OSP",
+                         "0018,0024": "*fl3d1", "0018,0023": "3D", "0018,0080": 4.2, "0018,0081": 1.9,
+                         "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_lava_ge": ({"0008,0008": "ORIGINAL\\PRIMARY\\OTHER", "0008,0070": "GE MEDICAL SYSTEMS",
+                    "0008,103E": "AX LAVA", "0018,0020": "GR", "0018,0021": "SS\\SK", "0018,0024": "efgre3d",
+                    "0018,0023": "3D", "0018,0080": 4.0, "0018,0081": 1.8, "0018,1314": 12.0},
+                   {"modality": "MR"}, AXIAL, False),
+    "mr_adc_ge": ({"0008,0008": "DERIVED\\PRIMARY\\OTHER", "0008,0070": "GE MEDICAL SYSTEMS",
+                   "0008,103E": "Apparent Diffusion Coefficient (mm2/s)", "0018,0020": "EP", "0018,0021": "NONE",
+                   "0018,0024": "epi2", "0018,0080": 6000.0, "0018,0081": 80.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_adc_philips": ({"0008,0008": "DERIVED\\PRIMARY\\DIFFUSION", "0008,0070": "Philips Medical Systems",
+                        "0008,103E": "dADC", "0018,0020": "SE", "0018,0021": "SK", "0018,0080": 3000.0,
+                        "0018,0081": 80.0, "0018,9087": 0.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_dixon_opp": ({"0008,0008": "DERIVED\\PRIMARY\\DIXON\\OPP_PHASE", "0008,0070": "SIEMENS",
+                      "0008,103E": "t1_vibe_dixon_tra_opp", "0018,0020": "GR", "0018,0021": "SK\\SP\\OSP",
+                      "0018,0024": "*fl3d2", "0018,0023": "3D", "0018,0080": 4.0, "0018,0081": 1.2,
+                      "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_dixon_fat": ({"0008,0008": "DERIVED\\PRIMARY\\DIXON\\FAT", "0008,0070": "SIEMENS",
+                      "0008,103E": "t1_vibe_dixon_tra_F", "0018,0020": "GR", "0018,0021": "SK\\SP\\OSP",
+                      "0018,0024": "*fl3d2", "0018,0023": "3D", "0018,0080": 4.0, "0018,0081": 2.4,
+                      "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_dixon_water": ({"0008,0008": "DERIVED\\PRIMARY\\DIXON\\WATER", "0008,0070": "SIEMENS",
+                        "0008,103E": "t1_vibe_dixon_tra_W", "0018,0020": "GR", "0018,0021": "SK\\SP\\OSP",
+                        "0018,0024": "*fl3d2", "0018,0023": "3D", "0018,0080": 4.0, "0018,0081": 2.4,
+                        "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_dixon_water_image_type": ({"0008,0008": "DERIVED\\PRIMARY\\DIXON\\WATER", "0008,0070": "SIEMENS",
+                                   "0008,103E": "t1_vibe_dixon_tra", "0018,0020": "GR",
+                                   "0018,0021": "SK\\SP\\OSP", "0018,0080": 4.0, "0018,0081": 2.4,
+                                   "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    "mr_mdixon_water": ({"0008,0008": "ORIGINAL\\PRIMARY\\W\\W\\DERIVED", "0008,0070": "Philips Medical Systems",
+                         "0008,103E": "mDIXON_W", "0018,0020": "GR", "0018,0021": "SK\\SP", "0018,0080": 5.5,
+                         "0018,0081": 1.8, "0018,1314": 10.0}, {"modality": "MR"}, AXIAL, False),
+    "pet_nac_spanish": ({"0008,0008": "ORIGINAL\\PRIMARY", "0008,0070": "SIEMENS",
+                         "0008,103E": "PET SIN CORRECCION", "0054,1001": "BQML", "0054,1000": "WHOLE BODY\\IMAGE"},
+                        {"modality": "PT"}, AXIAL, False),
+    "pet_no_corregido": ({"0008,0008": "ORIGINAL\\PRIMARY", "0008,0070": "SIEMENS",
+                          "0008,103E": "PET NO CORREGIDO", "0054,1001": "BQML", "0054,1000": "WHOLE BODY\\IMAGE"},
+                         {"modality": "PT"}, AXIAL, False),
+    "pet_corregido": ({"0008,0008": "ORIGINAL\\PRIMARY", "0008,0070": "SIEMENS", "0008,103E": "PET CORREGIDO",
+                       "0054,1001": "BQML", "0054,1000": "WHOLE BODY\\IMAGE"}, {"modality": "PT"}, AXIAL, False),
+    "pet_wb_bqml": ({"0008,0008": "ORIGINAL\\PRIMARY", "0008,0070": "SIEMENS", "0008,103E": "PET WB",
+                     "0054,1001": "BQML", "0054,1000": "WHOLE BODY\\IMAGE"}, {"modality": "PT"}, AXIAL, False),
+    "ct_cardiac_la_pv": ({"0008,0008": "ORIGINAL\\PRIMARY\\AXIAL", "0008,0070": "SIEMENS",
+                          "0008,103E": "LA/PV 0.75 Bv36", "0018,1210": "Bv36", "0018,0010": "Omnipaque",
+                          "0018,0015": "HEART"}, {"modality": "CT"}, AXIAL, False),
+    "ct_dual_source": ({"0008,0008": "ORIGINAL\\PRIMARY\\AXIAL\\CT_SOM7 SPI DUAL", "0008,0070": "SIEMENS",
+                        "0008,103E": "Thorax 1.0 Br40", "0018,1210": "Br40f", "0018,0015": "CHEST"},
+                       {"modality": "CT"}, AXIAL, False),
+    "ct_dual_energy_det": ({"0008,0008": "ORIGINAL\\PRIMARY\\AXIAL\\CT_SOM5 SPI\\DET_AB", "0008,0070": "SIEMENS",
+                            "0008,103E": "Abdomen 1.5 Qr40", "0018,1210": "Qr40", "0018,0015": "ABDOMEN"},
+                           {"modality": "CT"}, AXIAL, False),
+    "nm_wb_ant_post": ({"0008,0008": "ORIGINAL\\PRIMARY\\WHOLE BODY\\EMISSION", "0008,0070": "GE MEDICAL SYSTEMS",
+                        "0008,103E": "WB ANT/POST"}, {"modality": "NM"}, NONE, False),
+    "nm_3hr_post": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,0070": "SIEMENS",
+                     "0008,103E": "THYROID 3HR POST"}, {"modality": "NM"}, NONE, False),
+    "nm_24h_post_ant": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,0070": "SIEMENS",
+                         "0008,103E": "WB 24 H POST ANT"}, {"modality": "NM"}, NONE, False),
+    "mg_generated_2d": ({"0008,0008": "DERIVED\\PRIMARY\\TOMO_2D\\NONE", "0008,0070": "HOLOGIC, Inc.",
+                         "0008,103E": "L MLO", "0018,5101": "MLO", "0020,0062": "L"}, {"modality": "MG"}, NONE, False),
 }
 
 ALL_MODALITIES = ("CT", "MR", "PT", "NM", "CR", "DX", "RF", "PX", "IO", "MG", "US", "XA", "SR")
@@ -372,6 +475,67 @@ class IdentifyTests(unittest.TestCase):
         self.assertEqual(sided.explain, ("MLO", "Left breast"))
         region = next(f for f in run("cxr_pa") if f.item == "region")
         self.assertEqual(region.explain, ("Body part examined",))
+
+    def test_final_review_fixes(self):
+        # 1. A "no agent" value is no agent.
+        self.assertHas("ct_agent_none", "series", "not determined: Contrast/Bolus Agent missing")
+        self.assertEqual(texts(run("ct_agent_none"), "contrast"), [])
+        self.assertHas("mr_agent_no", "series", "T1-weighted")
+        self.assertHas("mr_agent_no", "contrast", "not determined: Contrast/Bolus Agent missing")
+        f = next(f for f in run("mr_agent_no") if f.item == "contrast")
+        self.assertIn("= NO (a no-agent value, read as missing)", f.evidence)
+        self.assertEqual(texts(run("xa_agent_dash"), "contrast"), [])
+        # 2. Short TI: STIR only on a spin-echo IR without an agent.
+        for name in ("mr_lge_psir_siemens", "mr_lge_psir_philips"):
+            self.assertHas(name, "series", "T1-weighted, inversion recovery prepared, post-contrast")
+        self.assertHas("mr_lge_no_agent", "series", "T1-weighted, inversion recovery prepared")
+        self.assertHas("mr_tirm_siemens", "series", "STIR (fat-suppressing inversion recovery)")
+        self.assertHas("mr_stir_agent_stamped", "series", "T1-weighted, inversion recovery prepared, post-contrast")
+        # 3. bSSFP by name; T1 gradient echo only when spoiled; else not determined.
+        for name in ("mr_cine_siemens", "mr_cine_philips"):
+            self.assertHas(name, "series", "Balanced steady-state free precession (bSSFP)")
+        self.assertHas("mr_survey_philips", "series", "Gradient echo, weighting not determined")
+        self.assertEqual(R.mr_kind(run("mr_survey_philips")), "")
+        self.assertHas("mr_vibe_siemens", "series", "T1-weighted (gradient echo)")
+        self.assertHas("mr_vibe_siemens", "series", "Fat suppressed")
+        self.assertHas("mr_lava_ge", "series", "T1-weighted (gradient echo)")
+        f = next(f for f in run("mr_vibe_siemens") if f.english == "T1-weighted (gradient echo)")
+        self.assertIn("(0018,0021) = SK\\SP\\OSP", f.evidence)
+        # 4. ADC maps named by the description.
+        self.assertHas("mr_adc_ge", "series", "ADC map")
+        self.assertHas("mr_adc_philips", "series", "ADC map")
+        self.assertHas("mr_dwi_adc_description", "series", "Diffusion-weighted (trace)")
+        # 6. BQML says nothing about attenuation correction; Spanish words do.
+        self.assertHas("pet_nac_spanish", "series", "PET, not attenuation corrected")
+        self.assertHas("pet_no_corregido", "series", "PET, not attenuation corrected")
+        self.assertHas("pet_corregido", "series", "PET, attenuation corrected")
+        self.assertHas("pet_wb_bqml", "series", "not determined: attenuation correction not stated")
+        self.assertHas("pet_wb_bqml", "series", "Values in Bq/mL (activity concentration)")
+        # 7. "PV" is not portal venous.
+        self.assertHas("ct_cardiac_la_pv", "series", "Contrast-enhanced CT, phase not stated")
+        # 8. Only the Dixon water image is fat suppressed.
+        for name in ("mr_dixon_opp", "mr_dixon_fat"):
+            self.assertHas(name, "series", "T1-weighted (gradient echo)")
+            self.assertNotIn("Fat suppressed", texts(run(name), "series"), name)
+        for name in ("mr_dixon_water", "mr_dixon_water_image_type", "mr_mdixon_water"):
+            self.assertHas(name, "series", "Fat suppressed")
+        f = next(f for f in run("mr_dixon_water_image_type") if f.english == "Fat suppressed")
+        self.assertIn("(0008,0008)", f.evidence)
+        water = R.T.word_re(R.T.MR_DIXON_WATER_WORDS)
+        for desc in ("DIXON W/O", "DIXON W CONTRAST", "DIXON W GAD", "DIXON W/WO"):
+            self.assertIsNone(water.search(desc), desc)
+        self.assertIsNotNone(water.search("MDIXON W"))
+        # 9. NM: both views, and time after injection.
+        self.assertHas("nm_wb_ant_post", "projection",
+                       "not determined: the description names both anterior and posterior views")
+        self.assertHas("nm_3hr_post", "projection", "not determined: no view in Patient Orientation or the description")
+        self.assertHas("nm_24h_post_ant", "projection", "Anterior view")
+        # 10. Dual source is not dual energy.
+        self.assertNotIn("Dual-energy (spectral) reconstruction", texts(run("ct_dual_source"), "series"))
+        self.assertHas("ct_dual_energy_det", "series", "Dual-energy (spectral) reconstruction")
+        # 11. Hologic generated 2D.
+        self.assertHas("mg_generated_2d", "series", "Synthetic 2D mammogram")
+        self.assertHas("mg_generated_2d", "projection", "Left MLO")
 
     def test_tables_are_module_constants(self):
         for name in ("CT_KERNELS", "CT_PHASE_WORDS", "MR_WORDS", "XR_VIEWS", "MG_VIEWS", "NM_KINDS"):
@@ -582,6 +746,19 @@ class FakeResponse(io.BytesIO):
     headers = {"Content-Length": "16"}
 
 
+class CountingResponse(FakeResponse):
+    """Remembers how many body bytes were read (the response is closed when the download stops)."""
+
+    def __init__(self, body, headers):
+        super().__init__(body)
+        self.headers, self.consumed = headers, 0
+
+    def read(self, n=-1):
+        chunk = super().read(n)
+        self.consumed += len(chunk)
+        return chunk
+
+
 class TruncatedResponse(FakeResponse):
     def read(self, n=-1):
         raise http.client.IncompleteRead(b"partial", 100)
@@ -637,6 +814,47 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(M.CLASSES, ("t1w", "gret2star", "t2w", "flair", "b0", "tracew", "adc", "fa", "eadc", "dwig"))
         self.assertEqual(M.LOW_PROBABILITY, 0.4)
         self.assertTrue(issubclass(M.Unavailable, ValueError))
+
+    def test_too_large_announced_aborts(self):
+        big = CountingResponse(b"x" * 64, {"Content-Length": str(M.MAX_BYTES + 1)})
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=big):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("more than", str(cm.exception))
+            self.assertEqual(big.consumed, 0)  # stopped before reading the body
+            self.assertEqual(os.listdir(d), [])
+
+    def test_too_large_unannounced_aborts(self):
+        big = CountingResponse(b"x" * (M.MAX_BYTES + 4 * (1 << 16)), {})
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=big):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("exceeds", str(cm.exception))
+            self.assertLessEqual(big.consumed, M.MAX_BYTES + (1 << 16))  # stopped at the cap, not at the end
+            self.assertEqual(os.listdir(d), [])
+
+    def test_download_uses_its_own_temporary_file(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(b"not the model..")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            other = os.path.join(d, M.FILE + ".part")  # a concurrent run's file is not touched
+            with open(other, "wb") as fh:
+                fh.write(b"other run")
+            seen = []
+            with self.assertRaises(M.Unavailable):
+                M.model_path(lambda _: seen.append(sorted(os.listdir(d))))
+            (during,) = {tuple(x) for x in seen}
+            mine = [n for n in during if n != M.FILE + ".part"]
+            self.assertEqual(len(mine), 1)
+            self.assertTrue(mine[0].startswith(M.FILE + ".") and mine[0].endswith(".part"), mine)
+            self.assertEqual(os.listdir(d), [M.FILE + ".part"])
 
     def test_hash_mismatch_deletes(self):
         with tempfile.TemporaryDirectory() as d, \
@@ -821,8 +1039,9 @@ def _fake_rp():
 class _Volume:
     """What the host gives an image tool, as far as seriesid.py reads it."""
 
-    def __init__(self, tags, row, col, spacing_source="pixel"):
+    def __init__(self, tags, row, col, spacing_source="pixel", rgb=None):
         self.tags = {k.lower(): v for k, v in tags.items()}  # the host keys tags in lower case
+        self._rgb = rgb
         self.slice_rows = None if row is None else [row]
         self.slice_cols = None if col is None else [col]
         self.spacing_source = spacing_source
@@ -833,7 +1052,9 @@ class _Volume:
         return "top" if self.tags.get(tag.lower()) is not None else None
 
     def rgb(self):
-        return None
+        if isinstance(self._rgb, BaseException):
+            raise self._rgb
+        return self._rgb
 
 
 class _Series:
@@ -880,12 +1101,12 @@ class LayerTests(unittest.TestCase):
     def setUp(self):
         self.rp.ids.clear()
 
-    def call(self, tags, series, row, col, predict=None, download=False):
+    def call(self, tags, series, row, col, predict=None, download=False, rgb=None):
         ctx = _Ctx(series) if series is not None else _Ctx(None)
         predict = predict or mock.Mock(side_effect=M.Unavailable("offline"))
         with mock.patch.object(M, "predict", predict), \
                 mock.patch.object(self.S, "_will_download", return_value=download):
-            result = self.rp.tools["identify"](_Volume(tags, row, col), ctx)
+            result = self.rp.tools["identify"](_Volume(tags, row, col, rgb=rgb), ctx)
         (window,) = result.kwargs["windows"]
         self.assertEqual(window.args[:2], ("main", None))
         return window.args[2], ctx
@@ -945,6 +1166,43 @@ class LayerTests(unittest.TestCase):
         blocks, _ = self.call({"0018,0010": agent}, {"modality": "CT"}, *AXIAL)
         cells = [r[1] for r in blocks[1].args[0] if r[0] == "Contrast"]
         self.assertEqual(cells, ["Contrast agent recorded (%s)" % ("A" * 1000)])
+
+    def us_series(self, rgb):
+        tags = {"0008,0008": "ORIGINAL\\PRIMARY\\ABDOMINAL", "0008,0070": "GE Healthcare", "0018,0015": "ABDOMEN",
+                "0008,103E": "Abdomen"}
+        blocks, _ = self.call(tags, {"modality": "US"}, None, None, rgb=rgb)
+        return [(r[1], r[2]) for r in blocks[1].args[0] if r[0] == "Series"][0]
+
+    def test_ultrasound_colour_is_measured(self):
+        rows, cols = 768, 1024
+        grey = bytes(v for i in range(rows * cols) for v in ((i * 7) % 256,) * 3)  # grey stored as RGB
+        result, evidence = self.us_series(grey)
+        self.assertEqual(result, "Ultrasound, greyscale")
+        self.assertIn("pixels grey", evidence)
+        doppler = bytearray(grey)
+        for p in range(0, rows * cols, 50):  # 2 % of pixels red: a colour Doppler box
+            doppler[3 * p:3 * p + 3] = b"\xc8\x20\x20"
+        result, evidence = self.us_series(bytes(doppler))
+        self.assertEqual(result, "Ultrasound, colour (Doppler or colour map)")
+        self.assertIn("2.00 % of pixels", evidence)
+        sparse = bytearray(grey)
+        sparse[0:3] = b"\xff\x00\x00"  # one coloured pixel (a cursor): below 0.1 %
+        self.assertEqual(self.us_series(bytes(sparse))[0], "Ultrasound, greyscale")
+        result, evidence = self.us_series(ValueError("colour file holds 3 bytes, expected 9"))
+        self.assertEqual(result, "Ultrasound, greyscale")
+        self.assertIn("colour data unreadable", evidence)
+        self.assertEqual(self.us_series(None), ("Ultrasound, greyscale", "image is greyscale"))
+
+    @unittest.skipUnless(importlib.util.find_spec("numpy"), "needs numpy")
+    def test_ultrasound_colour_numpy(self):
+        import numpy as np
+
+        grey = np.repeat(np.arange(768 * 1024, dtype=np.uint32).reshape(768, 1024, 1) % 256, 3, axis=2)
+        grey = grey.astype(np.uint8)
+        self.assertEqual(self.us_series(grey)[0], "Ultrasound, greyscale")
+        colour = grey.copy()
+        colour[100:200, 100:300] = (40, 60, 220)  # a colour box with values below the grey ones: no wraparound
+        self.assertEqual(self.us_series(colour)[0], "Ultrasound, colour (Doppler or colour map)")
 
     def test_progress_only_around_a_download(self):
         def predict(vector, progress):

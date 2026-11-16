@@ -62,6 +62,51 @@ def _result(f):
     return _tr_id(f.result, **{k: v[:_MAX_ARG] for k, v in f.args})
 
 
+_SAMPLE_PIXELS = 200_000  # pure-Python path: at most this many pixels, evenly strided
+
+
+def _chroma_fraction(rgb):
+    """Fraction of pixels whose chroma (max - min of R, G, B) is above T.US_CHROMA_MIN.
+
+    `rgb` is what volume.rgb() returns: a uint8 (rows, columns, 3) array, or the raw R G B bytes without numpy.
+    """
+    if isinstance(rgb, (bytes, bytearray, memoryview)):
+        data = bytes(rgb)
+        n = len(data) // 3
+        if n == 0:
+            return 0.0
+        step = max(1, n // _SAMPLE_PIXELS)
+        stride = 3 * step
+        r, g, b = data[0::stride], data[1::stride], data[2::stride]
+        count = min(len(r), len(g), len(b))
+        coloured = sum(1 for i in range(count)
+                       if max(r[i], g[i], b[i]) - min(r[i], g[i], b[i]) > T.US_CHROMA_MIN)
+        return coloured / count if count else 0.0
+    import numpy as np
+
+    a = np.asarray(rgb).reshape(-1, 3)
+    if a.shape[0] == 0:
+        return 0.0
+    chroma = a.max(axis=1).astype(np.int16) - a.min(axis=1).astype(np.int16)
+    return float(np.count_nonzero(chroma > T.US_CHROMA_MIN)) / a.shape[0]
+
+
+def _colour(volume):
+    """(image is colour, evidence). Greyscale stored as RGB / YBR is greyscale; unreadable colour data never fails
+    the run."""
+    try:
+        rgb = volume.rgb()
+        if rgb is None:
+            return False, "image is greyscale"
+        fraction = _chroma_fraction(rgb)
+    except Exception as e:
+        return False, "colour data unreadable (%s: %s); read as greyscale" % (type(e).__name__, e)
+    share = "%.2f %% of pixels with chroma above %d" % (100 * fraction, T.US_CHROMA_MIN)
+    if fraction > T.US_COLOUR_FRACTION:
+        return True, "image stored as colour; " + share
+    return False, "image stored as colour, pixels grey; " + share
+
+
 def _will_download():
     """The model file is neither given (RADSPIDER_SERIES_ID_MODEL) nor cached: running it downloads it first."""
     if os.environ.get(M.ENV_MODEL):
@@ -150,7 +195,7 @@ def identify(volume, ctx):
     series = _series_dict(ctx.series)
     tags = {str(k).lower(): v for k, v in volume.tags.items()}
     row, col = _first(volume.slice_rows), _first(volume.slice_cols)
-    findings = R.identify(tags, series, row, col, volume.rgb() is not None)
+    findings = R.identify(tags, series, row, col, *_colour(volume))
 
     modality = (series or {}).get("modality")
     for f in findings:

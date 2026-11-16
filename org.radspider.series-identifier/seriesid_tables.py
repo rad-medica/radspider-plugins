@@ -78,7 +78,8 @@ CT_NATIVE = "Non-contrast CT"
 CT_PHASE_WORDS = (
     (NEGATED_CONTRAST, CT_NATIVE),
     (r"CTA|ANGIO\w*|ANGIOTC|ANGIO-?TC", "Contrast-enhanced CT, angiographic phase (CTA)"),
-    (r"PORTAL|PORTO ?-?VENOUS|PORTOVENOSA|PV", "Contrast-enhanced CT, portal venous phase"),
+    # Not bare PV: in cardiac CT it is the pulmonary veins ("LA/PV").
+    (r"PORTAL|PORTO ?-?VENOUS|PORTOVENOSA", "Contrast-enhanced CT, portal venous phase"),
     (r"(LATE |EARLY )?ARTERIAL|ARTERIAL|ARTERIELLE?|ART", "Contrast-enhanced CT, arterial phase"),
     (r"NEPHRO\w*|NEFRO\w*", "Contrast-enhanced CT, nephrographic phase"),
     (r"EXCRET\w*|UROGRA\w*|PYELO\w*|PIELO\w*", "Contrast-enhanced CT, excretory phase"),
@@ -96,8 +97,11 @@ CT_DERIVED_WORDS = (
     (r"MPR|REFORMAT\w*|MPR\w*", "CT multiplanar reformat (MPR)"),
 )
 CT_LOCALIZER = "CT localizer (scout)"
-# HEURISTIC. "DE" is only read in Image Type values: in descriptions it is the Spanish "of" ("TC DE TORAX").
-CT_DUAL_ENERGY_IMAGE_TYPE = r"DE|DUAL|DUAL ?-?ENERGY|SPECTRAL|MONOE\w*|VMI"
+# HEURISTIC, from vendor Image Type values seen in practice (no vendor document fetched): Siemens dual-energy
+# images carry "DE" or detector tokens such as "DET_A", "DET_B", "DET_AB"; other vendors write "SPECTRAL" or
+# monoenergetic words. Bare "DUAL" is NOT read: Siemens dual-source single-energy scans write it too
+# ("CT_SOM7 SPI DUAL"). "DE" is only read in Image Type values: in descriptions it is the Spanish "of" ("TC DE TORAX").
+CT_DUAL_ENERGY_IMAGE_TYPE = r"DE|DE_\w+|DET_\w+|DUAL ?-?ENERGY|SPECTRAL|MONOE\w*|VMI"
 CT_DUAL_ENERGY_WORDS = r"DUAL ?-?ENERGY|SPECTRAL|MONOENERGETIC|MONOE\w*|VMI"
 CT_DUAL_ENERGY = "Dual-energy (spectral) reconstruction"
 CT_KEV = r"(\d{2,3}) ?KEV"
@@ -140,6 +144,9 @@ KERNEL_UNKNOWN = "Kernel not in the tables ({kernel})"
 # --- Contrast (CT, MR, XA) -----------------------------------------------------------------------------------------
 
 CONTRAST_RECORDED = "Contrast agent recorded ({agent})"
+# Contrast/Bolus Agent (0018,0010) values that say no agent was given; read as if the tag were missing, like any
+# value that matches NEGATED_CONTRAST ("NO CONTRAST", "SIN CONTRASTE"). HEURISTIC list of values seen in practice.
+CONTRAST_ABSENT_VALUES = frozenset({"NONE", "NO", "N", "NIL", "-", "0", "N/A", "NO CONTRAST"})
 CONTRAST_DESCRIPTION = "Contrast suggested by the description"
 # HEURISTIC: post-contrast words in Series Description (GD/GAD = gadolinium, +C / C+ = with contrast, KM =
 # Kontrastmittel). Bare POST is not enough ("POST OP"); it must be followed by a contrast noun. Never read when
@@ -164,8 +171,12 @@ TE_LONG_MIN = 80.0
 # (MPRAGE-like, T1-FLAIR).
 STIR_TI_MAX = 300.0
 FLAIR_TI_MIN = 1500.0
-# Gradient echo: a TE of 15 ms or more is read as T2*-weighted, shorter as T1-weighted. HEURISTIC.
+# Gradient echo: a TE of 15 ms or more is read as T2*-weighted. A shorter TE is read as T1-weighted only when the
+# echo is spoiled: SP in Sequence Variant (0018,0021), or a flip angle below GRE_T1_FLIP_MAX with a TR below
+# TR_SHORT_MAX (or, failing both, a T1 word in the description). Unspoiled short-TE gradient echo (balanced SSFP
+# cine, flip 50-70 degrees) is not T1-weighted and gives MR_GRE_ND. HEURISTIC cut-offs.
 GRE_T2STAR_TE_MIN = 15.0
+GRE_T1_FLIP_MAX = 35.0
 # A diffusion tensor has 6 independent elements, so a tensor (DTI) acquisition needs at least 6 directions; a clinical
 # trace acquisition uses 3 orthogonal ones.
 DTI_MIN_DIRECTIONS = 6
@@ -175,7 +186,7 @@ TRACE_DIRECTIONS = 3
 # Sequence Name. HEURISTIC lists of common vendor sequence and series names.
 MR_WORDS = {
     "eadc": r"EADC|EXPADC|EXP ADC",  # description fallback only; Image Type words decide first
-    "adc": r"ADC",
+    "adc": r"APPARENT DIFFUSION COEFFICIENT|D?ADC",  # GE writes the full name, Philips "dADC"
     "fa": r"FA",  # Image Type only
     "diffusion": r"DWI|DIFFUSION|DTI|DIFF|EP2D DIFF|TRACEW|DW",
     "perfusion": r"PERFUSION|PERF|DSC|DCE|ASL|PCASL|PASL",
@@ -183,7 +194,8 @@ MR_WORDS = {
     "pc": r"PC|PCA|PHASE ?-?CONTRAST|QFLOW|FLOW ?-?QUANT\w*|VENC",  # not bare FLOW: "FLOW COMP" is not PC
     "mra": r"MRA|ANGIO\w*|CE ?-?MRA",
     "swi": r"SWI|SWAN|SWIP|VENBOLD|SUSCEPT\w*",
-    "ssfp": r"TRUFI|TRUE ?-?FISP|FIESTA|B-?FFE|BSSFP|SSFP|BALANCED",
+    # Also read in Sequence Name: Siemens cine "*tfi2d1_12" (TrueFISP), Philips "sBTFE" / "BTFE".
+    "ssfp": r"TRUFI|TRUE ?-?FISP|FIESTA|B-?FFE|BSSFP|SSFP|BALANCED|TFI\w*|S?BTFE|CINE TF",
     "t1flair": r"T1\w* ?-?FLAIR",  # checked before "flair": T1 FLAIR is an IR-prepared T1
     "flair": r"FLAIR|DARK ?-?FLUID",
     "stir": r"STIR|TIRM",
@@ -192,8 +204,15 @@ MR_WORDS = {
     "t1": r"T1\w*",
     "t2": r"T2\w*",
     "pd": r"PD\w*|DP",
-    "fatsat": r"FS|FATSAT|FAT ?-?SAT\w*|SPAIR|SPIR|SPECIAL|DIXON|FAT ?-?SUPP\w*",
+    # Not DIXON: in-phase, opposed-phase and fat-only Dixon images are not fat suppressed; see MR_DIXON_*.
+    "fatsat": r"FS|FATSAT|FAT ?-?SAT\w*|SPAIR|SPIR|SPECIAL|FAT ?-?SUPP\w*",
 }
+# HEURISTIC: only the water image of a Dixon series is fat suppressed. It is named by Image Type value WATER, or by a
+# description with a Dixon word and a water token (Siemens "t1_vibe_dixon_W", Philips "mDIXON W"). The W token is
+# not read before "/" or a contrast word ("W/O", "W CONTRAST": with / without).
+MR_DIXON_WORDS = r"M?DIXON"
+MR_DIXON_WATER_WORDS = rf"WATER|W(?! ?/)(?! ?(?:{CONTRAST_NOUNS}|WO)(?![A-Z0-9]))"
+MR_GRE_ND = "Gradient echo, weighting not determined"
 MR = {
     "t1": "T1-weighted",
     "t1_post": "T1-weighted, post-contrast",
@@ -229,14 +248,17 @@ MR = {
 
 # Attenuation correction words in Image Type / description. HEURISTIC (Corrected Image (0028,0051), which carries
 # ATTN, is not among the 32 tags). NAC words are tried first.
-PET_NAC_WORDS = r"NAC|NO ?-?AC|NON ?-?AC|NOAC|UNCORR\w*|NOT CORRECTED|NO ATTN|NONATTN"
-PET_AC_WORDS = r"AC|CTAC|MAC|ATTN|ATTENUATION CORRECTED|CORR|CORRECTED|QCFX"
+# Spanish words too ("SIN CORRECCION", "NO CORREGIDO" / "CORREGIDO").
+PET_NAC_WORDS = (r"NAC|NO ?-?AC|NON ?-?AC|NOAC|UNCORR\w*|NOT CORRECTED|NO ATTN|NONATTN|SIN CORRECCI\w*|"
+                 r"NO CORREGID\w*|SIN AC")
+PET_AC_WORDS = r"AC|CTAC|MAC|ATTN|ATTENUATION CORRECTED|CORR|CORRECTED|QCFX|CORREGID\w*|CON CORRECCI\w*"
 PET_AC = "PET, attenuation corrected"
 PET_NAC = "PET, not attenuation corrected"
 PET_AC_UNSTATED = "not determined: attenuation correction not stated"
 # Units (0054,1001) defined terms, DICOM PS3.3 C.8.9.1.1.3. Read for attenuation correction as a HEURISTIC:
-# quantitative units are normally only produced after attenuation correction; raw counts usually are not.
-PET_UNITS_AC = {"BQML", "GML", "CM2ML", "MGMINML", "UMOLMINML", "MLMING", "MLG", "UMOLML", "MLMINML", "MLML"}
+# derived quantitative units (SUV, kinetic parameters) are normally only produced after attenuation correction; raw
+# counts usually are not. Not BQML: scanners write Bq/mL on non-corrected (NAC) images too.
+PET_UNITS_AC = {"GML", "CM2ML", "MGMINML", "UMOLMINML", "MLMING", "MLG", "UMOLML", "MLMINML", "MLML"}
 PET_UNITS_NAC = {"CNTS", "CPS", "PROPCNTS", "PROPCPS"}
 PET_UNITS = {
     "BQML": "Values in Bq/mL (activity concentration)",
@@ -272,6 +294,10 @@ NM_VIEW_WORDS = ((r"ANT|ANTERIOR", "Anterior view"),
                  (r"POSTERIOR|POST(?! ?(VOID|STRESS|REST|INJ\w*|THERAPY|TX|MICT\w*))", "Posterior view"),
                  (r"LAT|LATERAL|LLAT|RLAT", "Lateral view"))
 NM_VIEW_UNKNOWN = "not determined: no view in Patient Orientation or the description"
+# HEURISTIC: "3HR POST", "24 H POST" give the time after injection, not a view; removed before the view words.
+NM_TIME_POST = r"\d+ ?H\w* POST\w*"
+# Both anterior and posterior named (a whole-body "ANT/POST" pair): the view of this image is not named.
+NM_VIEW_BOTH = "not determined: the description names both anterior and posterior views"
 
 # --- Projection radiography ----------------------------------------------------------------------------------------
 
@@ -326,7 +352,8 @@ MG_LATERALITY = {"L": "Left breast", "R": "Right breast", "B": "Both breasts"}
 MG_SERIES = "Mammogram"
 # HEURISTIC: vendor product names (Hologic C-View, GE V-Preview, Siemens Insight 2D) and generic words.
 MG_TOMO_WORDS = r"TOMO\w*|DBT"
-MG_SYNTHETIC_WORDS = r"SYNTH\w*|C-?VIEW|S-?VIEW|V-?PREVIEW|INSIGHT 2D|2D SYNTH\w*"
+# Synthetic words are tried before TOMO: Hologic writes TOMO_2D (Image Type) on its generated 2D images.
+MG_SYNTHETIC_WORDS = r"SYNTH\w*|C-?VIEW|S-?VIEW|V-?PREVIEW|INSIGHT 2D|2D SYNTH\w*|TOMO[ _]?2D|GENERATED[ _]?2D"
 MG_TOMO = "Breast tomosynthesis"
 MG_SYNTHETIC = "Synthetic 2D mammogram"
 
@@ -363,6 +390,10 @@ XA_SERIES = "X-ray angiography run"
 # --- US ------------------------------------------------------------------------------------------------------------
 
 US_COLOUR = "Ultrasound, colour (Doppler or colour map)"
+# Greyscale ultrasound is often stored as RGB or YBR. HEURISTIC: an image is colour only when more than
+# US_COLOUR_FRACTION of its pixels have a chroma (max - min of R, G, B) above US_CHROMA_MIN.
+US_CHROMA_MIN = 10
+US_COLOUR_FRACTION = 0.001
 US_GREY = "Ultrasound, greyscale"
 US_NO_VIEW = "not determined: ultrasound views are not in the header"
 
@@ -540,8 +571,11 @@ EXPLAIN = {
     MR["2d"]: "The images were acquired slice by slice (2D acquisition).",
     MR["3d"]: "The images were acquired as one volume (3D acquisition), which allows thin slices and reformats in "
               "any plane.",
-    MR["fatsat"]: "The series description indicates fat suppression, which makes fat dark so that other tissues "
-                  "stand out.",
+    MR["fatsat"]: "The series description, or the water image of a Dixon series, indicates fat suppression, which "
+                  "makes fat dark so that other tissues stand out.",
+    MR_GRE_ND: "A gradient-echo image whose header shows neither spoiling (SP in Sequence Variant, or a low flip angle "
+               "with a short TR) nor a T1 description, so its weighting is not named. Unspoiled gradient echo, such "
+               "as balanced SSFP, is not T1-weighted. " + _ND,
     # PET
     PET_AC: "The PET image is corrected for attenuation, the absorption of radiation by the body. Corrected images "
             "are the ones used for quantitative values such as SUV.",
@@ -583,6 +617,8 @@ EXPLAIN = {
     "Posterior view": "A planar nuclear medicine view taken from the back of the patient.",
     "Lateral view": "A planar nuclear medicine view taken from the side of the patient.",
     NM_VIEW_UNKNOWN: "Neither Patient Orientation nor the series description names the view. " + _ND,
+    NM_VIEW_BOTH: "The series description names both the anterior and the posterior view, as for a whole-body scan "
+                  "stored with both views, so the view of this image is not named. " + _ND,
     # Radiography
     XR_MODALITIES["CR"]: "A projection radiograph: an X-ray image of a body part, flattened onto one plane.",
     XR_MODALITIES["RF"]: "An image from fluoroscopy, live X-ray imaging used to follow movement or guide "
@@ -719,7 +755,7 @@ def all_result_ids():
     ids |= set(REGIONS.values())
     ids |= {CT_LOCALIZER, CT_PHASE_UNSTATED, CT_DUAL_ENERGY, CT_MONO, KERNEL_UNKNOWN, CONTRAST_RECORDED,
             CONTRAST_DESCRIPTION, PET_AC, PET_NAC, PET_AC_UNSTATED, PET_UNITS_OTHER, PET_MIP, NM_KIND_UNKNOWN,
-            NM_VIEW_UNKNOWN, VIEW_UNKNOWN, ORIENTATION_FRONTAL, ORIENTATION_LATERAL, ORIENTATION_AXIAL, MG_SERIES,
+            NM_VIEW_UNKNOWN, NM_VIEW_BOTH, MR_GRE_ND, VIEW_UNKNOWN, ORIENTATION_FRONTAL, ORIENTATION_LATERAL, ORIENTATION_AXIAL, MG_SERIES,
             MG_TOMO, MG_SYNTHETIC, XA_SERIES, US_COLOUR, US_GREY, US_NO_VIEW, REGION_OTHER, MODALITY_INFERRED,
             NO_RULES, ND_MODALITY, ND_GEOMETRY, ND_CONTRAST, ND_KERNEL, ND_TR_TE, ND_TR_TE_RANGE, ND_UNITS,
             ND_IMAGE_TYPE, ND_XR_VIEW, ND_VIEW, ND_LATERALITY, ND_PRIMARY, ND_SECONDARY, ND_BODY_PART,

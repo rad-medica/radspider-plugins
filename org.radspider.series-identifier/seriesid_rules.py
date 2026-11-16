@@ -258,13 +258,28 @@ def _region_row(t):
     return _f("region", T.REGION_OTHER, t.ev(BODY_PART), part=part)
 
 
-def _contrast_row(t, series_desc, allow_description=True):
+def _agent(t):
+    """Contrast/Bolus Agent text, or None when it is missing or says no agent ("NONE", "NO", "-", "SIN CONTRASTE")."""
     agent = t.text(CONTRAST)
+    if agent is None or agent in T.CONTRAST_ABSENT_VALUES or _search(T.NEGATED_CONTRAST, agent.replace("_", " ")):
+        return None
+    return agent
+
+
+def _agent_ev(t):
+    """Evidence for Contrast/Bolus Agent, saying when a present value was read as no agent."""
+    if t.has(CONTRAST) and _agent(t) is None:
+        return f"{t.ev(CONTRAST)} (a no-agent value, read as missing)"
+    return t.ev(CONTRAST)
+
+
+def _contrast_row(t, series_desc, allow_description=True):
+    agent = _agent(t)
     if agent is not None:
-        return _f("contrast", T.CONTRAST_RECORDED, t.ev(CONTRAST), agent=agent)
+        return _f("contrast", T.CONTRAST_RECORDED, _agent_ev(t), agent=agent)
     if allow_description and _post_contrast_words(series_desc):
-        return _f("contrast", T.CONTRAST_DESCRIPTION, f"{t.ev(CONTRAST)}; {_dev(series_desc)}")
-    return _f("contrast", T.ND_CONTRAST, t.ev(CONTRAST))
+        return _f("contrast", T.CONTRAST_DESCRIPTION, f"{_agent_ev(t)}; {_dev(series_desc)}")
+    return _f("contrast", T.ND_CONTRAST, _agent_ev(t))
 
 
 def _post_contrast_words(series_desc):
@@ -369,13 +384,13 @@ def _ct(t, desc, series_desc, row, col):
         if derived:
             out.append(_f("series", derived, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     phase = _first(T.CT_PHASE_WORDS, desc)
-    agent = t.text(CONTRAST)
+    agent = _agent(t)
     if phase:
-        out.append(_f("series", phase, f"{_dev(desc)}; {t.ev(CONTRAST)}"))
+        out.append(_f("series", phase, f"{_dev(desc)}; {_agent_ev(t)}"))
     elif agent is not None:
-        out.append(_f("series", T.CT_PHASE_UNSTATED, f"{t.ev(CONTRAST)}; no phase word in the description"))
+        out.append(_f("series", T.CT_PHASE_UNSTATED, f"{_agent_ev(t)}; no phase word in the description"))
     else:
-        out.append(_f("series", T.ND_CONTRAST, f"{t.ev(CONTRAST)}; no phase word in the description"))
+        out.append(_f("series", T.ND_CONTRAST, f"{_agent_ev(t)}; no phase word in the description"))
     if _search(T.CT_DUAL_ENERGY_IMAGE_TYPE, " ".join(words)) or _search(T.CT_DUAL_ENERGY_WORDS, desc):
         out.append(_f("series", T.CT_DUAL_ENERGY, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     kev = re.search(T.CT_KEV, desc or "")
@@ -406,10 +421,14 @@ def _mr_kind(t, series, desc, series_desc):
     tr, te, ti, flip = t.number(TR), t.number(TE), t.number(TI), t.number(FLIP)
     seq = set(t.words(SCANNING_SEQ))
     timing = t.ev(TR, TE, TI, SCANNING_SEQ)
-    post = t.has(CONTRAST) or _post_contrast_words(series_desc)
+    agent = _agent(t)
+    post = agent is not None or _post_contrast_words(series_desc)
 
-    # Diffusion maps: Image Type decides; the description only when Image Type says neither map nor diffusion
-    # and no b-value is above 0 (a "DWI ADC" description on a DIFFUSION image is the diffusion series).
+    # Diffusion maps. 1. Image Type ADC / EADC / FA decides. 2. An ADC / eADC word in the description decides next,
+    # also on a DIFFUSION Image Type (Philips "dADC", GE "Apparent Diffusion Coefficient"), unless the b-values show
+    # an acquired diffusion image: the image b-value or a series b-value above 0 ("DWI ADC" on a b = 1000 image is
+    # the diffusion series). A b = 0 image described as ADC is therefore read as the ADC map (docs Limits).
+    # 3. Diffusion Image Type, b-values or words: the acquired diffusion kinds.
     for key in ("eadc", "adc", "fa"):
         if key.upper() in words:
             return T.MR[key], t.ev(IMAGE_TYPE)
@@ -417,15 +436,14 @@ def _mr_kind(t, series, desc, series_desc):
     b_values = numbers(s.get("b_values")) or []
     b_image = t.number(B_VALUE)
     directions = number(s.get("gradient_directions"))
-    diffusion_tags = bool({"DIFFUSION", "TRACEW"} & words) or (b_image or 0) > 0 or any(b > 0 for b in b_values)
-    if not diffusion_tags:
+    b_ev = (f"{t.ev(IMAGE_TYPE, B_VALUE)}; series b-values {', '.join(_fmt(b) for b in b_values) or 'missing'}")
+    acquired = (b_image or 0) > 0 or any(b > 0 for b in b_values)
+    if not acquired:
         for key in ("eadc", "adc"):
             if _search(T.MR_WORDS[key], names):
-                return T.MR[key], f"{t.ev(IMAGE_TYPE)}; {names_ev}"
-    if diffusion_tags or _search(T.MR_WORDS["diffusion"], names):
-        ev = (f"{t.ev(IMAGE_TYPE, B_VALUE)}; series b-values "
-              f"{', '.join(_fmt(b) for b in b_values) or 'missing'}; gradient directions "
-              f"{_fmt(directions) if directions is not None else 'missing'}")
+                return T.MR[key], f"{b_ev}; {names_ev}"
+    if acquired or {"DIFFUSION", "TRACEW"} & words or _search(T.MR_WORDS["diffusion"], names):
+        ev = f"{b_ev}; gradient directions {_fmt(directions) if directions is not None else 'missing'}"
         if b_image is not None and b_image == 0:
             return T.MR["b0"], ev
         if "TRACEW" in words:
@@ -440,14 +458,18 @@ def _mr_kind(t, series, desc, series_desc):
         if _search(T.MR_WORDS[key], names):
             return T.MR[key], names_ev
     if _search(T.MR_WORDS["mra"], names):
-        return (T.MR["ce_mra"] if t.has(CONTRAST) or _search(r"CE ?-?MRA", names) else T.MR["mra"]), \
-            f"{names_ev}; {t.ev(CONTRAST)}"
+        return (T.MR["ce_mra"] if agent is not None or _search(r"CE ?-?MRA", names) else T.MR["mra"]), \
+            f"{names_ev}; {_agent_ev(t)}"
     if _search(T.MR_WORDS["swi"], names):
         return T.MR["swi"], names_ev
 
     if ti is not None and ti > 0:
+        # A short TI nulls fat (STIR) on a spin-echo IR without contrast. With a gradient-echo readout or a recorded
+        # agent it is an IR-prepared T1: cardiac late enhancement / PSIR (GR\IR, TI 250-350 ms, after gadolinium).
         if ti <= T.STIR_TI_MAX:
-            return T.MR["stir"], timing
+            if "GR" not in seq and agent is None:
+                return T.MR["stir"], f"{timing}; {_agent_ev(t)}"
+            return T.MR["t1_ir_post" if post else "t1_ir"], f"{timing}; {_agent_ev(t)}"
         if ti >= T.FLAIR_TI_MIN:
             return T.MR["flair"], timing
         return T.MR["t1_ir_post" if post else "t1_ir"], timing
@@ -459,10 +481,16 @@ def _mr_kind(t, series, desc, series_desc):
         return T.MR["ssfp"], names_ev
 
     if "GR" in seq and te is not None:
-        ev = f"{timing}; {t.ev(FLIP)}" if flip is not None else timing
+        ev = t.ev(TR, TE, TI, SCANNING_SEQ, SEQ_VARIANT, FLIP)
         if te >= T.GRE_T2STAR_TE_MIN:
             return T.MR["t2star"], ev
-        return T.MR["t1_gre_post" if post else "t1_gre"], ev
+        spoiled = "SP" in t.words(SEQ_VARIANT) or (flip is not None and flip < T.GRE_T1_FLIP_MAX and tr is not None
+                                                   and tr < T.TR_SHORT_MAX)
+        if spoiled:
+            return T.MR["t1_gre_post" if post else "t1_gre"], ev
+        if _search(T.MR_WORDS["t1"], names):
+            return T.MR["t1_gre_post" if post else "t1_gre"], f"{ev}; {names_ev}"
+        return T.MR_GRE_ND, ev
     if tr is not None and te is not None:
         if tr < T.TR_SHORT_MAX and te < T.TE_SHORT_MAX:
             return T.MR["t1_post" if post else "t1"], timing
@@ -487,8 +515,13 @@ def _mr(t, series, desc, series_desc, row, col):
     acq = t.text(MR_ACQ)
     if acq in ("2D", "3D"):
         out.append(_f("series", T.MR[acq.lower()], t.ev(MR_ACQ)))
-    if kind != T.MR["stir"] and _search(T.MR_WORDS["fatsat"], desc):
-        out.append(_f("series", T.MR["fatsat"], f"{_dev(desc)}"))
+    if kind != T.MR["stir"]:
+        if _search(T.MR_WORDS["fatsat"], desc):
+            out.append(_f("series", T.MR["fatsat"], f"{_dev(desc)}"))
+        elif "WATER" in t.words(IMAGE_TYPE):
+            out.append(_f("series", T.MR["fatsat"], f"{t.ev(IMAGE_TYPE)}: Dixon water image"))
+        elif _search(T.MR_DIXON_WORDS, desc) and _search(T.MR_DIXON_WATER_WORDS, desc):
+            out.append(_f("series", T.MR["fatsat"], f"{_dev(desc)}: Dixon water image"))
     out.append(_contrast_row(t, series_desc))
     out.append(_plane_row(row, col))
     return out
@@ -542,9 +575,13 @@ def _nm(t, desc, row, col):
     if kind is not None and kind.startswith("RECON"):
         out.append(_plane_row(row, col))
         return out
-    view = _first(T.NM_VIEW_WORDS, desc)
-    if view:
-        out.append(_f("projection", view, f"{_dev(desc)}"))
+    words = re.sub(rf"(?<![A-Z0-9])(?:{T.NM_TIME_POST})(?![A-Z0-9])", " ", desc) if desc else ""
+    views = [rid for pattern, rid in T.NM_VIEW_WORDS if _search(pattern, words)]
+    if "Anterior view" in views and "Posterior view" in views:
+        out.append(_f("projection", T.NM_VIEW_BOTH, f"{_dev(desc)}"))
+        return out
+    if views:
+        out.append(_f("projection", views[0], f"{_dev(desc)}"))
         return out
     oriented = _orientation_projection(t)
     if oriented:
@@ -631,15 +668,16 @@ def _xa(t, desc):
         if tilt:
             args["secondary"] = abs(s)
         out.append(_f("projection", T.XA_VIEWS[(side, tilt)], ev, **args))
-    if t.has(CONTRAST):
+    if _agent(t) is not None:
         out.append(_contrast_row(t, desc, allow_description=False))
     out.append(_region_row(t))
     return out
 
 
-def _us(t, color):
+def _us(t, color, color_evidence):
+    ev = color_evidence or ("image is colour" if color else "image is greyscale")
     return [
-        _f("series", T.US_COLOUR if color else T.US_GREY, "image is colour" if color else "image is greyscale"),
+        _f("series", T.US_COLOUR if color else T.US_GREY, ev),
         _f("projection", T.US_NO_VIEW, "no standard tag holds the ultrasound view"),
         _region_row(t),
     ]
@@ -648,12 +686,13 @@ def _us(t, color):
 # --- Entry point ---------------------------------------------------------------------------------------------------
 
 
-def identify(tags, series, row, col, color):
+def identify(tags, series, row, col, color, color_evidence=None):
     """Findings for the image on screen.
 
     `tags`: tag values keyed "gggg,eeee" (any case); `series`: the ctx.series fields as a dict (modality, images,
     frames, phases, phase_axis, b_values, gradient_directions, image_types) or None; `row`, `col`: the image's
-    direction cosines or None; `color`: whether the image is colour.
+    direction cosines or None; `color`: whether the image is colour; `color_evidence`: how that was decided (the
+    ultrasound evidence; a plain "image is colour / greyscale" when None).
     """
     t = _Tags(tags)
     modality, inferred = _modality(t, series)
@@ -680,7 +719,7 @@ def identify(tags, series, row, col, color):
     elif modality == "XA":
         out += _xa(t, desc)
     elif modality == "US":
-        out += _us(t, color)
+        out += _us(t, color, color_evidence)
     else:
         out.append(_f("series", T.NO_RULES, f"Modality {modality}", modality=modality))
     return out
@@ -934,11 +973,11 @@ DIFFUSION_ACQUIRED = frozenset(T.MR[k] for k in ("dwi", "trace", "dti", "b0"))
 
 def mr_kind(findings):
     """The MR series kind among `identify`'s findings: a MR_KINDS id, "" when the rules could not tell (TR / TE
-    missing or between the ranges), None when there is no MR kind (not MR)."""
+    missing or between the ranges, an unspoiled gradient echo), None when there is no MR kind (not MR)."""
     for f in findings:
         if f.item == "series" and f.result in MR_KINDS:
             return f.result
-        if f.item == "series" and f.result in (T.ND_TR_TE, T.ND_TR_TE_RANGE):
+        if f.item == "series" and f.result in (T.ND_TR_TE, T.ND_TR_TE_RANGE, T.MR_GRE_ND):
             return ""
     return None
 
