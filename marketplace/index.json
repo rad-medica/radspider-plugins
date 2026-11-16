@@ -22,7 +22,7 @@
       "package": {
         "file": "org.radspider.cads-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.cads-v1.1.0/org.radspider.cads-1.1.0.zip",
-        "sha256": "def6e0d53c4d1d1d76469d826a1fcd1b7ac60822277484987d415710a2bb3b57",
+        "sha256": "1f6bb880fe549e19ccc9555b16f78de1ab72cbf6836091ea25dad6db2e319832",
         "size": 52044
       },
       "tag": "org.radspider.cads-v1.1.0",
@@ -48,7 +48,7 @@
       "package": {
         "file": "org.radspider.density-lung-segmentation-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.density-lung-segmentation-v1.1.0/org.radspider.density-lung-segmentation-1.1.0.zip",
-        "sha256": "254fe7feaf6d9b1a222b2a6a971813b598da84b3a79d83e9b19f9e8b41700139",
+        "sha256": "f280f4d34fb800e838f1d5e733540d6072652a55880858ff447eee54dbb6b751",
         "size": 17257
       },
       "tag": "org.radspider.density-lung-segmentation-v1.1.0",
@@ -70,7 +70,7 @@
       "package": {
         "file": "org.radspider.examples-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.examples-v1.1.0/org.radspider.examples-1.1.0.zip",
-        "sha256": "63943260f6c5214335126d4f6016418316878e5ed34ce544eb891d9825d99232",
+        "sha256": "62b9088576945c2effeb65c1cdb04a45b9ef17a77da777ddc2db71890406c633",
         "size": 5041
       },
       "tag": "org.radspider.examples-v1.1.0",
@@ -95,7 +95,7 @@
       "package": {
         "file": "org.radspider.lung-ct-analyzer-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.lung-ct-analyzer-v1.1.0/org.radspider.lung-ct-analyzer-1.1.0.zip",
-        "sha256": "2ad2fe823d3449b01b5825f42c79930a331759c4a28df82e0079a678a9462712",
+        "sha256": "e79c6bf2d17238bb19c3e47f613442ac8400fbddbd8b72258d26a08ae22b76a2",
         "size": 32065
       },
       "tag": "org.radspider.lung-ct-analyzer-v1.1.0",
@@ -122,7 +122,7 @@
       "package": {
         "file": "org.radspider.monai-wholebody-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.monai-wholebody-v1.1.0/org.radspider.monai-wholebody-1.1.0.zip",
-        "sha256": "745c8961b4515c1fc54c199d5e71f1574233769d543389bd490a0c4a584739f9",
+        "sha256": "ec653d12bf822484a631821e59a76f31a3a5a2dddd66c14c1fc9a131bb4c429e",
         "size": 11504
       },
       "tag": "org.radspider.monai-wholebody-v1.1.0",
@@ -147,7 +147,7 @@
       "package": {
         "file": "org.radspider.numpy-demo-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.numpy-demo-v1.1.0/org.radspider.numpy-demo-1.1.0.zip",
-        "sha256": "f7f4e1e0ed43a2249049b04002177b43b62f54e317a528be820a68d8b21e471b",
+        "sha256": "688ce57ffe9762642746f22eb3df13d5c0ab3270250a924030da1cbea0b2125a",
         "size": 5465
       },
       "tag": "org.radspider.numpy-demo-v1.1.0",
@@ -174,7 +174,7 @@
       "package": {
         "file": "org.radspider.radiomics-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.radiomics-v1.1.0/org.radspider.radiomics-1.1.0.zip",
-        "sha256": "bd89aab6670a5dc0a7bd978756a8a1d39bef42fba890c26c5e472b2363c0394a",
+        "sha256": "51c6d23bbd0a29d089010a5b10f879ca5c8c816ca29395b8a6905fdef3324847",
         "size": 18442
       },
       "tag": "org.radspider.radiomics-v1.1.0",
@@ -198,7 +198,7 @@
       "package": {
         "file": "org.radspider.registration-demo-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.registration-demo-v1.1.0/org.radspider.registration-demo-1.1.0.zip",
-        "sha256": "f74e7d7b3555f96397346f0a2d22ca28544c566bc76f54b7decec19f044a6624",
+        "sha256": "09242da17f31a6ce340eacb6c0724b4c5b99ff80d64927e305a1b8850a22352e",
         "size": 15495
       },
       "tag": "org.radspider.registration-demo-v1.1.0",
@@ -223,7 +223,7 @@
       "package": {
         "file": "org.radspider.roi-tools-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.roi-tools-v1.1.0/org.radspider.roi-tools-1.1.0.zip",
-        "sha256": "ff7fd5aeb2b0f2dbcbdfd6f3d58435b4d9c4a09ac2c9cf0a494ed6084ff9dedc",
+        "sha256": "78693f1ac6db7c8c38f33efeba25cab5e3bb8f21e539a8ca170cca060d61e9a6",
         "size": 59496
       },
       "tag": "org.radspider.roi-tools-v1.1.0",
@@ -251,7 +251,7 @@
       "package": {
         "file": "org.radspider.sam-med3d-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-med3d-v1.1.0/org.radspider.sam-med3d-1.1.0.zip",
-        "sha256": "da433bc93120a14175ae48ac380b5c487d2bfe6ccbfb80f49fc06ba95cb6bb82",
+        "sha256": "3f5a37ead8c16a1d874b9ded4a2532821e518bef57c134285bb982a2fc2d5214",
         "size": 13166
       },
       "tag": "org.radspider.sam-med3d-v1.1.0",
@@ -278,7 +278,7 @@
       "package": {
         "file": "org.radspider.sam-slices-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-slices-v1.1.0/org.radspider.sam-slices-1.1.0.zip",
-        "sha256": "546e23cc3aea0e88667a8ab2962d4649fa2d1c8721186137b2b4a88c2bf2f9bd",
+        "sha256": "2c4f46c8a820bb33bfb948be2ada433a73385d95e020f50f22b3b7a5acffb2cd",
         "size": 19630
       },
       "tag": "org.radspider.sam-slices-v1.1.0",
@@ -304,7 +304,7 @@
       "package": {
         "file": "org.radspider.skeletal-radiology-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.skeletal-radiology-v1.1.0/org.radspider.skeletal-radiology-1.1.0.zip",
-        "sha256": "62fba1cf0a051daa243ec669411d3aa060aa820e15b3f45ac425d3537b506c22",
+        "sha256": "8a21d011894d48d4c49a83c3e66561bc27f381369c43dd0aa5a37c9a2913d206",
         "size": 122489
       },
       "tag": "org.radspider.skeletal-radiology-v1.1.0",
@@ -328,7 +328,7 @@
       "package": {
         "file": "org.radspider.testkit-1.2.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.testkit-v1.2.0/org.radspider.testkit-1.2.0.zip",
-        "sha256": "33914c027f67a0c7b148f5c2f06d7025606e43be7e226ad075ba395373584d0b",
+        "sha256": "8401fda2f70246accc5e2b53bfef32d7c62ff5675e30a27623fe94c9f19e9d4c",
         "size": 37338
       },
       "tag": "org.radspider.testkit-v1.2.0",
@@ -356,7 +356,7 @@
       "package": {
         "file": "org.radspider.totalsegmentator-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.totalsegmentator-v1.1.0/org.radspider.totalsegmentator-1.1.0.zip",
-        "sha256": "099471fdb3595b7296d4e6e84d97b3931dab4c35578b610d0a78e204ee6bc080",
+        "sha256": "2c3f4cf5e84b6bbeeb3278c2a2ac806034e2124fb789cf5bda9956626ed894d4",
         "size": 14597
       },
       "tag": "org.radspider.totalsegmentator-v1.1.0",
@@ -382,7 +382,7 @@
       "package": {
         "file": "org.radspider.volume-tools-1.1.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.volume-tools-v1.1.0/org.radspider.volume-tools-1.1.0.zip",
-        "sha256": "ab0a34fc6a12a171e920dab3dadd79a33f9d1f1fd569b97c5f87a565b19a8d67",
+        "sha256": "0df78d028b6e35575fab99a4b9774fa957e62caa6b9178fd3c6275641247f066",
         "size": 51254
       },
       "tag": "org.radspider.volume-tools-v1.1.0",

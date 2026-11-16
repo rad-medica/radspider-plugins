@@ -56,12 +56,17 @@ def version_key(version: str) -> tuple:
 
 
 def package_files(plugin: Path) -> list[Path]:
+    # Sorted by the POSIX path, not by `Path`: a WindowsPath compares with `\` and case-folded, so the same tree
+    # zipped on Windows and on Linux would order its entries differently and get another SHA-256.
     return sorted(
-        p
-        for p in plugin.rglob("*")
-        if p.is_file()
-        and not (set(p.relative_to(plugin).parts[:-1]) & EXCLUDED_DIRS)
-        and p.suffix not in EXCLUDED_SUFFIXES
+        (
+            p
+            for p in plugin.rglob("*")
+            if p.is_file()
+            and not (set(p.relative_to(plugin).parts[:-1]) & EXCLUDED_DIRS)
+            and p.suffix not in EXCLUDED_SUFFIXES
+        ),
+        key=lambda p: p.relative_to(plugin).as_posix(),
     )
 
 
@@ -72,6 +77,9 @@ def make_package(plugin: Path) -> bytes:
             info = zipfile.ZipInfo(f"{plugin.name}/{f.relative_to(plugin).as_posix()}", (1980, 1, 1, 0, 0, 0))
             info.compress_type = zipfile.ZIP_STORED
             info.external_attr = 0o644 << 16
+            # ZipInfo records the OS that made it (0 on Windows, 3 elsewhere): pin it, so a package built on
+            # Windows has the same bytes, and the same SHA-256, as the one the Linux release job builds.
+            info.create_system = 3
             z.writestr(info, f.read_bytes())
     return buf.getvalue()
 
