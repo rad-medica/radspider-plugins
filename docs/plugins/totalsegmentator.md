@@ -13,3 +13,11 @@ used once, to convert the official weights.
 | Limits | CT in HU only. Assumes slices run inferior → superior. 3 mm resolution: small structures (adrenals, small vessels) are coarse |
 | Speed | CPU, 122×101×112 voxels: 5.6 s once converted (28.7 s the first time, which includes download and conversion) |
 | Verified | Real CT (TotalSegmentator `example_ct_sm.nii.gz`, 30 slices, shorter than the window so the padding path runs) against the project's own `example_seg.nii.gz`: Dice 0.93-0.98 on spleen, kidneys, gallbladder, liver, stomach, lungs, colon, vertebrae; 0.79 pancreas, 0.89 aorta; mean 0.895 over 41 labels. Full `example_ct.nii.gz`: liver Dice 0.97 against the independent MONAI model, organ centroids where expected. SHA-256 mismatch tested (file removed). Not run on a full-body clinical CT, not run through the viewer GUI |
+
+## API 6 (1.1.0)
+
+| Feature | Where |
+|---|---|
+| Icons | Plugin and entry: `bone` (Phosphor) |
+| Spanish | `lang/es.toml`: every manifest text and every progress message. `lang/template.toml`: `python -m radspider_plugin template org.radspider.totalsegmentator` (SDK on `PYTHONPATH`) |
+| Params | `overlap_step` stays a number (a fraction, not a count or a pick) |

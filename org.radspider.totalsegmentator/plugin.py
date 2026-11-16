@@ -103,11 +103,11 @@ def model_path(ctx):
         return p
     onnx_path = os.path.join(cache_dir(), "total_3mm_v2.0.0.onnx")
     if not os.path.exists(onnx_path):
-        ctx.progress(0.01, "Downloading the TotalSegmentator weights (135 MB)")
+        ctx.progress(0.01, rp.tr("Downloading the TotalSegmentator weights (135 MB)"))
         with tempfile.TemporaryDirectory(dir=cache_dir()) as tmp:
             z = os.path.join(tmp, "weights.zip")
             download_checked(z)
-            ctx.progress(0.04, "Converting to ONNX (once)")
+            ctx.progress(0.04, rp.tr("Converting to ONNX (once)"))
             convert(z, onnx_path)
     return onnx_path
 
@@ -182,7 +182,7 @@ def total_fast(volume, ctx):
     target = (max(1, round(nz * sz / SPACING)), max(1, round(ny * sy / SPACING)), max(1, round(nx * sx / SPACING)))
 
     path = model_path(ctx)
-    ctx.progress(0.06, "Preparing the volume at 3 mm")
+    ctx.progress(0.06, rp.tr("Preparing the volume at 3 mm"))
     ras = np.ascontiguousarray(a[:, ::-1, ::-1])  # RAS file order: x and y run the other way
     r = zoom(ras, [t / s for t, s in zip(target, ras.shape)], order=1, mode="nearest", grid_mode=True).astype(np.float32)
     del a, ras
@@ -192,9 +192,10 @@ def total_fast(volume, ctx):
     opts.log_severity_level = 3
     providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider") if p in ort.get_available_providers()]
     session = ort.InferenceSession(path, opts, providers=providers)
-    ctx.progress(0.08, "Segmenting")
-    lab = segment_array(session, r, float(ctx.params["overlap_step"]), lambda f: ctx.progress(0.08 + 0.87 * f, "Segmenting"))
+    segmenting = rp.tr("Segmenting")
+    ctx.progress(0.08, segmenting)
+    lab = segment_array(session, r, float(ctx.params["overlap_step"]), lambda f: ctx.progress(0.08 + 0.87 * f, segmenting))
 
-    ctx.progress(0.96, "Back to the series grid")
+    ctx.progress(0.96, rp.tr("Back to the series grid"))
     full = zoom(lab, [s / t for s, t in zip((nz, ny, nx), lab.shape)], order=0, mode="nearest", grid_mode=True)
     return np.ascontiguousarray(full[:, ::-1, ::-1]).astype(np.uint8), NAMES

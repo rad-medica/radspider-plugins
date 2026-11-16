@@ -2,9 +2,10 @@
 # nnU-Net weights converted once to ONNX; segmentation then runs with onnxruntime only.
 id = "org.radspider.totalsegmentator"
 name = "TotalSegmentator"
-version = "1.0.0"
-api = 2
+version = "1.1.0"
+api = 6
 description = "117 anatomical structures on CT (TotalSegmentator v2, 3 mm model), run with ONNX Runtime."
+icon = "bone"
 requirements = "requirements.txt"
 
 [[segmentation]]
@@ -12,4 +13,5 @@ name = "total_fast"
 label = "TotalSegmentator: CT, 117 structures (3 mm)"
 description = """CT only. The first run downloads the official weights (135 MB, GitHub release, SHA-256 checked) and converts them to \
 ONNX (~65 MB, needs PyTorch once); later runs use ONNX Runtime only."""
+icon = "bone"
 params = [{ name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 }]
