@@ -39,7 +39,7 @@ def largest_above(volume, ctx):
                     todo.append(q)
         if size > best_size:
             best, best_size = current, size
-        ctx.progress(min(0.99, current / 1000.0), "%d regions" % current)
+        ctx.progress(min(0.99, current / 1000.0), rp.trn(current, "{n} region", "{n} regions"))
     return (labels == best).astype(np.uint8) if best else np.zeros(a.shape, np.uint8), ["Largest region"]
 
 
@@ -47,7 +47,7 @@ def largest_above(volume, ctx):
 def percentiles(volume, ctx):
     a = volume.numpy()
     a = a[~np.isnan(a)]
-    rows = [["Percentile", "Value"]]
+    rows = [[rp.tr("Percentile"), rp.tr("Value")]]
     for p in (5, 25, 50, 75, 95):
         rows.append([p, float(np.percentile(a, p)) if a.size else None])
     return rows

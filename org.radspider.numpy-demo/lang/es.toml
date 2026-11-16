@@ -1,0 +1,21 @@
+# NumPy demo: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+
+[language]
+name = "Español"
+
+[strings]
+
+# plugin.toml
+"NumPy demo" = "Demostración de NumPy"
+"Vectorised entries with numpy." = "Entradas vectorizadas con numpy."
+"Z-score" = "Puntuación Z"
+"(x - mean) / standard deviation over the voxels with data." = "(x − media) / desviación estándar sobre los vóxeles con datos."
+"Largest region above" = "Región más grande por encima"
+"Largest 6-connected region at or above the threshold (scipy-free flood fill)." = "La mayor región 6-conexa en el umbral o por encima (relleno por inundación, sin scipy)."
+"Percentiles" = "Percentiles"
+"5th, 25th, 50th, 75th and 95th percentile of the voxels with data." = "Percentiles 5, 25, 50, 75 y 95 de los vóxeles con datos."
+
+# plugin.py
+"{n} region" = { one = "{n} región", other = "{n} regiones" }
+"Percentile" = "Percentil"
+"Value" = "Valor"
