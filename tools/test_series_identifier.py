@@ -1,11 +1,21 @@
-"""Tests of org.radspider.series-identifier/seriesid_rules.py (pure Python, loaded by path)."""
+"""Tests of org.radspider.series-identifier/seriesid_rules.py and seriesid_model.py (loaded by path).
 
+The model test runs only when onnxruntime and numpy import and RADSPIDER_SERIES_ID_MODEL names the verified file;
+everything else needs neither (no network: urlopen is patched).
+"""
+
+import hashlib
 import importlib.util
+import io
 import math
+import os
 import re
 import sys
+import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
+from unittest import mock
 
 _DIR = Path(__file__).resolve().parent.parent / "org.radspider.series-identifier"
 _PATH = _DIR / "seriesid_rules.py"
@@ -441,6 +451,188 @@ class IdentifyTests(unittest.TestCase):
             sentences = [s for s in re.split(r"(?<=[.!?])\s+", para) if s]
             self.assertLessEqual(len(sentences), 3, key)
             self.assertTrue(para.endswith("."), key)
+
+
+# --- dcm-classifier features and model --------------------------------------------------------------------------
+
+_MODEL_SPEC = importlib.util.spec_from_file_location("seriesid_model", _DIR / "seriesid_model.py")
+M = importlib.util.module_from_spec(_MODEL_SPEC)
+_MODEL_SPEC.loader.exec_module(M)
+
+T1 = {
+    "0018,0081": 10.0, "0018,0080": 500.0, "0018,1314": 90.0, "0018,0095": 200.0, "0018,0050": 5.0,
+    "0018,0020": "SE", "0018,0021": "SP", "0008,0008": "ORIGINAL\\PRIMARY\\M\\ND", "0008,0070": "SIEMENS",
+}
+T1_VECTOR = [
+    0, 10.0, -12345, 90.0, 0, 0, 0, 0, 0, 0, 1, 0, -12345, -12345, 1, -12345, 200.0, 500.0, -12345,
+    0, 0, 1, 0, 1, -12345, 0, 0, 0,
+]
+
+
+def feats(tags, geometry=True, spacing=True, **extra):
+    vec, why = R.features({**tags, **extra}, geometry, spacing)
+    return (dict(zip(R.FEATURES, vec)) if vec is not None else None), why
+
+
+class FeatureTests(unittest.TestCase):
+    def test_feature_order(self):
+        self.assertEqual(len(R.FEATURES), 28)
+        self.assertEqual(R.FEATURES, (
+            "Diffusionb-valueBool", "EchoTime", "EchoTrainLength", "FlipAngle", "HasDiffusionGradientOrientation",
+            "ImageType_ADC", "ImageType_DERIVED", "ImageType_DIFFUSION", "ImageType_EADC", "ImageType_FA",
+            "ImageType_ORIGINAL", "ImageType_TRACEW", "ImagingFrequency", "InversionTime", "Manufacturer_siemens",
+            "NumberOfAverages", "PixelBandwidth", "RepetitionTime", "SAR", "ScanningSequence_GR",
+            "ScanningSequence_IR", "ScanningSequence_SE", "SequenceVariant_MP", "SequenceVariant_SP", "dBdt",
+            "has_b0", "has_pos_b0", "likely_diffusion",
+        ))
+
+    def test_features_t1(self):
+        vec, why = R.features(T1, True, True)
+        self.assertIsNone(why)
+        self.assertEqual(vec, T1_VECTOR)
+        f, _ = feats(T1)
+        for name, want in (("ImageType_ORIGINAL", 1), ("Manufacturer_siemens", 1), ("ScanningSequence_SE", 1),
+                           ("SequenceVariant_SP", 1), ("InversionTime", -12345), ("has_b0", 0),
+                           ("likely_diffusion", 0)):
+            self.assertEqual(f[name], want, name)
+
+    def test_missing_scanning_sequence_quirk(self):
+        f, _ = feats(T1, **{"0018,0020": None})
+        self.assertEqual((f["ScanningSequence_SE"], f["ScanningSequence_GR"], f["ScanningSequence_IR"]), (1, 0, 0))
+        # Present but empty is not "missing" for the reference: no default, no SE.
+        f, _ = feats(T1, **{"0018,0020": ""})
+        self.assertEqual(f["ScanningSequence_SE"], 0)
+        f, _ = feats(T1, **{"0018,0020": "GR\\IR"})
+        self.assertEqual((f["ScanningSequence_SE"], f["ScanningSequence_GR"], f["ScanningSequence_IR"]), (0, 1, 1))
+
+    def test_bvalue_rules(self):
+        f, _ = feats(T1, **{"0018,9087": 1004.0})
+        self.assertEqual((f["Diffusionb-valueBool"], f["has_pos_b0"], f["has_b0"], f["likely_diffusion"]),
+                         (1, 1, 0, 1))
+        self.assertEqual(R.bvalue({"0018,9087": 1004.0}), 1000)
+        self.assertEqual(R.bvalue({"0018,9087": 1005.0}), 1000)  # round half to even: round(100.5) == 100
+        # > 5000 is tested before rounding: 5004 is missing although it would round to 5000.
+        self.assertEqual(R.bvalue({"0018,9087": 5004.0}), -12345)
+        self.assertEqual(R.bvalue({"0018,9087": 5000.0}), 5000)
+        f, _ = feats(T1, **{"0018,9087": 0.0})
+        self.assertEqual((f["Diffusionb-valueBool"], f["has_b0"], f["has_pos_b0"], f["likely_diffusion"]),
+                         (1, 1, 0, 0))
+        f, _ = feats(T1, **{"0018,9087": 6000.0})
+        self.assertEqual((f["Diffusionb-valueBool"], f["has_b0"], f["has_pos_b0"]), (0, 0, 0))
+        self.assertEqual(R.bvalue({"0018,9087": [0.0, 1000.0]}), -12345)
+        f, _ = feats(T1, **{"0018,9089": [0, 0.6, 0.8]})
+        self.assertEqual((f["HasDiffusionGradientOrientation"], f["likely_diffusion"]), (1, 1))
+        f, _ = feats(T1, **{"0018,9089": [0, 0.6, 0.9]})
+        self.assertEqual(f["HasDiffusionGradientOrientation"], 0)
+        f, _ = feats(T1, **{"0018,9089": [0.6, 0.8]})
+        self.assertEqual(f["HasDiffusionGradientOrientation"], 0)
+
+    def test_adc_eadc(self):
+        f, _ = feats(T1, **{"0008,0008": "DERIVED\\PRIMARY\\EADC"})
+        self.assertEqual((f["ImageType_EADC"], f["ImageType_ADC"], f["ImageType_DERIVED"]), (1, 0, 1))
+        f, _ = feats(T1, **{"0008,0008": "DERIVED\\PRIMARY\\ADC"})
+        self.assertEqual((f["ImageType_ADC"], f["ImageType_EADC"], f["likely_diffusion"]), (1, 0, 1))
+
+    def test_substring_quirks(self):
+        # "fa" is a substring test: FAT sets ImageType_FA and with it likely_diffusion.
+        f, _ = feats(T1, **{"0008,0008": "ORIGINAL\\PRIMARY\\FAT"})
+        self.assertEqual((f["ImageType_FA"], f["likely_diffusion"]), (1, 1))
+        f, _ = feats(T1, **{"0008,0008": None, "0008,0070": None, "0018,0021": None})
+        self.assertEqual((f["ImageType_ORIGINAL"], f["Manufacturer_siemens"], f["SequenceVariant_SP"]), (0, 0, 0))
+        f, _ = feats(T1, **{"0008,0070": "Siemens Healthineers", "0018,0021": "SK\\MP\\OSP"})
+        self.assertEqual((f["Manufacturer_siemens"], f["SequenceVariant_MP"], f["SequenceVariant_SP"]), (1, 1, 1))
+
+    def test_numeric_fields(self):
+        f, why = feats(T1, **{"0018,0081": None, "0018,0080": None})
+        self.assertIsNone(why)  # the reference keeps going without TE/TR (ADC images)
+        self.assertEqual((f["EchoTime"], f["RepetitionTime"]), (-12345, -12345))
+        f, _ = feats(T1, **{"0018,1316": [1.0, 2.0], "0018,0082": [2500.0], "0018,0084": "63.6"})
+        self.assertEqual((f["SAR"], f["InversionTime"], f["ImagingFrequency"]), (-12345, 2500.0, 63.6))
+
+    def test_required_missing(self):
+        self.assertEqual(R.features({**T1, "0018,0095": None}, True, True), (None, "PixelBandwidth missing"))
+        self.assertEqual(R.features(T1, False, True), (None, "Image Orientation missing"))
+        self.assertEqual(R.features(T1, True, False), (None, "Pixel Spacing missing"))
+        self.assertEqual(R.features({**T1, "0018,1314": None}, True, True), (None, "FlipAngle missing"))
+        self.assertEqual(R.features({**T1, "0018,0050": None}, True, True), (None, "SliceThickness missing"))
+        self.assertEqual(R.features({**T1, "0018,0095": [200.0, 300.0]}, True, True)[1],
+                         "PixelBandwidth not a number")
+        self.assertEqual(R.features({**T1, "0018,0081": "x"}, True, True)[1], "EchoTime not a number")
+        # Reference order (dicom_config.py required_DICOM_fields): orientation is reported first.
+        self.assertEqual(R.features({}, False, False), (None, "Image Orientation missing"))
+
+    def test_series_update(self):
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 1000], "gradient_directions": 6}), "dwig")
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 1000], "gradient_directions": 1}), "tracew")
+        self.assertEqual(R.series_class("b0", {"b_values": [0, 1000], "gradient_directions": None}), "tracew")
+        self.assertEqual(R.series_class("adc", {"b_values": [0, 1000], "gradient_directions": 6}), "adc")
+        self.assertEqual(R.series_class("LOW_PROBABILITY_t2w", {"b_values": [1000]}), "tracew")
+        self.assertEqual(R.series_class("t2w", {"b_values": [0], "gradient_directions": 6}), "t2w")
+        self.assertEqual(R.series_class("t1w", None), "t1w")
+
+
+class FakeResponse(io.BytesIO):
+    headers = {"Content-Length": "16"}
+
+
+class ModelTests(unittest.TestCase):
+    def test_classes(self):
+        self.assertEqual(M.CLASSES, ("t1w", "gret2star", "t2w", "flair", "b0", "tracew", "adc", "fa", "eadc", "dwig"))
+        self.assertEqual(M.LOW_PROBABILITY, 0.4)
+        self.assertTrue(issubclass(M.Unavailable, ValueError))
+
+    def test_hash_mismatch_deletes(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(b"not the model..")) as op:
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            stale = os.path.join(d, "ova_rf_classifier.onnx")
+            with open(stale, "wb") as fh:
+                fh.write(b"0123456789")
+            seen = []
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(seen.append)
+            self.assertEqual(op.call_args.kwargs.get("timeout"), 60)
+            self.assertIn(M.SHA256, str(cm.exception))
+            self.assertIn(hashlib.sha256(b"not the model..").hexdigest(), str(cm.exception))
+            self.assertIn("RADSPIDER_SERIES_ID_MODEL", str(cm.exception))
+            self.assertEqual(os.listdir(d), [])
+            self.assertTrue(seen)
+
+    def test_offline(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", side_effect=urllib.error.URLError("offline")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("RADSPIDER_SERIES_ID_MODEL", str(cm.exception))
+            self.assertEqual(os.listdir(d), [])
+
+    def test_env_file_checked_not_deleted(self):
+        with tempfile.TemporaryDirectory() as d:
+            bad = os.path.join(d, "model.onnx")
+            with open(bad, "wb") as fh:
+                fh.write(b"0123456789")
+            with mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_MODEL": bad}):
+                with self.assertRaises(M.Unavailable):
+                    M.model_path(None)
+            self.assertTrue(os.path.isfile(bad))
+            with mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_MODEL": os.path.join(d, "absent.onnx")}):
+                with self.assertRaises(M.Unavailable):
+                    M.model_path(None)
+
+    @unittest.skipUnless(importlib.util.find_spec("onnxruntime") and importlib.util.find_spec("numpy")
+                         and os.path.isfile(os.environ.get("RADSPIDER_SERIES_ID_MODEL", "")),
+                         "needs onnxruntime, numpy and RADSPIDER_SERIES_ID_MODEL pointing to the model")
+    def test_predict(self):
+        pairs = M.predict(T1_VECTOR)
+        self.assertEqual(len(pairs), 10)
+        self.assertEqual({c for c, _ in pairs}, set(M.CLASSES))
+        self.assertAlmostEqual(sum(p for _, p in pairs), 1.0, delta=1e-5)
+        self.assertEqual([p for _, p in pairs], sorted((p for _, p in pairs), reverse=True))
+        with self.assertRaises(ValueError):
+            M.predict(T1_VECTOR[:-1])
 
 
 if __name__ == "__main__":

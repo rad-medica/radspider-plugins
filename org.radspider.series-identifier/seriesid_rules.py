@@ -2,6 +2,7 @@
 
 `identify` turns the tag values of the image on screen (keyed "gggg,eeee"), the series facts and the image
 orientation into a list of `Finding`s. The data tables and explanations live in `seriesid_tables`.
+`features` builds the 28-value input of the dcm-classifier model (run by `seriesid_model`).
 """
 
 import math
@@ -12,9 +13,9 @@ import seriesid_tables as T
 from seriesid_tables import (CT_KERNELS, CT_PHASE_WORDS, EXPLAIN, ITEMS, MG_VIEWS, MR_WORDS, NM_KINDS, TAGS,
                              XR_VIEWS, all_explain_ids, all_result_ids, explain_for, word_re)
 
-__all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "EXPLAIN", "ITEMS", "MG_VIEWS", "MR_WORDS", "NM_KINDS", "TAGS",
-           "XR_VIEWS", "Finding", "all_explain_ids", "all_result_ids", "explain_for", "identify",
-           "kernel_family", "number", "numbers", "plane", "text"]
+__all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "EXPLAIN", "FEATURES", "ITEMS", "MG_VIEWS", "MISSING", "MR_WORDS",
+           "NM_KINDS", "TAGS", "XR_VIEWS", "Finding", "all_explain_ids", "all_result_ids", "bvalue", "explain_for",
+           "features", "identify", "kernel_family", "number", "numbers", "plane", "series_class", "text"]
 
 AXIS_TOLERANCE_DEG = 10.0
 _EPS = 1e-9
@@ -682,3 +683,210 @@ def identify(tags, series, row, col, color):
     else:
         out.append(_f("series", T.NO_RULES, f"Modality {modality}", modality=modality))
     return out
+
+
+# --- dcm-classifier features ---------------------------------------------------------------------------------------
+# Reference: BRAINSia/dcm-classifier at commit 5dcb37384572416da806db69c90bbabcec9819c9, src/dcm_classifier/; every
+# `file:line` below is at that commit. The reference reads a pydicom Dataset of the first file of a volume. Here the
+# values come from the host: numbers as float or list of floats, text as str with "\"-joined values, absent as None.
+# `_element` turns them back into what pydicom would hold (one value, or a list for a multi-valued element).
+# Not reproducible: the private b-value and gradient tags (the host refuses private tags), so only the standard
+# b-value 0018,9087 is read, and 0018,9089 (Diffusion Gradient Orientation) stands in for the gradient tags.
+
+MISSING = -12345  # dicom_config.py:24 MISSING_VALUE
+
+# dicom_config.py:84-113 inference_features, in that order: the columns of the ONNX input.
+FEATURES = (
+    "Diffusionb-valueBool", "EchoTime", "EchoTrainLength", "FlipAngle", "HasDiffusionGradientOrientation",
+    "ImageType_ADC", "ImageType_DERIVED", "ImageType_DIFFUSION", "ImageType_EADC", "ImageType_FA",
+    "ImageType_ORIGINAL", "ImageType_TRACEW", "ImagingFrequency", "InversionTime", "Manufacturer_siemens",
+    "NumberOfAverages", "PixelBandwidth", "RepetitionTime", "SAR", "ScanningSequence_GR", "ScanningSequence_IR",
+    "ScanningSequence_SE", "SequenceVariant_MP", "SequenceVariant_SP", "dBdt", "has_b0", "has_pos_b0",
+    "likely_diffusion",
+)
+
+# Classes the reference never rewrites from the b-values (image_type_inference.py:510).
+DIFFUSION_CLASSES = ("tracew", "adc", "fa", "eadc", "dwig")
+
+SLICE_THICKNESS, NUM_AVERAGES, PIXEL_BANDWIDTH = "0018,0050", "0018,0083", "0018,0095"
+SAR_TAG, GRADIENT = "0018,1316", "0018,9089"
+
+# Optional numbers: absent, None or not convertible by float() -> MISSING (utility_functions.py:517-535 SAR,
+# :583-597, :637-666, :680-709, all through validate_numerical_dataset_element :757-774).
+_OPTIONAL_NUMBERS = (("EchoTrainLength", ECHO_TRAIN), ("ImagingFrequency", IMAGING_FREQ), ("InversionTime", TI),
+                     ("NumberOfAverages", NUM_AVERAGES), ("SAR", SAR_TAG), ("dBdt", DB_DT))
+
+# The ImageType words are derived from FEATURES as the reference does (utility_functions.py:778-780): names containing
+# "ADC" are excluded, they have their own branch.
+_IMAGE_TYPE_WORDS = tuple(f for f in FEATURES if "ImageType_" in f and "ADC" not in f)
+_CODED = (
+    # (feature prefix, tag, default when absent or None)
+    ("Manufacturer_", MANUFACTURER, "UnknownManufacturer"),  # utility_functions.py:536-548
+    ("ScanningSequence_", SCANNING_SEQ, "UnknownScanningSequence"),  # :598-610
+    ("SequenceVariant_", SEQ_VARIANT, "UnknownSequenceVariant"),  # :611-623
+)
+
+
+def _element(v):
+    """The value as pydicom holds it: None, a single value, or a list when the element has several values."""
+    if isinstance(v, (list, tuple)):
+        if not v:
+            return None
+        return v[0] if len(v) == 1 else list(v)
+    if isinstance(v, str) and "\\" in v:
+        return v.split("\\")
+    return v
+
+
+def _is_number(v):
+    """utility_functions.py:134-150 is_number: float() succeeds (on a list, as on a pydicom MultiValue, it fails)."""
+    try:
+        float(v)
+    except Exception:
+        return False
+    return True
+
+
+def _empty(v):
+    return v is None or str(v).strip() == ""
+
+
+def _lower_str(t, tag, default):
+    """`str(value).lower()` as the reference tests it (utility_functions.py:818, 848, 856, 864).
+
+    `default` replaces an absent or None value only (:537, :550, :599, :612); a present but empty value stays "".
+    pydicom's str() of a MultiValue is the list repr; of a single value, the value itself.
+    """
+    v = t.raw(tag)
+    if v is None:
+        return default.lower()
+    v = _element(v)
+    if v is None:
+        return ""
+    return (str([str(x) for x in v]) if isinstance(v, list) else str(v)).lower()
+
+
+def _bvalue(t):
+    v = _element(t.raw(B_VALUE))
+    if v is None:
+        return MISSING  # utility_functions.py:275-277
+    try:
+        b = float(v)  # a multi-valued element raises: MISSING (:291-293)
+    except (TypeError, ValueError):
+        return MISSING  # :282-290
+    if b > 5000:
+        return MISSING  # :280-281, tested before rounding
+    if not math.isfinite(b):
+        return MISSING  # the reference raises in round() here; no b-value is the safe reading
+    # :294-295 Python round (half to even) of b / 10, times 10; int() at dicom_volume.py:454.
+    return int(round(b / 10.0) * 10)
+
+
+def bvalue(tags):
+    """The b-value the reference derives from the standard tag 0018,9087 (utility_functions.py:191-297), or MISSING."""
+    return _bvalue(_Tags(tags))
+
+
+def _gradient_valid(t):
+    """utility_functions.py:362-368: exactly 3 components and |norm - 1| <= 0.01 (ensure_magnitude_of_1, :300-311).
+
+    The reference's standard tag is 0018,9076 (:328), a sequence; the vector it finds in practice comes from the
+    private tags (:329-334). 0018,9089 is the standard vector the host can deliver, read in their place.
+    """
+    v = numbers(t.raw(GRADIENT))
+    if v is None or len(v) != 3:
+        return False
+    return not abs(1 - math.sqrt(sum(c * c for c in v))) > 0.01
+
+
+def features(tags, has_geometry, has_spacing):
+    """The 28 model inputs in FEATURES order, or (None, reason) when the reference marks the volume INVALID.
+
+    `tags` keyed "gggg,eeee" as for `identify`; `has_geometry`: the image has an Image Orientation; `has_spacing`:
+    it has a pixel spacing. Returns (vector, None) or (None, "<Keyword> missing" / "<Keyword> not a number").
+    """
+    t = _Tags(tags)
+    # Required fields in the order of dicom_config.py:45-56, checked as sanitize_dicom_dataset does
+    # (utility_functions.py:458-506). StudyInstanceUID, SeriesInstanceUID and SeriesNumber are not among the tags
+    # this plugin reads; a series loaded by the host has them.
+    if not has_geometry:
+        return None, "Image Orientation missing"
+    pixel_bandwidth = _element(t.raw(PIXEL_BANDWIDTH))
+    if _empty(pixel_bandwidth):
+        return None, "PixelBandwidth missing"
+    if not _is_number(pixel_bandwidth):
+        return None, "PixelBandwidth not a number"  # :484-490
+    f = {"PixelBandwidth": float(pixel_bandwidth)}
+    for name, tag in (("EchoTime", TE), ("RepetitionTime", TR)):
+        v = _element(t.raw(tag))
+        if _empty(v):
+            f[name] = MISSING  # :460-470: an absent or empty TE/TR is MISSING, not INVALID (ADC images)
+        elif not _is_number(v):
+            return None, f"{name} not a number"  # :471-474
+        else:
+            f[name] = float(v)
+    flip = _element(t.raw(FLIP))
+    if _empty(flip):
+        return None, "FlipAngle missing"  # :501-504
+    if not _is_number(flip):
+        return None, "FlipAngle not a number"  # kept as text, float32 cast fails: image_type_inference.py:401-406
+    f["FlipAngle"] = float(flip)
+    if not has_spacing:
+        return None, "Pixel Spacing missing"  # :491-499
+    slice_thickness = _element(t.raw(SLICE_THICKNESS))
+    if _empty(slice_thickness):
+        return None, "SliceThickness missing"
+    if not _is_number(slice_thickness):
+        return None, "SliceThickness not a number"  # :484-490
+
+    for name, tag in _OPTIONAL_NUMBERS:
+        v = _element(t.raw(tag))
+        f[name] = float(v) if v is not None and _is_number(v) else MISSING
+
+    # ImageType (utility_functions.py:817-842): "eadc" wins over "adc"; the other words are plain substring tests,
+    # so FAT, for one, sets ImageType_FA.
+    image_type = _lower_str(t, IMAGE_TYPE, "UnknownImageType")  # default: :549-561
+    adc = "adc" in image_type
+    f["ImageType_EADC"] = int(adc and "eadc" in image_type)
+    f["ImageType_ADC"] = int(adc and not f["ImageType_EADC"])
+    for name in _IMAGE_TYPE_WORDS:
+        f[name] = int(name[len("ImageType_"):].lower() in image_type)
+    # Manufacturer, ScanningSequence, SequenceVariant (:847-870): substring tests on the lower-case text, so the
+    # default "UnknownScanningSequence" contains "se" and a missing ScanningSequence gives ScanningSequence_SE = 1.
+    for prefix, tag, default in _CODED:
+        s = _lower_str(t, tag, default)
+        for name in FEATURES:
+            if name.startswith(prefix):
+                f[name] = int(name[len(prefix):].lower() in s)
+
+    # Diffusion (dicom_volume.py:453-475).
+    b = _bvalue(t)
+    f["Diffusionb-valueBool"] = 0 if b == MISSING else 1
+    f["has_b0"] = int(b == 0)
+    f["has_pos_b0"] = int(b > 0)
+    f["HasDiffusionGradientOrientation"] = int(_gradient_valid(t))
+    f["likely_diffusion"] = int(
+        any(f[k] == 1 for k in ("ImageType_DIFFUSION", "ImageType_ADC", "ImageType_EADC", "ImageType_TRACEW",
+                                "ImageType_FA", "HasDiffusionGradientOrientation"))
+        or b > 0
+    )
+    return [f[name] for name in FEATURES], None
+
+
+def series_class(label, series):
+    """The model's class after the reference's series step (image_type_inference.py:504-511).
+
+    `LOW_PROBABILITY_` is dropped (:506). When the series has a b-value > 0 and the class is not a diffusion class,
+    the class becomes `dwig` with >= 3 distinct gradient directions, else `tracew` (utility_functions.py:398-402).
+    The reference takes the b-value of the volume; here `series["b_values"]` (ctx.series) holds those of the series.
+    """
+    label = label.replace("LOW_PROBABILITY_", "")
+    if label in DIFFUSION_CLASSES or not series:
+        return label
+    b_values = series.get("b_values")
+    if not isinstance(b_values, (list, tuple)):
+        b_values = [b_values]
+    if not any(b is not None and b > 0 for b in (number(x) for x in b_values)):
+        return label
+    directions = number(series.get("gradient_directions"))
+    return "dwig" if directions is not None and directions >= 3 else "tracew"
