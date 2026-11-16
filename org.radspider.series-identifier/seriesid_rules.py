@@ -464,12 +464,18 @@ def _mr_kind(t, series, desc, series_desc):
         return T.MR["swi"], names_ev
 
     if ti is not None and ti > 0:
-        # A short TI nulls fat (STIR) on a spin-echo IR without contrast. With a gradient-echo readout or a recorded
-        # agent it is an IR-prepared T1: cardiac late enhancement / PSIR (GR\IR, TI 250-350 ms, after gadolinium).
+        # A short TI nulls fat (STIR) on a spin-echo IR, whatever the agent (some sites stamp it on every series).
+        # On a gradient-echo IR it is an IR-prepared T1: cardiac late enhancement / PSIR (GR\IR, TI 250-350 ms,
+        # after gadolinium). Without SE or GR in Scanning Sequence, LGE / PSIR words decide; else STIR.
         if ti <= T.STIR_TI_MAX:
-            if "GR" not in seq and agent is None:
-                return T.MR["stir"], f"{timing}; {_agent_ev(t)}"
-            return T.MR["t1_ir_post" if post else "t1_ir"], f"{timing}; {_agent_ev(t)}"
+            t1_ir = T.MR["t1_ir_post" if post else "t1_ir"]
+            if "GR" in seq:
+                return t1_ir, f"{timing}; {_agent_ev(t)}"
+            if "SE" in seq:
+                return T.MR["stir"], timing
+            if _search(T.MR_WORDS["lge"], names):
+                return t1_ir, f"{timing}; {names_ev}; {_agent_ev(t)}"
+            return T.MR["stir"], timing
         if ti >= T.FLAIR_TI_MIN:
             return T.MR["flair"], timing
         return T.MR["t1_ir_post" if post else "t1_ir"], timing
@@ -488,8 +494,9 @@ def _mr_kind(t, series, desc, series_desc):
                                                    and tr < T.TR_SHORT_MAX)
         if spoiled:
             return T.MR["t1_gre_post" if post else "t1_gre"], ev
-        if _search(T.MR_WORDS["t1"], names):
-            return T.MR["t1_gre_post" if post else "t1_gre"], f"{ev}; {names_ev}"
+        # The tags show no spoiling: a T1 word in the description (what the series says it is) decides.
+        if _search(T.MR_WORDS["t1"], desc):
+            return T.MR["t1_gre_post" if post else "t1_gre"], f"{ev}; no spoiling in the tags; T1 word in {_dev(desc)}"
         return T.MR_GRE_ND, ev
     if tr is not None and te is not None:
         if tr < T.TR_SHORT_MAX and te < T.TE_SHORT_MAX:

@@ -199,6 +199,8 @@ MR_WORDS = {
     "t1flair": r"T1\w* ?-?FLAIR",  # checked before "flair": T1 FLAIR is an IR-prepared T1
     "flair": r"FLAIR|DARK ?-?FLUID",
     "stir": r"STIR|TIRM",
+    # Cardiac late gadolinium enhancement; read only for a short TI without SE or GR in Scanning Sequence.
+    "lge": r"LGE|PSIR|LATE ?-?GAD\w*|LATE ?-?ENHANCEMENT|DELAYED ?-?ENHANCEMENT|REALCE TARDIO",
     "t1ir": r"MPRAGE|MP-?RAGE|BRAVO|IR ?-?FSPGR|3D ?-?TFE|MP2RAGE",
     "t2star": r"T2\*|T2STAR|GRE|HEMO|MEDIC|MERGE",
     "t1": r"T1\w*",

@@ -222,6 +222,19 @@ CASES = {
                          "0008,103E": "tfl_LGE_SAX", "0018,0020": "GR\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
                          "0018,0024": "*tfl2d1_12", "0018,0080": 700.0, "0018,0081": 3.2, "0018,0082": 280.0,
                          "0018,1314": 25.0}, {"modality": "MR"}, AXIAL, False),
+    # Scanning Sequence missing (removed by an anonymiser or a converter): the words decide.
+    "mr_lge_no_sequence": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                            "0008,103E": "tfl_LGE_PSIR_SAX", "0018,0021": "SK\\SP\\MP\\OSP",
+                            "0018,0023": "2D", "0018,0080": 700.0, "0018,0081": 3.2, "0018,0082": 280.0,
+                            "0018,1314": 25.0, "0018,0010": "Gadovist"}, {"modality": "MR"}, AXIAL, False),
+    "mr_short_ti_no_sequence": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
+                                 "0008,103E": "COR T2 FS", "0018,0021": "SK\\SP\\MP\\OSP", "0018,0023": "2D",
+                                 "0018,0080": 5000.0, "0018,0081": 60.0, "0018,0082": 160.0, "0018,1314": 150.0},
+                                {"modality": "MR"}, CORONAL, False),
+    "mr_gre_t1_description": ({"0008,0008": "ORIGINAL\\PRIMARY\\OTHER", "0008,0070": "GE MEDICAL SYSTEMS",
+                               "0008,103E": "AX T1 FL2D", "0018,0020": "GR", "0018,0021": "SK", "0018,0024": "fgre",
+                               "0018,0023": "2D", "0018,0080": 180.0, "0018,0081": 4.2, "0018,1314": 70.0},
+                              {"modality": "MR"}, AXIAL, False),
     "mr_tirm_siemens": ({"0008,0008": "ORIGINAL\\PRIMARY\\M\\NORM\\DIS2D", "0008,0070": "SIEMENS",
                          "0008,103E": "t2_tirm_cor", "0018,0020": "SE\\IR", "0018,0021": "SK\\SP\\MP\\OSP",
                          "0018,0024": "*tir2d1_13", "0018,0080": 5000.0, "0018,0081": 60.0, "0018,0082": 150.0,
@@ -493,7 +506,14 @@ class IdentifyTests(unittest.TestCase):
             self.assertHas(name, "series", "T1-weighted, inversion recovery prepared, post-contrast")
         self.assertHas("mr_lge_no_agent", "series", "T1-weighted, inversion recovery prepared")
         self.assertHas("mr_tirm_siemens", "series", "STIR (fat-suppressing inversion recovery)")
-        self.assertHas("mr_stir_agent_stamped", "series", "T1-weighted, inversion recovery prepared, post-contrast")
+        self.assertHas("mr_stir_agent_stamped", "series", "STIR (fat-suppressing inversion recovery)")
+        self.assertHas("mr_stir_agent_stamped", "contrast", "Contrast agent recorded (GADOVIST)")
+        self.assertHas("mr_lge_no_sequence", "series", "T1-weighted, inversion recovery prepared, post-contrast")
+        self.assertHas("mr_short_ti_no_sequence", "series", "STIR (fat-suppressing inversion recovery)")
+        # 3. A T1 word in the description keeps an unspoiled-looking short-TE gradient echo T1, and says so.
+        f = next(f for f in run("mr_gre_t1_description") if f.item == "series")
+        self.assertEqual(f.english, "T1-weighted (gradient echo)")
+        self.assertIn("no spoiling in the tags; T1 word in Series Description (0008,103E) = AX T1 FL2D", f.evidence)
         # 3. bSSFP by name; T1 gradient echo only when spoiled; else not determined.
         for name in ("mr_cine_siemens", "mr_cine_philips"):
             self.assertHas(name, "series", "Balanced steady-state free precession (bSSFP)")
