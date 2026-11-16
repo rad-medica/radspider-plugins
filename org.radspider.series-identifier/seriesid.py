@@ -72,15 +72,15 @@ def _will_download():
 
 def _not_run(reason):
     """The model row when the model did not run, for a free-text reason (seriesid_model.Unavailable, an error)."""
-    return rp.tr("Model not run: {reason}", reason=reason[:_MAX_ARG])
+    return rp.tr("model not run: {reason}", reason=reason[:_MAX_ARG])
 
 
 def _refused(reason):
     """The model row for a refusal of seriesid_rules.features: "<field> missing" or "<field> not a number"."""
     if reason.endswith(" missing"):
-        return rp.tr("Model not run: {field} missing", field=reason[:-len(" missing")])
+        return rp.tr("model not run: {field} missing", field=reason[:-len(" missing")])
     if reason.endswith(" not a number"):
-        return rp.tr("Model not run: {field} is not a number", field=reason[:-len(" not a number")])
+        return rp.tr("model not run: {field} is not a number", field=reason[:-len(" not a number")])
     return _not_run(reason)
 
 

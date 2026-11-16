@@ -733,6 +733,19 @@ class ShellTests(unittest.TestCase):
             self.assertTrue(value.strip(), key)
             self.assertEqual(_placeholders(key), _placeholders(value), key)
 
+    def test_literal_ids_are_in_the_template(self):
+        """lang/template.toml is current: every literal rp.tr id of seriesid.py is in it (and so, by the test above,
+        in es.toml). Regenerate with `python -m radspider_plugin template org.radspider.series-identifier`."""
+        import ast
+
+        tree = ast.parse((_DIR / "seriesid.py").read_text(encoding="utf-8"))
+        ids = {node.args[0].value for node in ast.walk(tree)
+               if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "tr"
+               and isinstance(node.func.value, ast.Name) and node.func.value.id == "rp"
+               and node.args and isinstance(node.args[0], ast.Constant)}
+        self.assertGreater(len(ids), 20)
+        self.assertEqual(sorted(ids - set(_toml(_LANG / "template.toml")["strings"])), [])
+
     def test_verdict_tables(self):
         self.assertEqual(set(R.FEATURE_TAGS), set(R.FEATURES))
         self.assertTrue({t for t in R.FEATURE_TAGS.values() if t} <= set(R.TAGS))
@@ -891,18 +904,18 @@ class LayerTests(unittest.TestCase):
         self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, top)[0]), "t2w 0.81 · differs from the rules")
         top = mock.Mock(return_value=[("flair", 0.35), ("t1w", 0.3), ("t2w", 0.2)])
         self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, top)[0]), "flair 0.35 · low probability")
-        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL)[0]), "Model not run: offline")
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL)[0]), "model not run: offline")
         boom = mock.Mock(side_effect=RuntimeError("boom"))
-        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, boom)[0]), "Model not run: RuntimeError: boom")
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, boom)[0]), "model not run: RuntimeError: boom")
         self.assertIsNone(self.model_cell(self.call(_MR_T1, {"modality": "CT"}, *AXIAL)[0]))
 
     def test_model_refusal_and_unreliable_b(self):
         mr = {"modality": "MR"}
         no_flip = {k: v for k, v in _MR_T1.items() if k != "0018,1314"}
         blocks, _ = self.call(no_flip, mr, *AXIAL, mock.Mock(return_value=[("t1w", 0.9)]))
-        self.assertEqual(self.model_cell(blocks), "Model not run: FlipAngle missing")
+        self.assertEqual(self.model_cell(blocks), "model not run: FlipAngle missing")
         blocks, _ = self.call(_MR_T1, mr, None, None, mock.Mock(return_value=[("t1w", 0.9)]))
-        self.assertEqual(self.model_cell(blocks), "Model not run: Image Orientation missing")
+        self.assertEqual(self.model_cell(blocks), "model not run: Image Orientation missing")
         blocks, _ = self.call(_MR_DWI, mr, *AXIAL, mock.Mock(return_value=[("tracew", 0.8)]))
         self.assertEqual(self.model_cell(blocks), "tracew · unreliable: no standard b-value")
         dwi_b = dict(_MR_DWI, **{"0018,9087": 1000.0})
