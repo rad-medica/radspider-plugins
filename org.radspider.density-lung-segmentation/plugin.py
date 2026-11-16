@@ -12,7 +12,15 @@ from scipy import ndimage
 
 import radspider_plugin as rp
 
-NAMES = ["Air", "Healthy lungs", "Ground glass opacity", "Consolidation", "Other denser tissues"]
+NAMES = ["Air", "Healthy lungs", "Ground glass opacity", "Consolidation", "Other denser tissues"]  # segment names: study data
+# The same classes as the label cells of the table, which the viewer translates.
+CLASS_LABELS = [
+    rp.tr("Air"),
+    rp.tr("Healthy lungs"),
+    rp.tr("Ground glass opacity"),
+    rp.tr("Consolidation"),
+    rp.tr("Other denser tissues"),
+]
 
 # (weight, mean HU, variance HU^2) by rising mean = label 1..5, from GMM_parameters_COVID-19.joblib (SHA-256
 # 05297cce...2adc12): weights_, means_, covariances_ of a 1-D sklearn GaussianMixture with 5 components.
@@ -64,9 +72,9 @@ def _ball_close(mask, radius):
 def _lung_mask(a, threshold, min_voxels, progress):
     """Upstream's lung mask: air below the threshold, opened three times, the islands of at least ``min_voxels``
     whose bounding box stays clear of the first and last row and column, closed with balls of 30 and 20 voxels."""
-    progress(0.05, "Threshold and opening")
+    progress(0.05, rp.tr("Threshold and opening"))
     air = ndimage.binary_opening(a < threshold, iterations=3)
-    progress(0.25, "Islands")
+    progress(0.25, rp.tr("Islands"))
     lab, n = ndimage.label(air)
     sizes = np.bincount(lab.ravel())
     lungs = np.zeros(a.shape, dtype=bool)
@@ -88,7 +96,7 @@ def _lung_mask(a, threshold, min_voxels, progress):
     box = _bbox(lungs, (0, 0, 0))
     closed = lungs[box]
     for n, radius in enumerate(CLOSING_RADII):
-        progress(0.4 + 0.2 * n, "Closing, %d voxels" % radius)
+        progress(0.4 + 0.2 * n, rp.tr("Closing, {radius} voxels", radius=radius))
         closed = _ball_close(closed, radius)
     if closed.sum() <= 1000:
         raise ValueError("Lung mask of 1000 voxels or fewer after closing: this is not a usable chest CT.")
@@ -122,12 +130,12 @@ def _median(labels, mask):
 
 def _segment(volume, ctx, averaged):
     a = _hu(volume)
-    mask = _lung_mask(a, ctx.params["lung_threshold"], int(ctx.params["min_island_voxels"]), ctx.progress)
-    ctx.progress(0.8, "Mixture classes")
+    mask = _lung_mask(a, ctx.params["lung_threshold"], ctx.params["min_island_voxels"], ctx.progress)
+    ctx.progress(0.8, rp.tr("Mixture classes"))
     labels = np.zeros(a.shape, dtype=np.uint8)
     labels[mask] = _classify(a[mask])
     if averaged:
-        ctx.progress(0.9, "Median filter")
+        ctx.progress(0.9, rp.tr("Median filter"))
         labels = _median(labels, mask)
     return a, labels
 
@@ -144,31 +152,40 @@ def gmm_averaged(volume, ctx):
 
 @rp.tool("volumes")
 def volumes(volume, ctx):
-    averaged = ctx.params["averaged"] >= 0.5
+    averaged = ctx.params["averaged"]
     a, labels = _segment(volume, ctx, averaged)
     voxel_ml = volume.spacing[0] * volume.spacing[1] * volume.spacing[2] / 1000.0
     counts = np.bincount(labels.ravel(), minlength=6)[1:6]
     sums = np.bincount(labels.ravel(), weights=a.ravel(), minlength=6)[1:6]
     total = int(counts.sum())
-    table = [["Class", "Volume (ml)", "Share of the lung mask (%)", "Mean HU"]]
-    for name, count, s in zip(NAMES, counts, sums):
+    table = [[rp.tr("Class"), rp.tr("Volume (ml)"), rp.tr("Share of the lung mask (%)"), rp.tr("Mean HU")]]
+    for name, count, s in zip(CLASS_LABELS, counts, sums):
         table.append([
             name,
             round(float(count) * voxel_ml, 1),
             round(100.0 * count / total, 1) if total else 0.0,
             round(float(s) / count, 1) if count else None,
         ])
-    table.append(["Lung mask", round(total * voxel_ml, 1), 100.0 if total else 0.0, None])
+    table.append([rp.tr("Lung mask"), round(total * voxel_ml, 1), 100.0 if total else 0.0, None])
     plot = rp.Plot(
-        "Volume per class",
-        [rp.Series("Volume", np.arange(1.0, 6.0), counts * voxel_ml, kind="bars")],
-        x_label="1 air, 2 healthy lungs, 3 ground glass opacity, 4 consolidation, 5 other denser tissues",
-        y_label="ml",
+        rp.tr("Volume per class"),
+        [rp.Series(rp.tr("Volume"), np.arange(1.0, 6.0), counts * voxel_ml, kind="bars")],
+        x_label=rp.tr("1 air, 2 healthy lungs, 3 ground glass opacity, 4 consolidation, 5 other denser tissues"),
+        y_label=rp.tr("ml"),
     )
+    if averaged:
+        message = rp.tr(
+            "Averaged labels. The lung mask is closed with 30 and 20 voxel balls, so it holds vessels, hila and part "
+            "of the mediastinum (class 5). Not clinically evaluated."
+        )
+    else:
+        message = rp.tr(
+            "Per-voxel labels. The lung mask is closed with 30 and 20 voxel balls, so it holds vessels, hila and part "
+            "of the mediastinum (class 5). Not clinically evaluated."
+        )
     return rp.Result(
         table=table,
         plots=[plot],
         labels=(labels, NAMES),
-        message="%s labels. The lung mask is closed with 30 and 20 voxel balls, so it holds vessels, hila and part of "
-        "the mediastinum (class 5). Not clinically evaluated." % ("Averaged" if averaged else "Per-voxel"),
+        message=message,
     )
