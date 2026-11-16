@@ -6,7 +6,7 @@ TL;DR: automatic and hybrid interactive measurements on 2D skeletal radiographs 
 `numpy` and `scipy`: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), full-leg alignment (HKA, MAD,
 mLDFA, MPTA, JLCA, limb lengths and discrepancy), AP hip/pelvis (Wiberg LCEA, Tönnis acetabular index, neck-shaft CCD
 angle, pelvic obliquity), diaphyseal cortical morphometry (Barnett-Nordin index, corticomedullary ratio) and extremity
-goniometry (Foot AP, Foot Lateral, Hand/Wrist AP), plus a 3D/2D bone silhouette segmentation. `api = 2`. **Research use
+goniometry (Foot AP, Foot Lateral, Hand/Wrist AP), plus a 3D/2D bone silhouette segmentation. `api = 6` (1.1.0): plugin icon `bone`, one icon per entry, Spanish catalog `lang/es.toml`. **Research use
 only: not clinically evaluated.**
 
 | Entry | Kind | Does |
@@ -68,7 +68,7 @@ only: not clinically evaluated.**
 
 | | |
 |---|---|
-| Modes | `auto` (inferred from aspect ratio and ray count), `foot_ap`, `foot_lateral`, `hand_ap` |
+| Modes | `auto` (inferred from aspect ratio and ray count), `foot_ap`, `foot_lateral`, `hand_ap`. The `view_mode` parameter is a `choice` (*Auto detect*, *Foot AP*, *Foot lateral*, *Hand / wrist AP*; was a number 0–3); the window's *Extremity view* control keeps the ids above |
 | Foot AP | 1st and 2nd metatarsal axes and 1st proximal phalanx axis → **Hallux Valgus Angle (HVA, °)** and **1st–2nd Intermetatarsal Angle (IMA, °)** |
 | Foot Lateral | Superior calcaneal contour landmarks (posterior tuberosity, posterior facet apex, sinus tarsi nadir, anterior process) and inferior calcaneal line → **Böhler calcaneal angle (°)**, **Gissane crucial angle (°)** and **Calcaneal pitch (°)** |
 | Hand / Wrist AP | 2nd metacarpal shaft radiogrammetry (**length**, $D$, $d$, **Metacarpal Cortical Index MCI %**) and distal **Radial inclination (°)** |
@@ -93,3 +93,14 @@ only: not clinically evaluated.**
 | | |
 |---|---|
 | Verified | **Not run in radspider or on radiographic data** (`radspider_plugin`, `numpy` and `scipy` are provided by the plugin's runtime venv in radspider, not installed in this checkout). Validated statically with `tools/validate_plugins.py`, `tools/marketplace.py check` and `python -m unittest discover -s tools` |
+| Verified (1.1.0) | **1.1.0 (API 6), not run on real data and not run in the viewer.** Python 3.13 with numpy and scipy from another plugin's venv, the SDK from radspider `assets/python`: every entry ran on synthetic images or volumes and its reply was built with the SDK's own reply code (marked texts, controls, charts, pictures, ROIs, edits) without an exception; `lang/template.toml` regenerates byte-identical; `lang/es.toml` has exactly the template's keys; `python -I tools/validate_plugins.py`; `ruff check`; radspider `radspider-check --plugin-template` parsed the manifest. Measured numbers were not compared with 1.0.0 on real data; `tests/plugins.rs` does not load this plugin. |
+
+## API 6 (1.1.0)
+
+| | |
+|---|---|
+| `api` | 6 (was 2): icons, translations, typed parameters |
+| Icons | Plugin `bone`; `bone_silhouette` `bone`, `spine` `angle`, `lower_limb` `person-simple-walk`, `hip_pelvis` `circle-notch`, `bone_morphometry` `ruler`, `foot_hand` `footprints` |
+| Spanish | `lang/es.toml`: every manifest text and every marked text (table headers and label cells, classes, messages, progress, chart titles, axis labels, series names, picture titles, control labels and help). `lang/template.toml`: `python -m radspider_plugin template org.radspider.skeletal-radiology` (SDK on `PYTHONPATH`) |
+| Retyped parameters | `foot_hand.view_mode`: `choice` (was 0 auto, 1 foot AP, 2 foot lat, 3 hand AP). The others are measured quantities and stay `number` |
+| Not translated | The text of the stamped ROIs (study data) and of a raised error (an exception carries a plain string). In a message that names a limb alignment (*Lower limb*), the alignment word stays English |

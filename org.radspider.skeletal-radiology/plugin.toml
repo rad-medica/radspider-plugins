@@ -3,14 +3,16 @@
 # See docs/plugins/skeletal-radiology.md.
 id = "org.radspider.skeletal-radiology"
 name = "Skeletal radiology"
-version = "1.0.0"
-api = 2                        # 2: reads and writes ROIs, reads segments, interactive windows
+version = "1.1.0"
+api = 6                        # 6: icons, translations (lang/), typed parameters; reads and writes ROIs, reads segments, interactive windows
 description = "Automatic skeletal radiography measurements with interactive refinement: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), lower limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, limb lengths and discrepancy), hip and pelvis (Wiberg LCEA, Tönnis angle, neck-shaft CCD angle, pelvic obliquity), diaphyseal cortical morphometry (Barnett-Nordin index, corticomedullary ratio), and foot/hand goniometry (hallux valgus, intermetatarsal, Böhler, Gissane, metacarpal index)."
+icon = "bone"                  # a Phosphor icon: the entries without an icon of their own take it
 author = "radspider"
 requirements = "requirements.txt"
 
 [[segmentation]]
 name = "bone_silhouette"
+icon = "bone"
 label = "Skeletal bone mask"
 description = "Segments bright osseous structures slice by slice from a local-plus-global intensity percentile threshold, morphological hole closing and minimum area filtering."
 params = [
@@ -21,6 +23,7 @@ params = [
 
 [[tool]]
 name = "spine"
+icon = "angle"
 label = "Spine morphometry"
 description = "Automatic spine measurements on an AP/PA or lateral radiograph: spinal midline curve, maximally tilted superior and inferior endplates, Cobb angle, coronal/sagittal plumb offset and apical vertebral wedge ratio. Interactive window refines thresholds and endplate levels; two drawn lines on the slice override the endplates."
 params = [
@@ -30,6 +33,7 @@ params = [
 
 [[tool]]
 name = "lower_limb"
+icon = "person-simple-walk"
 label = "Lower limb alignment"
 description = "Automatic full-leg tele-radiography (pangoniometry) for right and/or left lower limb: hip center, femoral knee center, tibial knee center and ankle plafond center; HKA mechanical angle, MAD (mm), mLDFA, MPTA, JLCA, femoral/tibial/total lengths and leg length discrepancy (LLD). Interactive window refines landmarks or uses placed probes/lines."
 params = [
@@ -39,6 +43,7 @@ params = [
 
 [[tool]]
 name = "hip_pelvis"
+icon = "circle-notch"
 label = "Hip and pelvis"
 description = "Automatic AP pelvis and hip goniometry: bilateral femoral head centers and diameters, pelvic horizontal reference line (obliquity in ° and mm), Wiberg lateral center-edge angle (LCEA), Tönnis acetabular index, cervicodiaphyseal neck-shaft angle (CCD) and femoral offset. Interactive window adjusts levels or uses drawn ellipses/probes."
 params = [
@@ -48,6 +53,7 @@ params = [
 
 [[tool]]
 name = "bone_morphometry"
+icon = "ruler"
 label = "Bone morphometry"
 description = "Automatic diaphyseal radiogrammetry and cortical morphometry of a tubular bone: bone length, anatomical axis, outer periosteal diameter (D), inner medullary diameter (d), combined cortical thickness (CCT), Barnett-Nordin cortical index (%), corticomedullary ratio and cross-sectional cortical area. Interactive window slides the measurement level along the shaft."
 params = [
@@ -57,9 +63,10 @@ params = [
 
 [[tool]]
 name = "foot_hand"
+icon = "footprints"
 label = "Foot and hand"
 description = "Automatic extremity radiographic goniometry with interactive view selection: Foot AP (hallux valgus angle HVA, 1st–2nd intermetatarsal angle IMA), Foot Lateral (Böhler calcaneal angle, Gissane angle, calcaneal pitch) and Hand/Wrist AP (2nd metacarpal index MCI, radial inclination). Uses drawn lines when present."
 params = [
   { name = "bone_percentile", label = "Bone intensity percentile (%)", default = 72.0, min = 40.0, max = 98.0 },
-  { name = "view_mode", label = "View (0 auto, 1 foot AP, 2 foot lat, 3 hand AP)", default = 0.0, min = 0.0, max = 3.0 },
+  { name = "view_mode", label = "View", kind = "choice", options = ["Auto detect", "Foot AP", "Foot lateral", "Hand / wrist AP"], default = "Auto detect" },
 ]

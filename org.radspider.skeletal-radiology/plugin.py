@@ -55,6 +55,20 @@ def _should_stamp_rois(ctx):
     return ctx.event in (None, "stamp")
 
 
+def _quantity_header():
+    return [rp.tr("Quantity"), rp.tr("Value"), rp.tr("Unit")]
+
+
+def _side_text(name):
+    """The side of a limb ("Right" / "Left", the keys of the results) as a marked text."""
+    return rp.tr("Right") if name == "Right" else rp.tr("Left")
+
+
+def _hip_side_text(name):
+    """The side of a hip: its own context, as the word is feminine in Spanish (cadera derecha)."""
+    return rp.trc("hip", "Right") if name == "Right" else rp.trc("hip", "Left")
+
+
 def _r(val, digits=2):
     if val is None or not np.isfinite(val):
         return ""
@@ -280,7 +294,7 @@ def bone_silhouette(volume, ctx):
         sl = a[z].astype(np.float64)
         if np.isfinite(sl).any():
             labels[z] = _bone_mask_2d(sl, sx, sy, pct, closing_mm, min_area).astype(np.uint8)
-        ctx.progress((z + 1) / nz, "slice %d of %d" % (z + 1, nz))
+        ctx.progress((z + 1) / nz, rp.tr("slice {i} of {n}", i=z + 1, n=nz))
     return labels, ["Skeletal bone"]
 
 
@@ -294,7 +308,7 @@ def _spine_mask_from_context(volume, ctx, k, sl, sx, sy, pct):
         if any(w in name for w in ("spine", "vertebra", "columna", "bone", "skeletal")):
             m = s.mask()[k]
             if m.any():
-                return m, "segment '%s'" % s.name
+                return m, rp.tr("segment '{name}'", name=s.name)
     _, nx = sl.shape
     raw = _bone_mask_2d(sl, sx, sy, pct, closing_mm=4.0, min_area_mm2=30.0)
     # Focus on the central 70 % corridor where the vertebral column lies on AP/lateral spine radiographs.
@@ -304,7 +318,7 @@ def _spine_mask_from_context(volume, ctx, k, sl, sx, sy, pct):
     central = raw & corridor
     if central.any():
         raw = central
-    return raw, "auto threshold (P%g)" % round(pct, 1)
+    return raw, rp.tr("auto threshold (P{percentile})", percentile="%g" % round(pct, 1))
 
 
 @rp.tool("spine")
@@ -389,7 +403,7 @@ def spine(volume, ctx):
         inf_a, inf_b = tuple(l2.points[0]), tuple(l2.points[1])
         sup_tilt = math.degrees(math.atan2((sup_b[1] - sup_a[1]) * sy, (sup_b[0] - sup_a[0]) * sx))
         inf_tilt = math.degrees(math.atan2((inf_b[1] - inf_a[1]) * sy, (inf_b[0] - inf_a[0]) * sx))
-        source = "2 drawn endplate lines + auto midline"
+        source = rp.tr("2 drawn endplate lines + auto midline")
     else:
         sup_a, sup_b, sup_tilt = _endplate_segment(idx_sup)
         inf_a, inf_b, inf_tilt = _endplate_segment(idx_inf)
@@ -420,50 +434,49 @@ def spine(volume, ctx):
 
     if view_choice == "auto":
         is_sag = abs(plumb_offset_mm) > 25.0 or abs(apex_dev_mm) > 30.0
-        inferred_view = "sagittal (lateral)" if is_sag else "coronal (AP/PA)"
     else:
-        inferred_view = view_choice
+        is_sag = view_choice == "sagittal (lateral)"
+    inferred_view = rp.tr("sagittal (lateral)") if is_sag else rp.tr("coronal (AP/PA)")
 
-    severity = (
-        "Normal (< 10°)"
-        if cobb_deg < 10.0
-        else "Mild (10–25°)"
-        if cobb_deg < 25.0
-        else "Moderate (25–45°)"
-        if cobb_deg < 45.0
-        else "Severe (≥ 45°)"
+    severities = (
+        rp.tr("Normal (< 10°)"),
+        rp.tr("Mild (10–25°)"),
+        rp.tr("Moderate (25–45°)"),
+        rp.tr("Severe (≥ 45°)"),
     )
+    severity_index = 0 if cobb_deg < 10.0 else 1 if cobb_deg < 25.0 else 2 if cobb_deg < 45.0 else 3
+    severity = severities[severity_index]
 
     table = [
-        ["Quantity", "Value", "Unit"],
-        ["Image", k + 1, ""],
-        ["Detection source", source, ""],
-        ["Projection view", inferred_view, ""],
-        ["Cobb angle", _r(cobb_deg, 1), "°"],
-        ["Supplement", _r(supplement_deg, 1), "°"],
-        ["Classification", severity, ""],
-        ["Superior endplate tilt", _r(sup_tilt, 1), "°"],
-        ["Inferior endplate tilt", _r(inf_tilt, 1), "°"],
-        ["Plumb line balance (cranial − caudal)", _r(plumb_offset_mm, 1), "mm"],
-        ["Apical lateral deviation", _r(apex_dev_mm, 1), "mm"],
-        ["Apical vertebral wedge angle", _r(wedge_deg, 1), "°"],
-        ["Apical height ratio (concavity / convexity)", _r(wedge_ratio, 3), ""],
-        ["Spinal column length analyzed", _r((y_bot - y_top) * sy, 1), "mm"],
+        _quantity_header(),
+        [rp.tr("Image"), k + 1, ""],
+        [rp.tr("Detection source"), source, ""],
+        [rp.tr("Projection view"), inferred_view, ""],
+        [rp.tr("Cobb angle"), _r(cobb_deg, 1), "°"],
+        [rp.tr("Supplement"), _r(supplement_deg, 1), "°"],
+        [rp.tr("Classification"), severity, ""],
+        [rp.tr("Superior endplate tilt"), _r(sup_tilt, 1), "°"],
+        [rp.tr("Inferior endplate tilt"), _r(inf_tilt, 1), "°"],
+        [rp.tr("Plumb line balance (cranial − caudal)"), _r(plumb_offset_mm, 1), "mm"],
+        [rp.tr("Apical lateral deviation"), _r(apex_dev_mm, 1), "mm"],
+        [rp.tr("Apical vertebral wedge angle"), _r(wedge_deg, 1), "°"],
+        [rp.tr("Apical height ratio (concavity / convexity)"), _r(wedge_ratio, 3), ""],
+        [rp.tr("Spinal column length analyzed"), _r((y_bot - y_top) * sy, 1), "mm"],
     ]
 
     pos_mm = (ys - y_top) * sy
     plots = [
         rp.Plot(
-            "Spinal midline deviation from cranial-caudal axis",
-            [rp.Series("Deviation (mm)", pos_mm, dev_mm)],
-            x_label="Craniocaudal distance (mm)",
-            y_label="Lateral / sagittal offset (mm)",
+            rp.tr("Spinal midline deviation from cranial-caudal axis"),
+            [rp.Series(rp.tr("Deviation (mm)"), pos_mm, dev_mm)],
+            x_label=rp.tr("Craniocaudal distance (mm)"),
+            y_label=rp.tr("Lateral / sagittal offset (mm)"),
         ),
         rp.Plot(
-            "Vertebral tilt profile along the spine",
-            [rp.Series("Endplate tilt (°)", pos_mm, tilt_deg)],
-            x_label="Craniocaudal distance (mm)",
-            y_label="Tilt (°)",
+            rp.tr("Vertebral tilt profile along the spine"),
+            [rp.Series(rp.tr("Endplate tilt (°)"), pos_mm, tilt_deg)],
+            x_label=rp.tr("Craniocaudal distance (mm)"),
+            y_label=rp.tr("Tilt (°)"),
         ),
     ]
 
@@ -474,7 +487,9 @@ def spine(volume, ctx):
     _draw_line(rgb, sup_a, sup_b, [255, 220, 40], thickness=2)
     _draw_line(rgb, inf_a, inf_b, [255, 220, 40], thickness=2)
     _draw_dot(rgb, (apex_x, apex_y), [255, 70, 70], radius=4)
-    image = rp.Image("Spine morphometry (slice %d): Cobb %.1f°" % (k + 1, cobb_deg), nx, ny, rgb)
+    image = rp.Image(
+        rp.tr("Spine morphometry (slice {slice}): Cobb {cobb}°", slice=k + 1, cobb="%.1f" % cobb_deg), nx, ny, rgb
+    )
 
     rois = []
     if _should_stamp_rois(ctx):
@@ -492,25 +507,38 @@ def spine(volume, ctx):
 
     nz = volume.dims[2]
     controls = [
-        rp.Slider("slice", "Slice", k, 0, max(nz - 1, 1), step=1),
-        rp.Choice("view", "View", ["auto", "coronal (AP/PA)", "sagittal (lateral)"], view_choice),
-        rp.Slider("bone_percentile", "Bone intensity percentile (%)", pct, 40.0, 98.0, step=1.0),
-        rp.Slider("smooth_mm", "Midline smoothing (mm)", smooth_mm, 1.0, 40.0, step=0.5),
-        rp.Slider("cranial_frac", "Superior endplate level (0–0.48)", cranial_frac, 0.05, 0.48, step=0.01),
-        rp.Slider("caudal_frac", "Inferior endplate level (0.52–0.95)", caudal_frac, 0.52, 0.95, step=0.01),
-        rp.Checkbox("use_drawn_lines", "Override endplates with 2 drawn lines when present", use_drawn),
-        rp.Button("stamp", "Stamp ROIs on image", help="Adds the Cobb angle, plumb line and apex marker to the slice"),
+        rp.Slider("slice", rp.tr("Slice"), k, 0, max(nz - 1, 1), step=1),
+        rp.Choice(
+            "view", rp.tr("View"), [rp.tr("auto"), rp.tr("coronal (AP/PA)"), rp.tr("sagittal (lateral)")], view_choice
+        ),
+        rp.Slider("bone_percentile", rp.tr("Bone intensity percentile (%)"), pct, 40.0, 98.0, step=1.0),
+        rp.Slider("smooth_mm", rp.tr("Midline smoothing (mm)"), smooth_mm, 1.0, 40.0, step=0.5),
+        rp.Slider("cranial_frac", rp.tr("Superior endplate level (0–0.48)"), cranial_frac, 0.05, 0.48, step=0.01),
+        rp.Slider("caudal_frac", rp.tr("Inferior endplate level (0.52–0.95)"), caudal_frac, 0.52, 0.95, step=0.01),
+        rp.Checkbox("use_drawn_lines", rp.tr("Override endplates with 2 drawn lines when present"), use_drawn),
+        rp.Button(
+            "stamp",
+            rp.tr("Stamp ROIs on image"),
+            help=rp.tr("Adds the Cobb angle, plumb line and apex marker to the slice"),
+        ),
     ]
-    msg = "Spine: Cobb %.1f° (%s), balance %+.1f mm, wedge ratio %.3f" % (
-        cobb_deg,
-        severity,
-        plumb_offset_mm,
-        wedge_ratio,
-    )
+    # One sentence per class: the class is a translated word, and a marked text cannot be an argument of another.
+    spine_args = {"cobb": "%.1f" % cobb_deg, "balance": "%+.1f" % plumb_offset_mm, "ratio": "%.3f" % wedge_ratio}
+    msg = (
+        rp.tr("Spine: Cobb {cobb}° (Normal (< 10°)), balance {balance} mm, wedge ratio {ratio}", **spine_args),
+        rp.tr("Spine: Cobb {cobb}° (Mild (10–25°)), balance {balance} mm, wedge ratio {ratio}", **spine_args),
+        rp.tr("Spine: Cobb {cobb}° (Moderate (25–45°)), balance {balance} mm, wedge ratio {ratio}", **spine_args),
+        rp.tr("Spine: Cobb {cobb}° (Severe (≥ 45°)), balance {balance} mm, wedge ratio {ratio}", **spine_args),
+    )[severity_index]
     return rp.Result(table=table, plots=plots, images=[image], rois=rois, controls=controls, message=msg)
 
 
 # ------------------------------------------------------------------ 2. Tool: lower_limb
+
+
+def _alignment_text(alignment):
+    """The coronal alignment class of a limb as a marked text."""
+    return rp.tr("Varus") if alignment == "Varus" else rp.tr("Valgus") if alignment == "Valgus" else rp.tr("Neutral")
 
 
 def _analyze_single_limb(sl, limb_mask, is_right_limb, sx, sy, hip_frac, knee_frac, ankle_frac, probes, lines):
@@ -644,7 +672,7 @@ def _analyze_single_limb(sl, limb_mask, is_right_limb, sx, sy, hip_frac, knee_fr
     mldfa_deg = _vec_angle(fem_up, f_lat_dir)
     mpta_deg = _vec_angle(tib_dn, t_med_dir)
     jlca_deg = _acute_angle_deg((fx0, fy0), (fx1, fy1), (tx0, ty0), (tx1, ty1), sx, sy)
-    alignment = "Varus" if varus_deg > 1.5 else "Valgus" if varus_deg < -1.5 else "Neutral"
+    alignment = "Varus" if varus_deg > 1.5 else "Valgus" if varus_deg < -1.5 else "Neutral"  # the key of _alignment_text
 
     return {
         "hip": (hx, hy),
@@ -665,6 +693,75 @@ def _analyze_single_limb(sl, limb_mask, is_right_limb, sx, sy, hip_frac, knee_fr
         "mpta_deg": mpta_deg,
         "jlca_deg": jlca_deg,
     }
+
+
+def _limb_message(names, results):
+    """The status line of the lower-limb tool: one literal sentence per side set and alignment class (a marked text
+    cannot be an argument of another, so the class word cannot be one)."""
+    args = {}
+    for key, name in (("right", "Right"), ("left", "Left")):
+        if name in results:
+            args[key + "_hka"] = "%.1f" % results[name]["hka_deg"]
+            args[key + "_mad"] = "%.1f" % results[name]["mad_mm"]
+    if names == ["Right"]:
+        return {
+            "Varus": rp.tr("Lower limb: Right HKA {right_hka}° (Varus), MAD {right_mad} mm", **args),
+            "Valgus": rp.tr("Lower limb: Right HKA {right_hka}° (Valgus), MAD {right_mad} mm", **args),
+            "Neutral": rp.tr("Lower limb: Right HKA {right_hka}° (Neutral), MAD {right_mad} mm", **args),
+        }[results["Right"]["alignment"]]
+    if names == ["Left"]:
+        return {
+            "Varus": rp.tr("Lower limb: Left HKA {left_hka}° (Varus), MAD {left_mad} mm", **args),
+            "Valgus": rp.tr("Lower limb: Left HKA {left_hka}° (Valgus), MAD {left_mad} mm", **args),
+            "Neutral": rp.tr("Lower limb: Left HKA {left_hka}° (Neutral), MAD {left_mad} mm", **args),
+        }[results["Left"]["alignment"]]
+    return {
+        ("Varus", "Varus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Varus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Varus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Varus", "Valgus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Varus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Valgus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Varus", "Neutral"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Varus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Neutral), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Valgus", "Varus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Valgus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Varus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Valgus", "Valgus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Valgus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Valgus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Valgus", "Neutral"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Valgus), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Neutral), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Neutral", "Varus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Neutral), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Varus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Neutral", "Valgus"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Neutral), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Valgus), MAD {left_mad} mm",
+            **args,
+        ),
+        ("Neutral", "Neutral"): rp.tr(
+            "Lower limb: Right HKA {right_hka}° (Neutral), MAD {right_mad} mm; "
+            "Left HKA {left_hka}° (Neutral), MAD {left_mad} mm",
+            **args,
+        ),
+    }[(results["Right"]["alignment"], results["Left"]["alignment"])]
 
 
 @rp.tool("lower_limb")
@@ -716,25 +813,30 @@ def lower_limb(volume, ctx):
         )
 
     names = [n for n, _, _ in limbs]
-    table = [["Measurement", *names, "Unit"]]
+    table = [[rp.tr("Measurement"), *[_side_text(n) for n in names], rp.tr("Unit")]]
+
+    def _mad_text(r):
+        mad = str(_r(r["mad_mm"], 1))
+        return rp.tr("{mad} (medial)", mad=mad) if r["mad_dir"] == "medial" else rp.tr("{mad} (lateral)", mad=mad)
+
     rows_spec = [
-        ("HKA mechanical angle", lambda r: _r(r["hka_deg"], 1), "°"),
-        ("Coronal deviation (+varus / −valgus)", lambda r: _r(r["varus_deg"], 1), "°"),
-        ("Alignment classification", lambda r: r["alignment"], ""),
-        ("Mechanical axis deviation (MAD)", lambda r: "%s (%s)" % (_r(r["mad_mm"], 1), r["mad_dir"]), "mm"),
-        ("mLDFA (lateral distal femoral angle)", lambda r: _r(r["mldfa_deg"], 1), "°"),
-        ("MPTA (medial proximal tibial angle)", lambda r: _r(r["mpta_deg"], 1), "°"),
-        ("JLCA (joint line convergence angle)", lambda r: _r(r["jlca_deg"], 1), "°"),
-        ("Femoral mechanical length", lambda r: _r(r["fem_len_mm"], 1), "mm"),
-        ("Tibial mechanical length", lambda r: _r(r["tib_len_mm"], 1), "mm"),
-        ("Total limb mechanical length", lambda r: _r(r["total_len_mm"], 1), "mm"),
+        (rp.tr("HKA mechanical angle"), lambda r: _r(r["hka_deg"], 1), "°"),
+        (rp.tr("Coronal deviation (+varus / −valgus)"), lambda r: _r(r["varus_deg"], 1), "°"),
+        (rp.tr("Alignment classification"), lambda r: _alignment_text(r["alignment"]), ""),
+        (rp.tr("Mechanical axis deviation (MAD)"), _mad_text, "mm"),
+        (rp.tr("mLDFA (lateral distal femoral angle)"), lambda r: _r(r["mldfa_deg"], 1), "°"),
+        (rp.tr("MPTA (medial proximal tibial angle)"), lambda r: _r(r["mpta_deg"], 1), "°"),
+        (rp.tr("JLCA (joint line convergence angle)"), lambda r: _r(r["jlca_deg"], 1), "°"),
+        (rp.tr("Femoral mechanical length"), lambda r: _r(r["fem_len_mm"], 1), "mm"),
+        (rp.tr("Tibial mechanical length"), lambda r: _r(r["tib_len_mm"], 1), "mm"),
+        (rp.tr("Total limb mechanical length"), lambda r: _r(r["total_len_mm"], 1), "mm"),
     ]
     for title, fn, unit in rows_spec:
         table.append([title, *[fn(results[n]) for n in names], unit])
     if len(names) == 2:
         lld = results["Right"]["total_len_mm"] - results["Left"]["total_len_mm"]
-        longer = "Right longer" if lld > 0 else "Left longer" if lld < 0 else "Equal"
-        table.append(["Leg length discrepancy (LLD)", _r(abs(lld), 1), longer, "mm"])
+        longer = rp.tr("Right longer") if lld > 0 else rp.tr("Left longer") if lld < 0 else rp.tr("Equal")
+        table.append([rp.tr("Leg length discrepancy (LLD)"), _r(abs(lld), 1), longer, "mm"])
 
     rgb = _canvas_rgb(sl, mask)
     rois = []
@@ -773,7 +875,7 @@ def lower_limb(volume, ctx):
     x_idx = np.arange(1, 4, dtype=np.float64)
     series = [
         rp.Series(
-            n,
+            _side_text(n),
             x_idx + (-0.15 if i == 0 and len(names) == 2 else 0.15 if len(names) == 2 else 0.0),
             [results[n]["fem_len_mm"], results[n]["tib_len_mm"], results[n]["total_len_mm"]],
             kind="bars",
@@ -782,37 +884,30 @@ def lower_limb(volume, ctx):
     ]
     plots = [
         rp.Plot(
-            "Segmental lower-limb lengths (1 Femur, 2 Tibia, 3 Total)",
+            rp.tr("Segmental lower-limb lengths (1 Femur, 2 Tibia, 3 Total)"),
             series,
-            x_label="Segment",
-            y_label="Length (mm)",
+            x_label=rp.tr("Segment"),
+            y_label=rp.tr("Length (mm)"),
         )
     ]
-    image = rp.Image("Lower limb alignment (slice %d)" % (k + 1), nx, ny, rgb)
+    image = rp.Image(rp.tr("Lower limb alignment (slice {slice})", slice=k + 1), nx, ny, rgb)
     nz = volume.dims[2]
     controls = [
-        rp.Slider("slice", "Slice", k, 0, max(nz - 1, 1), step=1),
-        rp.Choice("side", "Analyzed limb", ["both", "right", "left"], side_choice),
-        rp.Slider("bone_percentile", "Bone intensity percentile (%)", pct, 40.0, 98.0, step=1.0),
-        rp.Slider("closing_mm", "Close bone contour (mm)", closing_mm, 0.0, 20.0, step=0.5),
-        rp.Slider("hip_y_frac", "Hip center level (0.02–0.25)", hip_frac, 0.02, 0.25, step=0.01),
-        rp.Slider("knee_y_frac", "Knee center level (0.35–0.70)", knee_frac, 0.35, 0.70, step=0.01),
-        rp.Slider("ankle_y_frac", "Ankle center level (0.75–0.98)", ankle_frac, 0.75, 0.98, step=0.01),
-        rp.Button("stamp", "Stamp ROIs on image", help="Adds mechanical axes, joint lines and landmarks to the slice"),
+        rp.Slider("slice", rp.tr("Slice"), k, 0, max(nz - 1, 1), step=1),
+        rp.Choice("side", rp.tr("Analyzed limb"), [rp.tr("both"), rp.tr("right"), rp.tr("left")], side_choice),
+        rp.Slider("bone_percentile", rp.tr("Bone intensity percentile (%)"), pct, 40.0, 98.0, step=1.0),
+        rp.Slider("closing_mm", rp.tr("Close bone contour (mm)"), closing_mm, 0.0, 20.0, step=0.5),
+        rp.Slider("hip_y_frac", rp.tr("Hip center level (0.02–0.25)"), hip_frac, 0.02, 0.25, step=0.01),
+        rp.Slider("knee_y_frac", rp.tr("Knee center level (0.35–0.70)"), knee_frac, 0.35, 0.70, step=0.01),
+        rp.Slider("ankle_y_frac", rp.tr("Ankle center level (0.75–0.98)"), ankle_frac, 0.75, 0.98, step=0.01),
+        rp.Button(
+            "stamp",
+            rp.tr("Stamp ROIs on image"),
+            help=rp.tr("Adds mechanical axes, joint lines and landmarks to the slice"),
+        ),
     ]
-    summary_parts = [
-        "%s HKA %.1f° (%s), MAD %.1f mm"
-        % (n, results[n]["hka_deg"], results[n]["alignment"], results[n]["mad_mm"])
-        for n in names
-    ]
-    return rp.Result(
-        table=table,
-        plots=plots,
-        images=[image],
-        rois=rois,
-        controls=controls,
-        message="Lower limb: " + "; ".join(summary_parts),
-    )
+    message = _limb_message(names, results)
+    return rp.Result(table=table, plots=plots, images=[image], rois=rois, controls=controls, message=message)
 
 
 # ------------------------------------------------------------------ 3. Tool: hip_pelvis
@@ -1028,14 +1123,14 @@ def hip_pelvis(volume, ctx):
 
     names = [n for n, _ in sides_to_run]
     table = [
-        ["Measurement", *names, "Unit"],
-        ["Femoral head diameter", *[_r(2.0 * hips[n]["r_mm"], 1) for n in names], "mm"],
-        ["Wiberg LCEA (lateral center-edge angle)", *[_r(hips[n]["lcea_deg"], 1) for n in names], "°"],
-        ["Tönnis angle (acetabular index)", *[_r(hips[n]["tonnis_deg"], 1) for n in names], "°"],
-        ["Neck-shaft CCD angle", *[_r(hips[n]["ccd_deg"], 1) for n in names], "°"],
-        ["Femoral offset", *[_r(hips[n]["fem_offset_mm"], 1) for n in names], "mm"],
-        ["Pelvic obliquity tilt", _r(pelvic_tilt_deg, 1), *([""] if len(names) == 2 else []), "°"],
-        ["Pelvic obliquity step", _r(pelvic_step_mm, 1), *([""] if len(names) == 2 else []), "mm"],
+        [rp.tr("Measurement"), *[_hip_side_text(n) for n in names], rp.tr("Unit")],
+        [rp.tr("Femoral head diameter"), *[_r(2.0 * hips[n]["r_mm"], 1) for n in names], "mm"],
+        [rp.tr("Wiberg LCEA (lateral center-edge angle)"), *[_r(hips[n]["lcea_deg"], 1) for n in names], "°"],
+        [rp.tr("Tönnis angle (acetabular index)"), *[_r(hips[n]["tonnis_deg"], 1) for n in names], "°"],
+        [rp.tr("Neck-shaft CCD angle"), *[_r(hips[n]["ccd_deg"], 1) for n in names], "°"],
+        [rp.tr("Femoral offset"), *[_r(hips[n]["fem_offset_mm"], 1) for n in names], "mm"],
+        [rp.tr("Pelvic obliquity tilt"), _r(pelvic_tilt_deg, 1), *([""] if len(names) == 2 else []), "°"],
+        [rp.tr("Pelvic obliquity step"), _r(pelvic_step_mm, 1), *([""] if len(names) == 2 else []), "mm"],
     ]
 
     rgb = _canvas_rgb(sl, mask)
@@ -1070,29 +1165,52 @@ def hip_pelvis(volume, ctx):
     x_idx = np.arange(1, 4, dtype=np.float64)
     series = [
         rp.Series(
-            n,
+            _hip_side_text(n),
             x_idx + (-0.15 if i == 0 and len(names) == 2 else 0.15 if len(names) == 2 else 0.0),
             [hips[n]["lcea_deg"], hips[n]["tonnis_deg"], hips[n]["ccd_deg"]],
             kind="bars",
         )
         for i, n in enumerate(names)
     ]
-    plots = [rp.Plot("Hip goniometry (1 LCEA °, 2 Tönnis °, 3 CCD °)", series, x_label="Angle", y_label="Degrees (°)")]
-    image = rp.Image("Hip and pelvis morphometry (slice %d)" % (k + 1), nx, ny, rgb)
+    plots = [
+        rp.Plot(
+            rp.tr("Hip goniometry (1 LCEA °, 2 Tönnis °, 3 CCD °)"),
+            series,
+            x_label=rp.tr("Angle"),
+            y_label=rp.tr("Degrees (°)"),
+        )
+    ]
+    image = rp.Image(rp.tr("Hip and pelvis morphometry (slice {slice})", slice=k + 1), nx, ny, rgb)
     nz = volume.dims[2]
     controls = [
-        rp.Slider("slice", "Slice", k, 0, max(nz - 1, 1), step=1),
-        rp.Choice("side", "Analyzed side", ["both", "right", "left"], side_choice),
-        rp.Slider("bone_percentile", "Bone intensity percentile (%)", pct, 40.0, 98.0, step=1.0),
-        rp.Slider("head_radius_mm", "Femoral head radius (mm, 0 = auto)", head_r_param, 0.0, 45.0, step=0.5),
-        rp.Slider("neck_level_frac", "Neck axis level (0.20–0.85)", neck_frac, 0.20, 0.85, step=0.02),
-        rp.Slider("shaft_level_frac", "Shaft axis level (0.30–0.85)", shaft_frac, 0.30, 0.85, step=0.02),
-        rp.Button("stamp", "Stamp ROIs on image", help="Adds femoral head ellipses, acetabular lines and CCD axes"),
+        rp.Slider("slice", rp.tr("Slice"), k, 0, max(nz - 1, 1), step=1),
+        rp.Choice("side", rp.tr("Analyzed side"), [rp.tr("both"), rp.tr("right"), rp.tr("left")], side_choice),
+        rp.Slider("bone_percentile", rp.tr("Bone intensity percentile (%)"), pct, 40.0, 98.0, step=1.0),
+        rp.Slider("head_radius_mm", rp.tr("Femoral head radius (mm, 0 = auto)"), head_r_param, 0.0, 45.0, step=0.5),
+        rp.Slider("neck_level_frac", rp.tr("Neck axis level (0.20–0.85)"), neck_frac, 0.20, 0.85, step=0.02),
+        rp.Slider("shaft_level_frac", rp.tr("Shaft axis level (0.30–0.85)"), shaft_frac, 0.30, 0.85, step=0.02),
+        rp.Button(
+            "stamp",
+            rp.tr("Stamp ROIs on image"),
+            help=rp.tr("Adds femoral head ellipses, acetabular lines and CCD axes"),
+        ),
     ]
-    msg = "Hip/pelvis: " + "; ".join(
-        "%s LCEA %.1f°, Tönnis %.1f°, CCD %.1f°" % (n, hips[n]["lcea_deg"], hips[n]["tonnis_deg"], hips[n]["ccd_deg"])
-        for n in names
-    )
+    hip_args = {}
+    for key, n in (("right", "Right"), ("left", "Left")):
+        if n in hips:
+            hip_args[key + "_lcea"] = "%.1f" % hips[n]["lcea_deg"]
+            hip_args[key + "_tonnis"] = "%.1f" % hips[n]["tonnis_deg"]
+            hip_args[key + "_ccd"] = "%.1f" % hips[n]["ccd_deg"]
+    if len(names) == 2:
+        msg = rp.tr(
+            "Hip/pelvis: Right LCEA {right_lcea}°, Tönnis {right_tonnis}°, CCD {right_ccd}°; "
+            "Left LCEA {left_lcea}°, Tönnis {left_tonnis}°, CCD {left_ccd}°",
+            **hip_args,
+        )
+    elif names == ["Right"]:
+        msg = rp.tr("Hip/pelvis: Right LCEA {right_lcea}°, Tönnis {right_tonnis}°, CCD {right_ccd}°", **hip_args)
+    else:
+        msg = rp.tr("Hip/pelvis: Left LCEA {left_lcea}°, Tönnis {left_tonnis}°, CCD {left_ccd}°", **hip_args)
     return rp.Result(table=table, plots=plots, images=[image], rois=rois, controls=controls, message=msg)
 
 
@@ -1185,17 +1303,20 @@ def bone_morphometry(volume, ctx):
         mask = _bone_mask_2d(sl, sx, sy, pct, closing_mm=2.5, min_area_mm2=10.0) & roi_m
         if not mask.any():
             mask = roi_m
-        source = "%s ROI on slice %d" % (closed_here[-1].kind, k + 1)
+        if closed_here[-1].kind == "ellipse":
+            source = rp.tr("ellipse ROI on slice {slice}", slice=k + 1)
+        else:
+            source = rp.tr("polygon ROI on slice {slice}", slice=k + 1)
     elif ctx.segments and ctx.segments[0].mask()[k].any():
         mask = ctx.segments[0].mask()[k]
-        source = "segment '%s'" % ctx.segments[0].name
+        source = rp.tr("segment '{name}'", name=ctx.segments[0].name)
     else:
         raw = _bone_mask_2d(sl, sx, sy, pct, closing_mm=3.0, min_area_mm2=20.0)
         comps = _largest_components(raw, k=1)
         if not comps:
             raise ValueError("No bone silhouette found on slice %d: lower 'Bone intensity percentile'" % (k + 1))
         mask = comps[0]
-        source = "largest bone silhouette (P%g)" % round(pct, 1)
+        source = rp.tr("largest bone silhouette (P{percentile})", percentile="%g" % round(pct, 1))
 
     ys, xs = np.nonzero(mask)
     if xs.size < 10:
@@ -1226,25 +1347,25 @@ def bone_morphometry(volume, ctx):
     vals_bone = sl[mask & np.isfinite(sl)]
     mean_intensity = float(vals_bone.mean()) if vals_bone.size else 0.0
     sd_intensity = float(vals_bone.std()) if vals_bone.size else 0.0
-    unit = volume.unit or "intensity"
+    unit = volume.unit or rp.tr("intensity")
 
     table = [
-        ["Quantity", "Value", "Unit"],
-        ["Image", k + 1, ""],
-        ["Source", source, ""],
-        ["Bone length (longitudinal axis)", _r(length_mm, 1), "mm"],
-        ["Diaphyseal sampling level", _r(100.0 * level_frac, 0), "% of length"],
-        ["Outer periosteal diameter (D)", _r(outer_d, 2), "mm"],
-        ["Inner medullary diameter (d)", _r(inner_d, 2), "mm"],
-        ["Combined cortical thickness (CCT = D − d)", _r(cct, 2), "mm"],
-        ["Cortex 1 / Cortex 2 thickness", "%s / %s" % (_r(cortex_l, 2), _r(cortex_r, 2)), "mm"],
-        ["Barnett-Nordin cortical index ((D − d) / D)", _r(cortical_index, 1), "%"],
-        ["Corticomedullary ratio ((D − d) / d)", _r(cm_ratio, 2), "ratio"],
-        ["Cross-sectional total area", _r(total_area, 1), "mm²"],
-        ["Cross-sectional cortical area", _r(cortical_area, 1), "mm²"],
-        ["Cross-sectional medullary area", _r(medullary_area, 1), "mm²"],
-        ["Exton-Smith dimensionless index", _r(exton_smith, 3), ""],
-        ["Bone mean ± SD", "%s ± %s" % (_r(mean_intensity, 1), _r(sd_intensity, 1)), unit],
+        _quantity_header(),
+        [rp.tr("Image"), k + 1, ""],
+        [rp.tr("Source"), source, ""],
+        [rp.tr("Bone length (longitudinal axis)"), _r(length_mm, 1), "mm"],
+        [rp.tr("Diaphyseal sampling level"), _r(100.0 * level_frac, 0), rp.tr("% of length")],
+        [rp.tr("Outer periosteal diameter (D)"), _r(outer_d, 2), "mm"],
+        [rp.tr("Inner medullary diameter (d)"), _r(inner_d, 2), "mm"],
+        [rp.tr("Combined cortical thickness (CCT = D − d)"), _r(cct, 2), "mm"],
+        [rp.tr("Cortex 1 / Cortex 2 thickness"), "%s / %s" % (_r(cortex_l, 2), _r(cortex_r, 2)), "mm"],
+        [rp.tr("Barnett-Nordin cortical index ((D − d) / D)"), _r(cortical_index, 1), "%"],
+        [rp.tr("Corticomedullary ratio ((D − d) / d)"), _r(cm_ratio, 2), rp.tr("ratio")],
+        [rp.tr("Cross-sectional total area"), _r(total_area, 1), "mm²"],
+        [rp.tr("Cross-sectional cortical area"), _r(cortical_area, 1), "mm²"],
+        [rp.tr("Cross-sectional medullary area"), _r(medullary_area, 1), "mm²"],
+        [rp.tr("Exton-Smith dimensionless index"), _r(exton_smith, 3), ""],
+        [rp.tr("Bone mean ± SD"), "%s ± %s" % (_r(mean_intensity, 1), _r(sd_intensity, 1)), unit],
     ]
 
     def _trans_pt(s_mm):
@@ -1263,20 +1384,23 @@ def bone_morphometry(volume, ctx):
         _draw_dot(rgb, pt, [60, 240, 120], radius=3)
 
     keep_band = (s_grid >= out_l - 8.0) & (s_grid <= out_r + 8.0)
-    plot_title = "Transverse diaphyseal profile (D = %.1f mm, d = %.1f mm, CI = %.1f%%)" % (
-        outer_d,
-        inner_d,
-        cortical_index,
+    plot_title = rp.tr(
+        "Transverse diaphyseal profile (D = {outer} mm, d = {inner} mm, CI = {ci}%)",
+        outer="%.1f" % outer_d,
+        inner="%.1f" % inner_d,
+        ci="%.1f" % cortical_index,
     )
     plots = [
         rp.Plot(
             plot_title,
-            [rp.Series("Intensity", s_grid[keep_band], prof[keep_band])],
-            x_label="Transverse position from shaft axis (mm)",
+            [rp.Series(rp.tr("Intensity"), s_grid[keep_band], prof[keep_band])],
+            x_label=rp.tr("Transverse position from shaft axis (mm)"),
             y_label=unit,
         )
     ]
-    image = rp.Image("Bone morphometry (slice %d): CI %.1f%%" % (k + 1, cortical_index), nx, ny, rgb)
+    image = rp.Image(
+        rp.tr("Bone morphometry (slice {slice}): CI {ci}%", slice=k + 1, ci="%.1f" % cortical_index), nx, ny, rgb
+    )
 
     rois = []
     if _should_stamp_rois(ctx):
@@ -1294,16 +1418,21 @@ def bone_morphometry(volume, ctx):
 
     nz = volume.dims[2]
     controls = [
-        rp.Slider("slice", "Slice", k, 0, max(nz - 1, 1), step=1),
-        rp.Slider("bone_percentile", "Bone intensity percentile (%)", pct, 40.0, 98.0, step=1.0),
-        rp.Slider("level_frac", "Diaphyseal sampling level (0.20–0.80)", level_frac, 0.20, 0.80, step=0.02),
-        rp.Button("stamp", "Stamp ROIs on image", help="Adds shaft axis, outer D and inner d lines to the slice"),
+        rp.Slider("slice", rp.tr("Slice"), k, 0, max(nz - 1, 1), step=1),
+        rp.Slider("bone_percentile", rp.tr("Bone intensity percentile (%)"), pct, 40.0, 98.0, step=1.0),
+        rp.Slider("level_frac", rp.tr("Diaphyseal sampling level (0.20–0.80)"), level_frac, 0.20, 0.80, step=0.02),
+        rp.Button(
+            "stamp",
+            rp.tr("Stamp ROIs on image"),
+            help=rp.tr("Adds shaft axis, outer D and inner d lines to the slice"),
+        ),
     ]
-    msg = "Bone morphometry: length %.1f mm, D %.2f mm, d %.2f mm, cortical index %.1f%%" % (
-        length_mm,
-        outer_d,
-        inner_d,
-        cortical_index,
+    msg = rp.tr(
+        "Bone morphometry: length {length} mm, D {outer} mm, d {inner} mm, cortical index {ci}%",
+        length="%.1f" % length_mm,
+        outer="%.2f" % outer_d,
+        inner="%.2f" % inner_d,
+        ci="%.1f" % cortical_index,
     )
     return rp.Result(table=table, plots=plots, images=[image], rois=rois, controls=controls, message=msg)
 
@@ -1311,17 +1440,15 @@ def bone_morphometry(volume, ctx):
 # ------------------------------------------------------------------ 5. Tool: foot_hand
 
 
+_VIEW_OF_PARAM = {"Foot AP": "foot_ap", "Foot lateral": "foot_lateral", "Hand / wrist AP": "hand_ap"}
+
+
 def _infer_extremity_view(mask, sx, sy, mode_param, choice_str):
     """Resolves the extremity view mode from interactive choice, manifest param or silhouette geometry."""
     if choice_str and choice_str != "auto":
         return choice_str
-    mode_int = int(round(mode_param))
-    if mode_int == 1:
-        return "foot_ap"
-    if mode_int == 2:
-        return "foot_lateral"
-    if mode_int == 3:
-        return "hand_ap"
+    if mode_param in _VIEW_OF_PARAM:
+        return _VIEW_OF_PARAM[mode_param]
     ys, xs = np.nonzero(mask)
     w_mm = (xs.max() - xs.min() + 1) * sx
     h_mm = (ys.max() - ys.min() + 1) * sy
@@ -1424,24 +1551,23 @@ def foot_hand(volume, ctx):
 
         hva_deg = _acute_angle_deg(m1_a, m1_b, p1_a, p1_b, sx, sy)
         ima_deg = _acute_angle_deg(m1_a, m1_b, m2_a, m2_b, sx, sy)
-        hva_class = (
-            "Normal (< 15°)"
-            if hva_deg < 15.0
-            else "Mild (15–20°)"
-            if hva_deg < 20.0
-            else "Moderate (20–40°)"
-            if hva_deg < 40.0
-            else "Severe (≥ 40°)"
+        hva_classes = (
+            rp.tr("Normal (< 15°)"),
+            rp.tr("Mild (15–20°)"),
+            rp.tr("Moderate (20–40°)"),
+            rp.tr("Severe (≥ 40°)"),
         )
+        hva_index = 0 if hva_deg < 15.0 else 1 if hva_deg < 20.0 else 2 if hva_deg < 40.0 else 3
+        hva_class = hva_classes[hva_index]
         table = [
-            ["Quantity", "Value", "Unit"],
-            ["Image", k + 1, ""],
-            ["View mode", "Foot AP (dorsoplantar)", ""],
-            ["Hallux valgus angle (HVA)", _r(hva_deg, 1), "°"],
-            ["HVA classification", hva_class, ""],
-            ["1st–2nd intermetatarsal angle (IMA)", _r(ima_deg, 1), "°"],
-            ["1st metatarsal shaft length", _r(len_m1, 1), "mm"],
-            ["2nd metatarsal shaft length", _r(len_m2, 1), "mm"],
+            _quantity_header(),
+            [rp.tr("Image"), k + 1, ""],
+            [rp.tr("View mode"), rp.tr("Foot AP (dorsoplantar)"), ""],
+            [rp.tr("Hallux valgus angle (HVA)"), _r(hva_deg, 1), "°"],
+            [rp.tr("HVA classification"), hva_class, ""],
+            [rp.tr("1st–2nd intermetatarsal angle (IMA)"), _r(ima_deg, 1), "°"],
+            [rp.tr("1st metatarsal shaft length"), _r(len_m1, 1), "mm"],
+            [rp.tr("2nd metatarsal shaft length"), _r(len_m2, 1), "mm"],
         ]
         ray_Wait = ((m1_a, m1_b, [60, 235, 120]), (p1_a, p1_b, [255, 215, 40]), (m2_a, m2_b, [90, 190, 255]))
         for a_pt, b_pt, col in ray_Wait:
@@ -1451,11 +1577,17 @@ def foot_hand(volume, ctx):
                 rp.Roi("line", k, [m1_a, m1_b]),
                 rp.Roi("line", k, [p1_a, p1_b]),
                 rp.Roi("line", k, [m2_a, m2_b]),
-                rp.Roi("text", k, [m1_a], text="Foot AP: HVA %.1f° (%s) | IMA %.1f°" % (hva_deg, hva_class, ima_deg)),
+                rp.Roi("text", k, [m1_a], text="Foot AP: HVA %.1f° (%s) | IMA %.1f°" % (hva_deg, str(hva_class), ima_deg)),
             ]
         plot_vals = [hva_deg, ima_deg]
-        plot_title = "Foot AP angles (1 HVA °, 2 IMA °)"
-        msg = "Foot AP: HVA %.1f° (%s), 1–2 IMA %.1f°" % (hva_deg, hva_class, ima_deg)
+        plot_title = rp.tr("Foot AP angles (1 HVA °, 2 IMA °)")
+        foot_args = {"hva": "%.1f" % hva_deg, "ima": "%.1f" % ima_deg}
+        msg = (
+            rp.tr("Foot AP: HVA {hva}° (Normal (< 15°)), 1–2 IMA {ima}°", **foot_args),
+            rp.tr("Foot AP: HVA {hva}° (Mild (15–20°)), 1–2 IMA {ima}°", **foot_args),
+            rp.tr("Foot AP: HVA {hva}° (Moderate (20–40°)), 1–2 IMA {ima}°", **foot_args),
+            rp.tr("Foot AP: HVA {hva}° (Severe (≥ 40°)), 1–2 IMA {ima}°", **foot_args),
+        )[hva_index]
 
     elif mode == "foot_lateral":
         # Extract superior and inferior calcaneal / hindfoot contour across columns x_min..x_max.
@@ -1492,12 +1624,12 @@ def foot_hand(volume, ctx):
         )
 
         table = [
-            ["Quantity", "Value", "Unit"],
-            ["Image", k + 1, ""],
-            ["View mode", "Foot Lateral", ""],
-            ["Böhler calcaneal angle (normal 20–40°)", _r(bohler_deg, 1), "°"],
-            ["Gissane crucial angle (normal 120–145°)", _r(gissane_deg, 1), "°"],
-            ["Calcaneal pitch angle (normal 18–30°)", _r(pitch_deg, 1), "°"],
+            _quantity_header(),
+            [rp.tr("Image"), k + 1, ""],
+            [rp.tr("View mode"), rp.tr("Foot Lateral"), ""],
+            [rp.tr("Böhler calcaneal angle (normal 20–40°)"), _r(bohler_deg, 1), "°"],
+            [rp.tr("Gissane crucial angle (normal 120–145°)"), _r(gissane_deg, 1), "°"],
+            [rp.tr("Calcaneal pitch angle (normal 18–30°)"), _r(pitch_deg, 1), "°"],
         ]
         _draw_line(rgb, pt_tub, pt_apex, [255, 215, 40], thickness=2)
         _draw_line(rgb, pt_apex, pt_ant, [255, 215, 40], thickness=2)
@@ -1517,8 +1649,13 @@ def foot_hand(volume, ctx):
                 ),
             ]
         plot_vals = [bohler_deg, gissane_deg, pitch_deg]
-        plot_title = "Foot lateral angles (1 Böhler °, 2 Gissane °, 3 Calcaneal pitch °)"
-        msg = "Foot lateral: Böhler %.1f°, Gissane %.1f°, calcaneal pitch %.1f°" % (bohler_deg, gissane_deg, pitch_deg)
+        plot_title = rp.tr("Foot lateral angles (1 Böhler °, 2 Gissane °, 3 Calcaneal pitch °)")
+        msg = rp.tr(
+            "Foot lateral: Böhler {bohler}°, Gissane {gissane}°, calcaneal pitch {pitch}°",
+            bohler="%.1f" % bohler_deg,
+            gissane="%.1f" % gissane_deg,
+            pitch="%.1f" % pitch_deg,
+        )
 
     else:
         # Hand / Wrist AP: 2nd metacarpal radiogrammetry + radial inclination.
@@ -1551,14 +1688,14 @@ def foot_hand(volume, ctx):
         )
 
         table = [
-            ["Quantity", "Value", "Unit"],
-            ["Image", k + 1, ""],
-            ["View mode", "Hand / Wrist AP", ""],
-            ["2nd metacarpal length", _r(mc_len_mm, 1), "mm"],
-            ["2nd metacarpal outer diameter (D)", _r(outer_d, 2), "mm"],
-            ["2nd metacarpal medullary diameter (d)", _r(inner_d, 2), "mm"],
-            ["Metacarpal cortical index (MCI = (D − d) / D)", _r(mci, 1), "%"],
-            ["Radial inclination angle", _r(radial_inc_deg, 1), "°"],
+            _quantity_header(),
+            [rp.tr("Image"), k + 1, ""],
+            [rp.tr("View mode"), rp.tr("Hand / Wrist AP"), ""],
+            [rp.tr("2nd metacarpal length"), _r(mc_len_mm, 1), "mm"],
+            [rp.tr("2nd metacarpal outer diameter (D)"), _r(outer_d, 2), "mm"],
+            [rp.tr("2nd metacarpal medullary diameter (d)"), _r(inner_d, 2), "mm"],
+            [rp.tr("Metacarpal cortical index (MCI = (D − d) / D)"), _r(mci, 1), "%"],
+            [rp.tr("Radial inclination angle"), _r(radial_inc_deg, 1), "°"],
         ]
         p_out_l = (float(p_lvl[0] + (out_l * n_mm[0]) / sx), float(p_lvl[1] + (out_l * n_mm[1]) / sy))
         p_out_r = (float(p_lvl[0] + (out_r * n_mm[0]) / sx), float(p_lvl[1] + (out_r * n_mm[1]) / sy))
@@ -1576,28 +1713,40 @@ def foot_hand(volume, ctx):
                 ),
             ]
         plot_vals = [mci, radial_inc_deg]
-        plot_title = "Hand/wrist metrics (1 MCI %, 2 Radial inclination °)"
-        msg = "Hand/wrist AP: MCI %.1f%% (D %.2f mm, d %.2f mm), radial inclination %.1f°" % (
-            mci,
-            outer_d,
-            inner_d,
-            radial_inc_deg,
+        plot_title = rp.tr("Hand/wrist metrics (1 MCI %, 2 Radial inclination °)")
+        msg = rp.tr(
+            "Hand/wrist AP: MCI {mci}% (D {outer} mm, d {inner} mm), radial inclination {incl}°",
+            mci="%.1f" % mci,
+            outer="%.2f" % outer_d,
+            inner="%.2f" % inner_d,
+            incl="%.1f" % radial_inc_deg,
         )
 
     plots = [
         rp.Plot(
             plot_title,
-            [rp.Series("Value", np.arange(1, len(plot_vals) + 1, dtype=np.float64), plot_vals, kind="bars")],
-            x_label="Metric",
-            y_label="Value",
+            [rp.Series(rp.tr("Value"), np.arange(1, len(plot_vals) + 1, dtype=np.float64), plot_vals, kind="bars")],
+            x_label=rp.tr("Metric"),
+            y_label=rp.tr("Value"),
         )
     ]
-    image = rp.Image("Foot and hand goniometry (%s, slice %d)" % (mode, k + 1), nx, ny, rgb)
+    if mode == "foot_ap":
+        image_title = rp.tr("Foot and hand goniometry (foot_ap, slice {slice})", slice=k + 1)
+    elif mode == "foot_lateral":
+        image_title = rp.tr("Foot and hand goniometry (foot_lateral, slice {slice})", slice=k + 1)
+    else:
+        image_title = rp.tr("Foot and hand goniometry (hand_ap, slice {slice})", slice=k + 1)
+    image = rp.Image(image_title, nx, ny, rgb)
     nz = volume.dims[2]
     controls = [
-        rp.Slider("slice", "Slice", k, 0, max(nz - 1, 1), step=1),
-        rp.Choice("view", "Extremity view", ["auto", "foot_ap", "foot_lateral", "hand_ap"], view_choice),
-        rp.Slider("bone_percentile", "Bone intensity percentile (%)", pct, 40.0, 98.0, step=1.0),
-        rp.Button("stamp", "Stamp ROIs on image", help="Adds goniometric axes and labels to the slice"),
+        rp.Slider("slice", rp.tr("Slice"), k, 0, max(nz - 1, 1), step=1),
+        rp.Choice(
+            "view",
+            rp.tr("Extremity view"),
+            [rp.tr("auto"), rp.tr("foot_ap"), rp.tr("foot_lateral"), rp.tr("hand_ap")],
+            view_choice,
+        ),
+        rp.Slider("bone_percentile", rp.tr("Bone intensity percentile (%)"), pct, 40.0, 98.0, step=1.0),
+        rp.Button("stamp", rp.tr("Stamp ROIs on image"), help=rp.tr("Adds goniometric axes and labels to the slice")),
     ]
     return rp.Result(table=table, plots=plots, images=[image], rois=rois, controls=controls, message=msg)
