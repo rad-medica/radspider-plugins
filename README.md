@@ -7,28 +7,28 @@ Proprietary, all rights reserved (`LICENSE`).
 
 - One folder per plugin, named exactly as its id: `plugin.toml` + a Python module (+ `requirements.txt`).
 - Install one: copy its folder into `<config>/plugins/` (beside `settings.toml`) or in radspider Settings → Modules → *Install folder…* (or *Install .zip…* of the folder). radspider makes the venv and pip-installs `requirements.txt`.
-- How plugins work (manifest, SDK, protocol, API 1-3): `docs/PLUGINS.md` in the radspider repository. Summary of what this repo relies on: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- How plugins work (manifest, SDK, protocol, API 1-6): `docs/PLUGINS.md` in the radspider repository. Summary of what this repo relies on: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Plugin folders stay at the repository root on purpose: radspider's `tests/plugins.rs` resolves `../radspider-plugins/<id>`.
 
 ## Plugins
 
 | Folder | API | Needs | What | Docs |
 |---|---|---|---|---|
-| `org.radspider.examples` | 1 | stdlib | One entry of each kind (node, segmentation, tool). Start here | [DEVELOPING](docs/DEVELOPING.md) |
-| `org.radspider.numpy-demo` | 1 | numpy | The same three kinds, vectorised | [DEVELOPING](docs/DEVELOPING.md) |
+| `org.radspider.examples` | 6 | stdlib | One entry of each kind (node, segmentation, tool). Start here | [DEVELOPING](docs/DEVELOPING.md) |
+| `org.radspider.numpy-demo` | 6 | numpy | The same three kinds, vectorised | [DEVELOPING](docs/DEVELOPING.md) |
 | `org.radspider.testkit` | 6 | numpy | Every feature: 4 nodes, 4 segmentations, 8 tools (params, units, progress, messages, empty result, error, cancel, charts, pictures, ROIs and segments in and out, an interactive window, icons, a Spanish catalog, several windows per run) | [testkit](docs/plugins/testkit.md) |
-| `org.radspider.sam-med3d` | 2 | torch, medim | Click-prompted 3D segmentation, SAM-Med3D turbo checkpoint | [sam-med3d](docs/plugins/sam-med3d.md) |
-| `org.radspider.monai-wholebody` | 2 | torch, monai | 104 CT structures, MONAI `wholeBody_ct_segmentation` bundle | [monai-wholebody](docs/plugins/monai-wholebody.md) |
-| `org.radspider.sam-slices` | 2 | onnxruntime | OHIF 3.10's AI on SAM ViT-B ONNX: click prompts, slice propagation, bidirectional measurement | [sam-slices](docs/plugins/sam-slices.md) |
-| `org.radspider.totalsegmentator` | 2 | onnxruntime (torch once) | 117 CT structures, TotalSegmentator v2 3 mm on ONNX Runtime | [totalsegmentator](docs/plugins/totalsegmentator.md) |
-| `org.radspider.registration-demo` | 3 | numpy | The smallest two-volume tool: translation-only registration | [registration-demo](docs/plugins/registration-demo.md) |
-| `org.radspider.cads` | 3 | torch, numpy, scipy | 167 CT structures in nine task groups, CADS nnU-Net models (open weights by default). After Slicer's CADSWholeBodyCTSeg | [cads](docs/plugins/cads.md) |
-| `org.radspider.lung-ct-analyzer` | 2 | numpy, scipy | Lung CT analysis by HU range (emphysema, inflated, infiltrated, collapsed) per lung, and a threshold lung segmentation. After Slicer's LungCTAnalyzer | [lung-ct-analyzer](docs/plugins/lung-ct-analyzer.md) |
-| `org.radspider.density-lung-segmentation` | 2 | numpy, scipy | Lung density classes from a 5-component Gaussian mixture, and their volumes. After Slicer's DensityLungSegmentation | [density-lung-segmentation](docs/plugins/density-lung-segmentation.md) |
-| `org.radspider.radiomics` | 2 | pyradiomics (from GitHub, compiled: needs git and a C compiler), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [radiomics](docs/plugins/radiomics.md) |
-| `org.radspider.roi-tools` | 2 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
-| `org.radspider.volume-tools` | 3 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
-| `org.radspider.skeletal-radiology` | 2 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [skeletal-radiology](docs/plugins/skeletal-radiology.md) |
+| `org.radspider.sam-med3d` | 6 | torch, medim | Click-prompted 3D segmentation, SAM-Med3D turbo checkpoint | [sam-med3d](docs/plugins/sam-med3d.md) |
+| `org.radspider.monai-wholebody` | 6 | torch, monai | 104 CT structures, MONAI `wholeBody_ct_segmentation` bundle | [monai-wholebody](docs/plugins/monai-wholebody.md) |
+| `org.radspider.sam-slices` | 6 | onnxruntime | OHIF 3.10's AI on SAM ViT-B ONNX: click prompts, slice propagation, bidirectional measurement | [sam-slices](docs/plugins/sam-slices.md) |
+| `org.radspider.totalsegmentator` | 6 | onnxruntime (torch once) | 117 CT structures, TotalSegmentator v2 3 mm on ONNX Runtime | [totalsegmentator](docs/plugins/totalsegmentator.md) |
+| `org.radspider.registration-demo` | 6 | numpy | The smallest two-volume tool: translation-only registration | [registration-demo](docs/plugins/registration-demo.md) |
+| `org.radspider.cads` | 6 | torch, numpy, scipy | 167 CT structures in nine task groups, CADS nnU-Net models (open weights by default). After Slicer's CADSWholeBodyCTSeg | [cads](docs/plugins/cads.md) |
+| `org.radspider.lung-ct-analyzer` | 6 | numpy, scipy | Lung CT analysis by HU range (emphysema, inflated, infiltrated, collapsed) per lung, and a threshold lung segmentation. After Slicer's LungCTAnalyzer | [lung-ct-analyzer](docs/plugins/lung-ct-analyzer.md) |
+| `org.radspider.density-lung-segmentation` | 6 | numpy, scipy | Lung density classes from a 5-component Gaussian mixture, and their volumes. After Slicer's DensityLungSegmentation | [density-lung-segmentation](docs/plugins/density-lung-segmentation.md) |
+| `org.radspider.radiomics` | 6 | pyradiomics (from GitHub, compiled: needs git and a C compiler), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [radiomics](docs/plugins/radiomics.md) |
+| `org.radspider.roi-tools` | 6 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
+| `org.radspider.volume-tools` | 6 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
+| `org.radspider.skeletal-radiology` | 6 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [skeletal-radiology](docs/plugins/skeletal-radiology.md) |
 
 Model weights are downloaded on first run (see each plugin's page); none are in this repository. Check each model's licence before shipping it inside a product.
 

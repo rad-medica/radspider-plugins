@@ -28,6 +28,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 - `tools/validate_plugins.py`: `api` 1 to 6; `icon` and `window` need api 6; a PNG icon must be a file inside the plugin folder.
 
 ### Changed
+- Every plugin moved to plugin API 6, version 1.1.0 (testkit stays 1.2.0): `org.radspider.examples`, `numpy-demo`, `registration-demo`, `monai-wholebody`, `totalsegmentator`, `sam-med3d`, `sam-slices`, `density-lung-segmentation`, `radiomics`, `cads`, `lung-ct-analyzer`, `volume-tools`, `roi-tools`, `skeletal-radiology`. Each gets Phosphor icons (plugin and entries), user-visible texts marked with `rp.tr` / `rp.trc` / `rp.trn`, `lang/template.toml` and a Spanish catalog `lang/es.toml`. Segment, label and ROI names stay untranslated (study data); raised error messages stay English (the SDK sends them as plain text).
+- Typed parameters (API 5) where a number encoded a flag, a pick or a count. Renamed or retyped, so values saved for 1.0.0 fall back to the defaults: `registration-demo` `subvoxel` → bool; `monai-wholebody` `highres` → choice `resolution` (`3 mm` / `1.5 mm`); `cads` `research_weights` → choice `weights`; `roi-tools` `all_on_slice`, `outlines` → bool, `sectors`, `layers` → integer, `mode` → choice; `skeletal-radiology` `view_mode` → choice. See each page under `docs/plugins/`.
+- Verified per plugin: manifest validation, catalogs match their regenerated templates, Python compiles; the numpy / scipy plugins ran on synthetic data outside the viewer; the model plugins (torch, ONNX, MONAI, CADS, SAM) were not run. Nothing checked in the radspider GUI.
 - Per-plugin sections moved from `README.md` to `docs/plugins/` (text unchanged).
 
 ## [0.1.0]

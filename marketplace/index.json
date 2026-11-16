@@ -5,8 +5,8 @@
     {
       "id": "org.radspider.cads",
       "name": "CADS whole body CT",
-      "version": "1.0.0",
-      "api": 3,
+      "version": "1.1.0",
+      "api": 6,
       "description": "167 anatomical structures on CT in nine groups (CADS-model, nnU-Net ResEnc L at 1.5 mm), run with PyTorch.",
       "entries": {
         "synth_node": 0,
@@ -20,20 +20,21 @@
         "dynamic-network-architectures>=0.4"
       ],
       "package": {
-        "file": "org.radspider.cads-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.cads-v1.0.0/org.radspider.cads-1.0.0.zip",
-        "sha256": "535dd1b10132a7d3852e6057d02b8f0601b8cb2bea7924010ee00530af266043",
-        "size": 36098
+        "file": "org.radspider.cads-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.cads-v1.1.0/org.radspider.cads-1.1.0.zip",
+        "sha256": "def6e0d53c4d1d1d76469d826a1fcd1b7ac60822277484987d415710a2bb3b57",
+        "size": 52044
       },
-      "tag": "org.radspider.cads-v1.0.0",
+      "tag": "org.radspider.cads-v1.1.0",
       "second_volume": false,
+      "icon": "person-arms-spread",
       "first_run_download": "Downloads the model weights of a task group the first time that group runs: about 762 MB per group and weight set, from the CADS GitHub releases."
     },
     {
       "id": "org.radspider.density-lung-segmentation",
       "name": "Density lung segmentation",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Lung tissue on CT by density with a fixed 5-class Gaussian mixture: air, healthy lung, ground glass opacity, consolidation, other denser tissues.",
       "entries": {
         "synth_node": 0,
@@ -45,19 +46,20 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.density-lung-segmentation-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.density-lung-segmentation-v1.0.0/org.radspider.density-lung-segmentation-1.0.0.zip",
-        "sha256": "418aebaa3ab7cbcb3a122bd86e8cedfff24849b1e245a81ee1018a785edcaf99",
-        "size": 10397
+        "file": "org.radspider.density-lung-segmentation-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.density-lung-segmentation-v1.1.0/org.radspider.density-lung-segmentation-1.1.0.zip",
+        "sha256": "254fe7feaf6d9b1a222b2a6a971813b598da84b3a79d83e9b19f9e8b41700139",
+        "size": 17257
       },
-      "tag": "org.radspider.density-lung-segmentation-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.density-lung-segmentation-v1.1.0",
+      "second_volume": false,
+      "icon": "wind"
     },
     {
       "id": "org.radspider.examples",
       "name": "Examples",
-      "version": "1.0.0",
-      "api": 1,
+      "version": "1.1.0",
+      "api": 6,
       "description": "One entry of each kind, standard library only.",
       "entries": {
         "synth_node": 1,
@@ -66,19 +68,20 @@
       },
       "requirements": [],
       "package": {
-        "file": "org.radspider.examples-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.examples-v1.0.0/org.radspider.examples-1.0.0.zip",
-        "sha256": "18306379a1920ef8a4f452d3b2822979075f35b2c2d2778613195812845488ea",
-        "size": 2237
+        "file": "org.radspider.examples-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.examples-v1.1.0/org.radspider.examples-1.1.0.zip",
+        "sha256": "63943260f6c5214335126d4f6016418316878e5ed34ce544eb891d9825d99232",
+        "size": 5041
       },
-      "tag": "org.radspider.examples-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.examples-v1.1.0",
+      "second_volume": false,
+      "icon": "book-open"
     },
     {
       "id": "org.radspider.lung-ct-analyzer",
       "name": "Lung CT analyzer",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Lung volumes by density on CT: emphysema, inflated, infiltrated, collapsed, vessels per lung, functional and affected volume. Lung masks without AI.",
       "entries": {
         "synth_node": 0,
@@ -90,19 +93,20 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.lung-ct-analyzer-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.lung-ct-analyzer-v1.0.0/org.radspider.lung-ct-analyzer-1.0.0.zip",
-        "sha256": "4f74c6818b7710215fb8d845e13bf3acf48cceb08ee41ae379ede95656928a8f",
-        "size": 22728
+        "file": "org.radspider.lung-ct-analyzer-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.lung-ct-analyzer-v1.1.0/org.radspider.lung-ct-analyzer-1.1.0.zip",
+        "sha256": "2ad2fe823d3449b01b5825f42c79930a331759c4a28df82e0079a678a9462712",
+        "size": 32065
       },
-      "tag": "org.radspider.lung-ct-analyzer-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.lung-ct-analyzer-v1.1.0",
+      "second_volume": false,
+      "icon": "wind"
     },
     {
       "id": "org.radspider.monai-wholebody",
       "name": "MONAI whole body CT",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "104 anatomical structures on CT with the MONAI wholeBody_ct_segmentation bundle.",
       "entries": {
         "synth_node": 0,
@@ -116,20 +120,21 @@
         "huggingface_hub"
       ],
       "package": {
-        "file": "org.radspider.monai-wholebody-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.monai-wholebody-v1.0.0/org.radspider.monai-wholebody-1.0.0.zip",
-        "sha256": "48da6de66c689f21f4ebe0272589a630614228a9c5e11ce6e9e20e49dcfb1a7c",
-        "size": 8232
+        "file": "org.radspider.monai-wholebody-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.monai-wholebody-v1.1.0/org.radspider.monai-wholebody-1.1.0.zip",
+        "sha256": "745c8961b4515c1fc54c199d5e71f1574233769d543389bd490a0c4a584739f9",
+        "size": 11504
       },
-      "tag": "org.radspider.monai-wholebody-v1.0.0",
+      "tag": "org.radspider.monai-wholebody-v1.1.0",
       "second_volume": false,
+      "icon": "person-simple-walk",
       "first_run_download": "Downloads the model weights on first run: 71 MB per resolution."
     },
     {
       "id": "org.radspider.numpy-demo",
       "name": "NumPy demo",
-      "version": "1.0.0",
-      "api": 1,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Vectorised entries with numpy.",
       "entries": {
         "synth_node": 1,
@@ -140,19 +145,20 @@
         "numpy>=1.26"
       ],
       "package": {
-        "file": "org.radspider.numpy-demo-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.numpy-demo-v1.0.0/org.radspider.numpy-demo-1.0.0.zip",
-        "sha256": "d18e7596bffefcf71e4721b8fd89b45b8c0aab14e0bd468ed3e7745aac4b737e",
-        "size": 2929
+        "file": "org.radspider.numpy-demo-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.numpy-demo-v1.1.0/org.radspider.numpy-demo-1.1.0.zip",
+        "sha256": "f7f4e1e0ed43a2249049b04002177b43b62f54e317a528be820a68d8b21e471b",
+        "size": 5465
       },
-      "tag": "org.radspider.numpy-demo-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.numpy-demo-v1.1.0",
+      "second_volume": false,
+      "icon": "function"
     },
     {
       "id": "org.radspider.radiomics",
       "name": "Radiomics (pyradiomics)",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics.",
       "entries": {
         "synth_node": 0,
@@ -166,19 +172,20 @@
         "PyWavelets>=1.6.0"
       ],
       "package": {
-        "file": "org.radspider.radiomics-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.radiomics-v1.0.0/org.radspider.radiomics-1.0.0.zip",
-        "sha256": "ea2fc4cbd70dc54342657eccf604f38703d891bf699ce1a46d06815a591175b4",
-        "size": 11693
+        "file": "org.radspider.radiomics-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.radiomics-v1.1.0/org.radspider.radiomics-1.1.0.zip",
+        "sha256": "bd89aab6670a5dc0a7bd978756a8a1d39bef42fba890c26c5e472b2363c0394a",
+        "size": 18442
       },
-      "tag": "org.radspider.radiomics-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.radiomics-v1.1.0",
+      "second_volume": false,
+      "icon": "chart-scatter"
     },
     {
       "id": "org.radspider.registration-demo",
       "name": "Registration demo",
-      "version": "1.0.0",
-      "api": 3,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Translation-only registration of a second series onto the active one (numpy, cross-correlation).",
       "entries": {
         "synth_node": 0,
@@ -189,19 +196,20 @@
         "numpy>=1.26"
       ],
       "package": {
-        "file": "org.radspider.registration-demo-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.registration-demo-v1.0.0/org.radspider.registration-demo-1.0.0.zip",
-        "sha256": "68c09d68fb8d1a1fae524e2db967629e03ad3ad9cb0b829f299c5e43ec312821",
-        "size": 10382
+        "file": "org.radspider.registration-demo-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.registration-demo-v1.1.0/org.radspider.registration-demo-1.1.0.zip",
+        "sha256": "f74e7d7b3555f96397346f0a2d22ca28544c566bc76f54b7decec19f044a6624",
+        "size": 15495
       },
-      "tag": "org.radspider.registration-demo-v1.0.0",
-      "second_volume": true
+      "tag": "org.radspider.registration-demo-v1.1.0",
+      "second_volume": true,
+      "icon": "intersect"
     },
     {
       "id": "org.radspider.roi-tools",
       "name": "ROI tools",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Ten measurement tools: Cobb angle, ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score.",
       "entries": {
         "synth_node": 0,
@@ -213,19 +221,20 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.roi-tools-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.roi-tools-v1.0.0/org.radspider.roi-tools-1.0.0.zip",
-        "sha256": "450ac6e859d6ea20a3640cc44a46038821a8f203bee069bc58395eb9eb5a1b1b",
-        "size": 37338
+        "file": "org.radspider.roi-tools-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.roi-tools-v1.1.0/org.radspider.roi-tools-1.1.0.zip",
+        "sha256": "ff7fd5aeb2b0f2dbcbdfd6f3d58435b4d9c4a09ac2c9cf0a494ed6084ff9dedc",
+        "size": 59496
       },
-      "tag": "org.radspider.roi-tools-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.roi-tools-v1.1.0",
+      "second_volume": false,
+      "icon": "ruler"
     },
     {
       "id": "org.radspider.sam-med3d",
       "name": "SAM-Med3D",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Click-prompted 3D segmentation: place Probe measurements on the object, run, get a segment.",
       "entries": {
         "synth_node": 0,
@@ -240,20 +249,21 @@
         "requests"
       ],
       "package": {
-        "file": "org.radspider.sam-med3d-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-med3d-v1.0.0/org.radspider.sam-med3d-1.0.0.zip",
-        "sha256": "fd70be77e7334a558b07ca1d2288bedb3d413e3d6304f07eaf132fec7bbe07f4",
-        "size": 10122
+        "file": "org.radspider.sam-med3d-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-med3d-v1.1.0/org.radspider.sam-med3d-1.1.0.zip",
+        "sha256": "da433bc93120a14175ae48ac380b5c487d2bfe6ccbfb80f49fc06ba95cb6bb82",
+        "size": 13166
       },
-      "tag": "org.radspider.sam-med3d-v1.0.0",
+      "tag": "org.radspider.sam-med3d-v1.1.0",
       "second_volume": false,
+      "icon": "cube",
       "first_run_download": "Downloads the SAM-Med3D turbo checkpoint (about 400 MB) from Hugging Face on first run."
     },
     {
       "id": "org.radspider.sam-slices",
       "name": "SAM slices",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments.",
       "entries": {
         "synth_node": 0,
@@ -266,20 +276,21 @@
         "huggingface_hub"
       ],
       "package": {
-        "file": "org.radspider.sam-slices-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-slices-v1.0.0/org.radspider.sam-slices-1.0.0.zip",
-        "sha256": "b173fb4f16943833c30cb5e9832c97e9bdf2ec95df34dbcdf09fb51d1718a9b3",
-        "size": 14103
+        "file": "org.radspider.sam-slices-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.sam-slices-v1.1.0/org.radspider.sam-slices-1.1.0.zip",
+        "sha256": "546e23cc3aea0e88667a8ab2962d4649fa2d1c8721186137b2b4a88c2bf2f9bd",
+        "size": 19630
       },
-      "tag": "org.radspider.sam-slices-v1.0.0",
+      "tag": "org.radspider.sam-slices-v1.1.0",
       "second_volume": false,
+      "icon": "magic-wand",
       "first_run_download": "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."
     },
     {
       "id": "org.radspider.skeletal-radiology",
       "name": "Skeletal radiology",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Automatic skeletal radiography measurements with interactive refinement: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), lower limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, limb lengths and discrepancy), hip and pelvis (Wiberg LCEA, Tönnis angle, neck-shaft CCD angle, pelvic obliquity), diaphyseal cortical morphometry (Barnett-Nordin index, corticomedullary ratio), and foot/hand goniometry (hallux valgus, intermetatarsal, Böhler, Gissane, metacarpal index).",
       "entries": {
         "synth_node": 0,
@@ -291,43 +302,44 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.skeletal-radiology-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.skeletal-radiology-v1.0.0/org.radspider.skeletal-radiology-1.0.0.zip",
-        "sha256": "3576e34705bd1e6b9d32edd44f9acc5eb15e0d6c4d3f38c3d4470963b52ed26d",
-        "size": 80660
+        "file": "org.radspider.skeletal-radiology-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.skeletal-radiology-v1.1.0/org.radspider.skeletal-radiology-1.1.0.zip",
+        "sha256": "62fba1cf0a051daa243ec669411d3aa060aa820e15b3f45ac425d3537b506c22",
+        "size": 122489
       },
-      "tag": "org.radspider.skeletal-radiology-v1.0.0",
-      "second_volume": false
+      "tag": "org.radspider.skeletal-radiology-v1.1.0",
+      "second_volume": false,
+      "icon": "bone"
     },
     {
       "id": "org.radspider.testkit",
       "name": "Test kit",
-      "version": "1.0.0",
-      "api": 2,
-      "description": "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window.",
+      "version": "1.2.0",
+      "api": 6,
+      "description": "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window, icons, translations, several windows per run.",
       "entries": {
         "synth_node": 4,
         "segmentation": 4,
-        "tool": 7
+        "tool": 8
       },
       "requirements": [
         "numpy>=1.26"
       ],
       "package": {
-        "file": "org.radspider.testkit-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.testkit-v1.0.0/org.radspider.testkit-1.0.0.zip",
-        "sha256": "de03082894c5546db4da9478591fd1f929e15a6e5737bad2614a0c784df2ae47",
-        "size": 20449
+        "file": "org.radspider.testkit-1.2.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.testkit-v1.2.0/org.radspider.testkit-1.2.0.zip",
+        "sha256": "33914c027f67a0c7b148f5c2f06d7025606e43be7e226ad075ba395373584d0b",
+        "size": 37338
       },
-      "tag": "org.radspider.testkit-v1.0.0",
+      "tag": "org.radspider.testkit-v1.2.0",
       "second_volume": false,
       "icon": "flask"
     },
     {
       "id": "org.radspider.totalsegmentator",
       "name": "TotalSegmentator",
-      "version": "1.0.0",
-      "api": 2,
+      "version": "1.1.0",
+      "api": 6,
       "description": "117 anatomical structures on CT (TotalSegmentator v2, 3 mm model), run with ONNX Runtime.",
       "entries": {
         "synth_node": 0,
@@ -342,20 +354,21 @@
         "dynamic-network-architectures>=0.4"
       ],
       "package": {
-        "file": "org.radspider.totalsegmentator-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.totalsegmentator-v1.0.0/org.radspider.totalsegmentator-1.0.0.zip",
-        "sha256": "a7b7d34217719cb81eae7e9936b0b41df4734e59980aa835d6a82194338e9bb3",
-        "size": 11483
+        "file": "org.radspider.totalsegmentator-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.totalsegmentator-v1.1.0/org.radspider.totalsegmentator-1.1.0.zip",
+        "sha256": "099471fdb3595b7296d4e6e84d97b3931dab4c35578b610d0a78e204ee6bc080",
+        "size": 14597
       },
-      "tag": "org.radspider.totalsegmentator-v1.0.0",
+      "tag": "org.radspider.totalsegmentator-v1.1.0",
       "second_volume": false,
+      "icon": "bone",
       "first_run_download": "Downloads the 135 MB nnU-Net checkpoint on first run and converts it to a 65 MB ONNX file (needs PyTorch once)."
     },
     {
       "id": "org.radspider.volume-tools",
       "name": "Volume tools",
-      "version": "1.0.0",
-      "api": 3,
+      "version": "1.1.0",
+      "api": 6,
       "description": "Invert, scale / normalize to a region, ΔR2 map of two series, tag grid from two tagged series, rigid mutual-information registration.",
       "entries": {
         "synth_node": 2,
@@ -367,13 +380,14 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.volume-tools-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.volume-tools-v1.0.0/org.radspider.volume-tools-1.0.0.zip",
-        "sha256": "46617cfb5bcf1d737fafd63a30339867cdbf7e13b290ad93137b5bfde78949e0",
-        "size": 34672
+        "file": "org.radspider.volume-tools-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.volume-tools-v1.1.0/org.radspider.volume-tools-1.1.0.zip",
+        "sha256": "ab0a34fc6a12a171e920dab3dadd79a33f9d1f1fd569b97c5f87a565b19a8d67",
+        "size": 51254
       },
-      "tag": "org.radspider.volume-tools-v1.0.0",
-      "second_volume": true
+      "tag": "org.radspider.volume-tools-v1.1.0",
+      "second_volume": true,
+      "icon": "cube"
     }
   ]
 }
