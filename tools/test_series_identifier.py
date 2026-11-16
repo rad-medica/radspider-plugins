@@ -5,6 +5,7 @@ everything else needs neither (no network: urlopen is patched).
 """
 
 import hashlib
+import http.client
 import importlib.util
 import io
 import math
@@ -12,6 +13,7 @@ import os
 import re
 import sys
 import tempfile
+import types
 import unittest
 import urllib.error
 from pathlib import Path
@@ -569,13 +571,68 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(R.series_class("LOW_PROBABILITY_t2w", {"b_values": [1000]}), "tracew")
         self.assertEqual(R.series_class("t2w", {"b_values": [0], "gradient_directions": 6}), "t2w")
         self.assertEqual(R.series_class("t1w", None), "t1w")
+        # The reference tests the volume b-value as get_bvalue returns it: rounded to 10, MISSING above 5000.
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 3], "gradient_directions": 6}), "t2w")
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 6000], "gradient_directions": 6}), "t2w")
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 5], "gradient_directions": 6}), "t2w")  # 0.5 -> 0
+        self.assertEqual(R.series_class("t2w", {"b_values": [0, 6], "gradient_directions": 6}), "dwig")
 
 
 class FakeResponse(io.BytesIO):
     headers = {"Content-Length": "16"}
 
 
+class TruncatedResponse(FakeResponse):
+    def read(self, n=-1):
+        raise http.client.IncompleteRead(b"partial", 100)
+
+
 class ModelTests(unittest.TestCase):
+    def setUp(self):
+        M.reset()
+
+    def tearDown(self):
+        M.reset()
+
+    def test_truncated_download_leaves_nothing(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=TruncatedResponse(b"")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("RADSPIDER_SERIES_ID_MODEL", str(cm.exception))
+            self.assertEqual(os.listdir(d), [])
+
+    def test_interrupt_leaves_nothing(self):
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(FakeResponse, "read", side_effect=KeyboardInterrupt), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(b"x")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(KeyboardInterrupt):
+                M.model_path(None)
+            self.assertEqual(os.listdir(d), [])
+
+    def test_failure_cached(self):
+        # Fake numpy/onnxruntime so this runs on a python without them: the failure comes from the download.
+        fakes = {"numpy": types.ModuleType("numpy"), "onnxruntime": types.ModuleType("onnxruntime")}
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.dict(sys.modules, fakes), \
+                mock.patch.object(M.urllib.request, "urlopen", side_effect=urllib.error.URLError("offline")) as op:
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as first:
+                M.predict(T1_VECTOR)
+            with self.assertRaises(M.Unavailable) as second:
+                M.predict(T1_VECTOR)
+            self.assertEqual(op.call_count, 1)
+            self.assertIs(second.exception, first.exception)
+            M.reset()
+            with self.assertRaises(M.Unavailable):
+                M.predict(T1_VECTOR)
+            self.assertEqual(op.call_count, 2)
+
     def test_classes(self):
         self.assertEqual(M.CLASSES, ("t1w", "gret2star", "t2w", "flair", "b0", "tracew", "adc", "fa", "eadc", "dwig"))
         self.assertEqual(M.LOW_PROBABILITY, 0.4)
@@ -631,6 +688,11 @@ class ModelTests(unittest.TestCase):
         self.assertEqual({c for c, _ in pairs}, set(M.CLASSES))
         self.assertAlmostEqual(sum(p for _, p in pairs), 1.0, delta=1e-5)
         self.assertEqual([p for _, p in pairs], sorted((p for _, p in pairs), reverse=True))
+        self.assertEqual(pairs[0][0], "t1w")
+        self.assertAlmostEqual(pairs[0][1], 0.9129343, places=6)  # as before the session options
+        options = M.load().get_session_options()
+        self.assertEqual((options.intra_op_num_threads, options.inter_op_num_threads), (1, 1))
+        self.assertEqual(options.get_session_config_entry("session.intra_op.allow_spinning"), "0")
         with self.assertRaises(ValueError):
             M.predict(T1_VECTOR[:-1])
 

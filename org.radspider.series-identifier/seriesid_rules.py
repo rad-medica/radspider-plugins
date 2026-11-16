@@ -774,6 +774,11 @@ def _bvalue(t):
         b = float(v)  # a multi-valued element raises: MISSING (:291-293)
     except (TypeError, ValueError):
         return MISSING  # :282-290
+    return _normalise_b(b)
+
+
+def _normalise_b(b):
+    """A b-value (float) as get_bvalue returns it: MISSING above 5000 or not finite, else rounded to 10."""
     if b > 5000:
         return MISSING  # :280-281, tested before rounding
     if not math.isfinite(b):
@@ -878,7 +883,8 @@ def series_class(label, series):
 
     `LOW_PROBABILITY_` is dropped (:506). When the series has a b-value > 0 and the class is not a diffusion class,
     the class becomes `dwig` with >= 3 distinct gradient directions, else `tracew` (utility_functions.py:398-402).
-    The reference takes the b-value of the volume; here `series["b_values"]` (ctx.series) holds those of the series.
+    The reference takes the b-value of the volume as get_bvalue returns it (rounded to 10, MISSING above 5000); here
+    each of `series["b_values"]` (ctx.series) goes through the same `_normalise_b`.
     """
     label = label.replace("LOW_PROBABILITY_", "")
     if label in DIFFUSION_CLASSES or not series:
@@ -886,7 +892,7 @@ def series_class(label, series):
     b_values = series.get("b_values")
     if not isinstance(b_values, (list, tuple)):
         b_values = [b_values]
-    if not any(b is not None and b > 0 for b in (number(x) for x in b_values)):
+    if not any(b is not None and _normalise_b(b) > 0 for b in (number(x) for x in b_values)):
         return label
     directions = number(series.get("gradient_directions"))
     return "dwig" if directions is not None and directions >= 3 else "tracew"

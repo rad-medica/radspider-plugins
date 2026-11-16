@@ -9,6 +9,7 @@ numpy and onnxruntime are imported when the model is first used, so this module 
 """
 
 import hashlib
+import http.client
 import os
 import threading
 import urllib.error
@@ -30,6 +31,7 @@ N_FEATURES = 28
 
 _lock = threading.Lock()
 _session = None
+_failure = None
 
 
 class Unavailable(ValueError):
@@ -78,13 +80,13 @@ def model_path(progress):
         return local
     try:
         d = cache_dir()
+        path = os.path.join(d, FILE)
+        if os.path.isfile(path):
+            if sha256_of(path) == SHA256:
+                return path
+            _remove(path)  # damaged or stale: fetched again below
     except OSError as e:
-        raise Unavailable("Cannot create the model folder (%s). Set %s to a writable folder" % (e, ENV_DIR)) from e
-    path = os.path.join(d, FILE)
-    if os.path.isfile(path):
-        if sha256_of(path) == SHA256:
-            return path
-        _remove(path)  # damaged or stale: fetched again below
+        raise Unavailable("Cannot use the model folder (%s). Set %s to a writable folder" % (e, ENV_DIR)) from e
     part = path + ".part"
     h = hashlib.sha256()
     try:
@@ -99,32 +101,67 @@ def model_path(progress):
                 done += len(chunk)
                 if progress and total:
                     progress(min(1.0, done / total))
-    except (OSError, ValueError) as e:  # URLError, timeouts and disk errors are OSError
+    except BaseException as e:
+        # Never leave a partial file, whatever stopped the download (KeyboardInterrupt included).
         _remove(part)
-        raise Unavailable("Could not download the dcm-classifier model (%s). %s" % (e, _offline_hint())) from e
+        # URLError, timeouts and disk errors are OSError; a truncated body is an http.client.HTTPException.
+        if isinstance(e, (OSError, ValueError, http.client.HTTPException)):
+            raise Unavailable("Could not download the dcm-classifier model (%s). %s" % (e, _offline_hint())) from e
+        raise
     got = h.hexdigest()
     if got != SHA256:
         _remove(part)
         raise Unavailable("The downloaded dcm-classifier model does not match the pinned SHA-256: expected %s, got %s;"
                           " it was deleted. %s" % (SHA256, got, _offline_hint()))
-    os.replace(part, path)
+    try:
+        os.replace(part, path)
+    except OSError as e:
+        _remove(part)
+        raise Unavailable("Could not store the model as %s (%s). %s" % (path, e, _offline_hint())) from e
     return path
 
 
-def _load(progress):
-    global _session
+def _new_session(progress):
+    try:
+        import onnxruntime
+    except ImportError as e:
+        raise Unavailable("onnxruntime is not installed (%s)" % e) from e
+    path = model_path(progress)
+    try:
+        # One thread, no spinning: a 28-value forest needs no pool, and idle spinning threads would burn CPU in
+        # the host for the life of the process.
+        options = onnxruntime.SessionOptions()
+        options.intra_op_num_threads = 1
+        options.inter_op_num_threads = 1
+        options.add_session_config_entry("session.intra_op.allow_spinning", "0")
+        options.add_session_config_entry("session.inter_op.allow_spinning", "0")
+        return onnxruntime.InferenceSession(path, sess_options=options, providers=["CPUExecutionProvider"])
+    except Exception as e:
+        raise Unavailable("onnxruntime could not load %s (%s)" % (path, e)) from e
+
+
+def load(progress=None):
+    """The ONNX session, created once per process. A failure is remembered too: later calls raise the same
+    `Unavailable` without retrying the download (`reset` forgets both)."""
+    global _session, _failure
     with _lock:
+        if _failure is not None:
+            raise _failure
         if _session is None:
             try:
-                import onnxruntime
-            except ImportError as e:
-                raise Unavailable("onnxruntime is not installed (%s)" % e) from e
-            path = model_path(progress)
-            try:
-                _session = onnxruntime.InferenceSession(path, providers=["CPUExecutionProvider"])
-            except Exception as e:
-                raise Unavailable("onnxruntime could not load %s (%s)" % (path, e)) from e
+                _session = _new_session(progress)
+            except Unavailable as e:
+                _failure = e
+                raise
         return _session
+
+
+def reset():
+    """Forget the cached session and the cached failure (for tests, or a retry the user asked for)."""
+    global _session, _failure
+    with _lock:
+        _session = None
+        _failure = None
 
 
 def predict(vector, progress=None):
@@ -138,7 +175,7 @@ def predict(vector, progress=None):
         import numpy as np
     except ImportError as e:
         raise Unavailable("numpy is not installed (%s)" % e) from e
-    session = _load(progress)
+    session = load(progress)
     x = np.asarray([vector], dtype=np.float32)
     outputs = [o.name for o in session.get_outputs()]
     _, probabilities = session.run(outputs[:2], {session.get_inputs()[0].name: x})
