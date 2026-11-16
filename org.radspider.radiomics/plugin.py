@@ -13,15 +13,15 @@ import radspider_plugin as rp
 # The classes SlicerRadiomics lists, in pyradiomics' output order; shape2D is left out (it needs force2D).
 CLASSES = ["shape", "firstorder", "glcm", "gldm", "glrlm", "glszm", "ngtdm"]
 CLASS_LABELS = {
-    "firstorder": "First order",
-    "shape": "Shape (3D)",
+    "firstorder": rp.tr("First order"),
+    "shape": rp.tr("Shape (3D)"),
     "glcm": "GLCM",
     "glrlm": "GLRLM",
     "glszm": "GLSZM",
     "gldm": "GLDM",
     "ngtdm": "NGTDM",
 }
-ALL_SEGMENTS = "All segments"
+ALL_SEGMENTS = rp.tr("All segments")
 LOG_FIELDS = ("log_sigma_1", "log_sigma_2", "log_sigma_3")
 
 
@@ -49,25 +49,26 @@ def _options(ctx, segment_names):
 
 
 def _controls(o, segment_names):
-    out = [rp.Choice("segment", "Segment", [ALL_SEGMENTS] + segment_names, o["segment"])]
+    out = [rp.Choice("segment", rp.tr("Segment"), [ALL_SEGMENTS] + segment_names, o["segment"])]
     out += [rp.Checkbox("class_" + k, CLASS_LABELS[k], o["classes"][k]) for k in sorted(CLASSES)]
     out += [
-        rp.Button("all_classes", "All classes"),
-        rp.Button("no_classes", "No classes"),
-        rp.Number("bin_width", "Bin width", o["bin_width"], min=0.01, max=10000.0, step=1.0,
-                  help="Width of the grey-level bins, in the unit of the series (25 suits HU)"),
-        rp.Number("resample_mm", "Resampled voxel size (mm, 0 = none)", o["resample_mm"], min=0.0, max=50.0, step=0.5,
-                  help="Isotropic voxel size the image and the mask are resampled to before extraction"),
-        rp.Checkbox("symmetric_glcm", "Symmetrical GLCM", o["symmetric_glcm"]),
+        rp.Button("all_classes", rp.tr("All classes")),
+        rp.Button("no_classes", rp.tr("No classes")),
+        rp.Number("bin_width", rp.tr("Bin width"), o["bin_width"], min=0.01, max=10000.0, step=1.0,
+                  help=rp.tr("Width of the grey-level bins, in the unit of the series (25 suits HU)")),
+        rp.Number("resample_mm", rp.tr("Resampled voxel size (mm, 0 = none)"), o["resample_mm"], min=0.0, max=50.0,
+                  step=0.5, help=rp.tr("Isotropic voxel size the image and the mask are resampled to before extraction")),
+        rp.Checkbox("symmetric_glcm", rp.tr("Symmetrical GLCM"), o["symmetric_glcm"]),
     ]
     out += [
-        rp.Number(k, "LoG kernel size %d (mm, 0 = off)" % (i + 1), o["log_sigmas"][i], min=0.0, max=50.0, step=0.5,
-                  help="Sigma of a Laplacian of Gaussian filter; features are also computed on the filtered image")
+        rp.Number(k, rp.tr("LoG kernel size {number} (mm, 0 = off)", number=i + 1), o["log_sigmas"][i], min=0.0, max=50.0,
+                  step=0.5,
+                  help=rp.tr("Sigma of a Laplacian of Gaussian filter; features are also computed on the filtered image"))
         for i, k in enumerate(LOG_FIELDS)
     ]
     out += [
-        rp.Checkbox("wavelet", "Wavelet features (8 decompositions, slow)", o["wavelet"]),
-        rp.Button("extract", "Extract"),
+        rp.Checkbox("wavelet", rp.tr("Wavelet features (8 decompositions, slow)"), o["wavelet"]),
+        rp.Button("extract", rp.tr("Extract")),
     ]
     return out
 
@@ -154,7 +155,7 @@ def _table(columns, results):
             if k not in seen:
                 seen.add(k)
                 keys.append(k)
-    return [["Feature"] + columns] + [[k] + [_cell(r[k]) if k in r else "" for r in results] for k in keys]
+    return [[rp.tr("Feature")] + columns] + [[k] + [_cell(r[k]) if k in r else "" for r in results] for k in keys]
 
 
 @rp.tool("radiomics")
@@ -172,7 +173,11 @@ def radiomics(volume, ctx):
     if ctx.event != "extract":
         return rp.Result(
             controls=controls,
-            message="%d segment(s). Choose the feature classes and options, then press Extract." % len(segments),
+            message=rp.trn(
+                len(segments),
+                "{n} segment. Choose the feature classes and options, then press Extract.",
+                "{n} segments. Choose the feature classes and options, then press Extract.",
+            ),
         )
     if not enabled:
         raise ValueError("No feature class selected: tick at least one, then press Extract")
@@ -196,7 +201,7 @@ def radiomics(volume, ctx):
 
     results, failed = [], []
     for i, (name, segment) in enumerate(picked):
-        ctx.progress(i / len(picked), "%s (%d of %d)" % (name, i + 1, len(picked)))
+        ctx.progress(i / len(picked), rp.tr("{name} ({index} of {total})", name=name, index=i + 1, total=len(picked)))
         mask = segment.mask() & has_data
         try:
             if not mask.any():
@@ -207,15 +212,27 @@ def radiomics(volume, ctx):
             # resampling) with a ValueError. One unusable segment should not cost the others their columns.
             results.append({"extraction_Error": str(e)})
             failed.append("%s: %s" % (name, e))
-    ctx.progress(1.0, "Done")
+    ctx.progress(1.0, rp.tr("Done"))
     if len(failed) == len(picked):
         raise ValueError("No features extracted. " + "; ".join(failed))
 
     table = _table([n for n, _ in picked], results)
     n_features = sum(1 for row in table[1:] if not row[0].startswith(("diagnostics_", "extraction_")))
-    message = "pyradiomics %s: %d features × %d segment(s), classes %s." % (
-        pyradiomics.__version__, n_features, len(picked) - len(failed), ", ".join(enabled),
-    )
+    done = len(picked) - len(failed)
+    args = {"version": pyradiomics.__version__, "features": n_features, "classes": ", ".join(enabled)}
     if failed:
-        message += " Failed: " + "; ".join(failed)
+        message = rp.trn(
+            done,
+            "pyradiomics {version}: {features} features × {n} segment, classes {classes}. Failed: {failed}",
+            "pyradiomics {version}: {features} features × {n} segments, classes {classes}. Failed: {failed}",
+            failed="; ".join(failed)[:900],  # a text argument is capped at 1000 characters
+            **args,
+        )
+    else:
+        message = rp.trn(
+            done,
+            "pyradiomics {version}: {features} features × {n} segment, classes {classes}.",
+            "pyradiomics {version}: {features} features × {n} segments, classes {classes}.",
+            **args,
+        )
     return rp.Result(table=table, controls=controls, message=message)

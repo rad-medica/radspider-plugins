@@ -173,20 +173,23 @@ def segment(volume, ctx):
     if np.isnan(a).any():
         a = np.where(np.isnan(a), np.nanmin(a) if not np.isnan(a).all() else 0.0, a).astype(np.float32)
     dims, spacing = volume.dims, volume.spacing
-    groups = group_prompts(ctx.rois, dims, ctx.params["separate"] >= 0.5)
+    groups = group_prompts(ctx.rois, dims, ctx.params["separate"])
     if len(groups) > 255:
         raise ValueError("More than 255 objects")
-    iterations = int(round(ctx.params["iterations"]))
+    iterations = ctx.params["iterations"]
     thr = float(ctx.params["threshold"])
 
-    ctx.progress(0.02, "Loading SAM-Med3D (first run downloads ~400 MB)")
+    ctx.progress(0.02, rp.tr("Loading SAM-Med3D (first run downloads ~400 MB)"))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(device)
 
     labels = np.zeros(a.shape, dtype=np.uint8)
     names = []
     for i, (pos, neg) in enumerate(groups):
-        ctx.progress(0.1 + 0.85 * i / len(groups), "Object %d of %d on %s" % (i + 1, len(groups), device.type))
+        ctx.progress(
+            0.1 + 0.85 * i / len(groups),
+            rp.tr("Object {index} of {total} on {device}", index=i + 1, total=len(groups), device=device.type),
+        )
         centre = [sum(p[k] for p in pos) / len(pos) for k in range(3)]
         win = Window(dims, spacing, centre)
         points = [win.to_window(p) for p in pos]
