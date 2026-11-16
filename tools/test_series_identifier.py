@@ -271,6 +271,7 @@ CASES = {
                                    "0008,103E": "t1_vibe_dixon_tra", "0018,0020": "GR",
                                    "0018,0021": "SK\\SP\\OSP", "0018,0080": 4.0, "0018,0081": 2.4,
                                    "0018,1314": 9.0}, {"modality": "MR"}, AXIAL, False),
+    # Philips Image Type W\W and the Siemens DET_AB token below are not checked against a real header.
     "mr_mdixon_water": ({"0008,0008": "ORIGINAL\\PRIMARY\\W\\W\\DERIVED", "0008,0070": "Philips Medical Systems",
                          "0008,103E": "mDIXON_W", "0018,0020": "GR", "0018,0021": "SK\\SP", "0018,0080": 5.5,
                          "0018,0081": 1.8, "0018,1314": 10.0}, {"modality": "MR"}, AXIAL, False),
@@ -299,6 +300,8 @@ CASES = {
                      "0008,103E": "THYROID 3HR POST"}, {"modality": "NM"}, NONE, False),
     "nm_24h_post_ant": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,0070": "SIEMENS",
                          "0008,103E": "WB 24 H POST ANT"}, {"modality": "NM"}, NONE, False),
+    "nm_24hr_posterior": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,0070": "SIEMENS",
+                           "0008,103E": "WB 24HR POSTERIOR"}, {"modality": "NM"}, NONE, False),
     "mg_generated_2d": ({"0008,0008": "DERIVED\\PRIMARY\\TOMO_2D\\NONE", "0008,0070": "HOLOGIC, Inc.",
                          "0008,103E": "L MLO", "0018,5101": "MLO", "0020,0062": "L"}, {"modality": "MG"}, NONE, False),
 }
@@ -530,6 +533,7 @@ class IdentifyTests(unittest.TestCase):
                        "not determined: the description names both anterior and posterior views")
         self.assertHas("nm_3hr_post", "projection", "not determined: no view in Patient Orientation or the description")
         self.assertHas("nm_24h_post_ant", "projection", "Anterior view")
+        self.assertHas("nm_24hr_posterior", "projection", "Posterior view")
         # 10. Dual source is not dual energy.
         self.assertNotIn("Dual-energy (spectral) reconstruction", texts(run("ct_dual_source"), "series"))
         self.assertHas("ct_dual_energy_det", "series", "Dual-energy (spectral) reconstruction")
@@ -855,6 +859,42 @@ class ModelTests(unittest.TestCase):
             self.assertEqual(len(mine), 1)
             self.assertTrue(mine[0].startswith(M.FILE + ".") and mine[0].endswith(".part"), mine)
             self.assertEqual(os.listdir(d), [M.FILE + ".part"])
+
+    def test_download_success_stores_only_the_model(self):
+        body = b"a verified body"
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M, "SHA256", hashlib.sha256(body).hexdigest()), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(body)):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            path = M.model_path(None)
+            self.assertEqual(path, os.path.join(d, M.FILE))
+            self.assertEqual(os.listdir(d), [M.FILE])
+            with open(path, "rb") as fh:
+                self.assertEqual(fh.read(), body)
+
+    def test_replace_failure_uses_a_verified_file_stored_meanwhile(self):
+        body = b"a verified body"
+        with tempfile.TemporaryDirectory() as d, \
+                mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}), \
+                mock.patch.object(M, "SHA256", hashlib.sha256(body).hexdigest()), \
+                mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(body)):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            target = os.path.join(d, M.FILE)
+
+            def replace(src, dst):  # another run stored the same file first; ours cannot replace it
+                with open(target, "wb") as fh:
+                    fh.write(body)
+                raise PermissionError("in use")
+
+            with mock.patch.object(M.os, "replace", side_effect=replace):
+                self.assertEqual(M.model_path(None), target)
+            self.assertEqual(os.listdir(d), [M.FILE])
+            with mock.patch.object(M.os, "replace", side_effect=PermissionError("in use")):
+                os.remove(target)
+                with self.assertRaises(M.Unavailable):
+                    M.model_path(None)
+            self.assertEqual(os.listdir(d), [])
 
     def test_hash_mismatch_deletes(self):
         with tempfile.TemporaryDirectory() as d, \

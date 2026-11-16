@@ -97,7 +97,7 @@ CT_DERIVED_WORDS = (
     (r"MPR|REFORMAT\w*|MPR\w*", "CT multiplanar reformat (MPR)"),
 )
 CT_LOCALIZER = "CT localizer (scout)"
-# HEURISTIC, from vendor Image Type values seen in practice (no vendor document fetched): Siemens dual-energy
+# HEURISTIC, unverified (from the final review ruling; no vendor document or real header checked): Siemens dual-energy
 # images carry "DE" or detector tokens such as "DET_A", "DET_B", "DET_AB"; other vendors write "SPECTRAL" or
 # monoenergetic words. Bare "DUAL" is NOT read: Siemens dual-source single-energy scans write it too
 # ("CT_SOM7 SPI DUAL"). "DE" is only read in Image Type values: in descriptions it is the Spanish "of" ("TC DE TORAX").
@@ -295,7 +295,7 @@ NM_VIEW_WORDS = ((r"ANT|ANTERIOR", "Anterior view"),
                  (r"LAT|LATERAL|LLAT|RLAT", "Lateral view"))
 NM_VIEW_UNKNOWN = "not determined: no view in Patient Orientation or the description"
 # HEURISTIC: "3HR POST", "24 H POST" give the time after injection, not a view; removed before the view words.
-NM_TIME_POST = r"\d+ ?H\w* POST\w*"
+NM_TIME_POST = r"\d+ ?H\w* POST"  # whole words: "24HR POSTERIOR" keeps its view
 # Both anterior and posterior named (a whole-body "ANT/POST" pair): the view of this image is not named.
 NM_VIEW_BOTH = "not determined: the description names both anterior and posterior views"
 
