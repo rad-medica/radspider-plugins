@@ -1,0 +1,34 @@
+# Radiomics: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+
+[language]
+name = "Español"
+
+[strings]
+
+# plugin.toml
+"Radiomics (pyradiomics)" = "Radiómica (pyradiomics)"
+"pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics." = "Características de pyradiomics por segmento (primer orden, forma, GLCM, GLRLM, GLSZM, GLDM, NGTDM; filtros opcionales LoG y wavelet), en una tabla que se puede guardar como CSV. Las opciones de SlicerRadiomics."
+"Opens a window with the feature classes, the segment and the pyradiomics options; Extract computes the features of each segment: one row per feature, one column per segment, with the pyradiomics diagnostics rows. Needs at least one segment." = "Abre una ventana con las clases de características, el segmento y las opciones de pyradiomics; Extraer calcula las características de cada segmento: una fila por característica, una columna por segmento, con las filas de diagnóstico de pyradiomics. Requiere al menos un segmento."
+
+# plugin.py
+"First order" = "Primer orden"
+"Shape (3D)" = "Forma (3D)"
+"All segments" = "Todos los segmentos"
+"Segment" = "Segmento"
+"All classes" = "Todas las clases"
+"No classes" = "Ninguna clase"
+"Bin width" = "Ancho de intervalo"
+"Width of the grey-level bins, in the unit of the series (25 suits HU)" = "Ancho de los intervalos de niveles de gris, en la unidad de la serie (25 sirve para HU)"
+"Resampled voxel size (mm, 0 = none)" = "Tamaño de vóxel remuestreado (mm, 0 = ninguno)"
+"Isotropic voxel size the image and the mask are resampled to before extraction" = "Tamaño de vóxel isotrópico al que se remuestrean la imagen y la máscara antes de la extracción"
+"Symmetrical GLCM" = "GLCM simétrica"
+"LoG kernel size {number} (mm, 0 = off)" = "Tamaño de núcleo LoG {number} (mm, 0 = desactivado)"
+"Sigma of a Laplacian of Gaussian filter; features are also computed on the filtered image" = "Sigma de un filtro laplaciano de gaussiana; las características también se calculan sobre la imagen filtrada"
+"Wavelet features (8 decompositions, slow)" = "Características wavelet (8 descomposiciones, lento)"
+"Extract" = "Extraer"
+"Feature" = "Característica"
+"{n} segment. Choose the feature classes and options, then press Extract." = { one = "{n} segmento. Elija las clases de características y las opciones y pulse Extraer.", other = "{n} segmentos. Elija las clases de características y las opciones y pulse Extraer." }
+"{name} ({index} of {total})" = "{name} ({index} de {total})"
+"Done" = "Hecho"
+"pyradiomics {version}: {features} features × {n} segment, classes {classes}. Failed: {failed}" = { one = "pyradiomics {version}: {features} características × {n} segmento, clases {classes}. Con fallo: {failed}", other = "pyradiomics {version}: {features} características × {n} segmentos, clases {classes}. Con fallo: {failed}" }
+"pyradiomics {version}: {features} features × {n} segment, classes {classes}." = { one = "pyradiomics {version}: {features} características × {n} segmento, clases {classes}.", other = "pyradiomics {version}: {features} características × {n} segmentos, clases {classes}." }

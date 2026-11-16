@@ -3,13 +3,15 @@
 # (see requirements.txt): the machine needs git and a C compiler.
 id = "org.radspider.radiomics"
 name = "Radiomics (pyradiomics)"
-version = "1.0.0"
-api = 2                        # 2: reads the segments, interactive window
+version = "1.1.0"
+api = 6                        # 6: icons, Spanish catalog (lang/); reads the segments, interactive window
+icon = "chart-scatter"
 description = "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics."
 author = "radspider"
 requirements = "requirements.txt"
 
 [[tool]]
 name = "radiomics"
+icon = "list-numbers"
 label = "Radiomics (pyradiomics)"
 description = "Opens a window with the feature classes, the segment and the pyradiomics options; Extract computes the features of each segment: one row per feature, one column per segment, with the pyradiomics diagnostics rows. Needs at least one segment."
