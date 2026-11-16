@@ -2,36 +2,40 @@
 # marker prompts, propagation between slices, and the bidirectional measurement of a segment.
 id = "org.radspider.sam-slices"
 name = "SAM slices"
-version = "1.0.0"
-api = 2
+version = "1.1.0"
+api = 6
+icon = "magic-wand"
 description = "SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments."
 requirements = "requirements.txt"
 
 [[segmentation]]
 name = "prompt"
+icon = "cursor-click"
 label = "SAM: segment from clicks (2D)"
 description = """Probe measurements are include markers, Text measurements reading '-' exclude markers, as in OHIF's prompt tool. \
 Each slice that holds a Probe is segmented on that slice only. First run downloads the models (~190 MB, Hugging Face)."""
 params = [
   { name = "center", label = "Window centre (HU / value)", default = 40.0 },
   { name = "width", label = "Window width", default = 400.0, min = 1.0 },
-  { name = "separate", label = "One segment per slice (1) or one segment (0)", default = 0.0, min = 0.0, max = 1.0 },
+  { name = "separate", label = "One segment per slice", kind = "bool", default = false },
 ]
 
 [[segmentation]]
 name = "propagate"
+icon = "stack-plus"
 label = "SAM: propagate a segment to neighbouring slices"
 description = """Takes a segment, and on each slice beyond its first and last it prompts SAM with random points of the neighbour's mask \
 (OHIF's Labelmap Assist). Stops when a slice comes out empty. The result is a new segment holding the old voxels and the new ones."""
 params = [
-  { name = "segment", label = "Segment (1 = top of the list)", default = 1.0, min = 1.0, max = 64.0 },
-  { name = "slices", label = "Slices to add in each direction", default = 10.0, min = 1.0, max = 200.0 },
+  { name = "segment", label = "Segment (1 = top of the list)", kind = "integer", default = 1, min = 1, max = 64 },
+  { name = "slices", label = "Slices to add in each direction", kind = "integer", default = 10, min = 1, max = 200 },
   { name = "center", label = "Window centre", default = 40.0 },
   { name = "width", label = "Window width", default = 400.0, min = 1.0 },
 ]
 
 [[tool]]
 name = "bidirectional"
+icon = "ruler"
 label = "Bidirectional measurement of segments"
 description = """For every segment: the slice where it is largest, its longest diameter and the longest chord perpendicular to it, \
 drawn as a bidimensional measurement (OHIF 3.10 'bidirectional measurement for segments'). No model."""

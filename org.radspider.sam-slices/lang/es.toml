@@ -1,0 +1,31 @@
+# SAM slices: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+
+[language]
+name = "Español"
+
+[strings]
+
+# plugin.toml
+"SAM slices" = "SAM por cortes"
+"SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments." = "SAM ViT-B (ONNX) sobre cortes individuales: clics como indicaciones, propagación entre cortes y medición bidireccional de segmentos."
+"SAM: segment from clicks (2D)" = "SAM: segmentar a partir de clics (2D)"
+"Probe measurements are include markers, Text measurements reading '-' exclude markers, as in OHIF's prompt tool. Each slice that holds a Probe is segmented on that slice only. First run downloads the models (~190 MB, Hugging Face)." = "Las mediciones de Sonda son marcadores de inclusión y las mediciones de Texto que contienen '-' son marcadores de exclusión, como en la herramienta de indicaciones de OHIF. Cada corte que contiene una Sonda se segmenta solo en ese corte. La primera ejecución descarga los modelos (~190 MB, Hugging Face)."
+"Window centre (HU / value)" = "Centro de ventana (HU / valor)"
+"Window width" = "Ancho de ventana"
+"One segment per slice" = "Un segmento por corte"
+"SAM: propagate a segment to neighbouring slices" = "SAM: propagar un segmento a los cortes vecinos"
+"Takes a segment, and on each slice beyond its first and last it prompts SAM with random points of the neighbour's mask (OHIF's Labelmap Assist). Stops when a slice comes out empty. The result is a new segment holding the old voxels and the new ones." = "Toma un segmento y, en cada corte más allá de su primero y su último, indica a SAM puntos aleatorios de la máscara del corte vecino (Labelmap Assist de OHIF). Se detiene cuando un corte sale vacío. El resultado es un segmento nuevo con los vóxeles antiguos y los nuevos."
+"Segment (1 = top of the list)" = "Segmento (1 = el primero de la lista)"
+"Slices to add in each direction" = "Cortes que añadir en cada dirección"
+"Window centre" = "Centro de ventana"
+"Bidirectional measurement of segments" = "Medición bidireccional de segmentos"
+"For every segment: the slice where it is largest, its longest diameter and the longest chord perpendicular to it, drawn as a bidimensional measurement (OHIF 3.10 'bidirectional measurement for segments'). No model." = "Para cada segmento: el corte donde es más grande, su diámetro mayor y la cuerda más larga perpendicular a él, dibujados como una medición bidimensional (la «medición bidireccional de segmentos» de OHIF 3.10). Sin modelo."
+
+# plugin.py
+"Loading SAM ViT-B (first run downloads ~190 MB)" = "Cargando SAM ViT-B (la primera ejecución descarga ~190 MB)"
+"Slice {slice}" = "Corte {slice}"
+"Segment" = "Segmento"
+"Slice" = "Corte"
+"Long axis (mm)" = "Eje mayor (mm)"
+"Short axis (mm)" = "Eje menor (mm)"
+"{n} measurement added" = { one = "{n} medición añadida", other = "{n} mediciones añadidas" }

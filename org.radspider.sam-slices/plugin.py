@@ -124,16 +124,16 @@ def prompt(volume, ctx):
     a = volume.numpy()
     dims = volume.dims
     groups = prompts_by_slice(ctx.rois, dims)
-    ctx.progress(0.02, "Loading SAM ViT-B (first run downloads ~190 MB)")
+    ctx.progress(0.02, rp.tr("Loading SAM ViT-B (first run downloads ~190 MB)"))
     sam = Sam()
     labels = np.zeros(a.shape, dtype=np.uint8)
     names = []
     for n, z in enumerate(sorted(groups)):
-        ctx.progress(0.1 + 0.85 * n / len(groups), "Slice %d" % z)
+        ctx.progress(0.1 + 0.85 * n / len(groups), rp.tr("Slice {slice}", slice=z))
         inc, exc = groups[z]
         x, scale = model_input(a[z], ctx.params["center"], ctx.params["width"])
         m, _ = sam.mask(sam.embed(x), inc, exc, scale, a[z].shape)
-        if ctx.params["separate"] >= 0.5:
+        if ctx.params["separate"]:
             if len(names) >= 255:
                 raise ValueError("More than 255 slices with prompts")
             labels[z][m] = len(names) + 1
@@ -149,18 +149,18 @@ def propagate(volume, ctx):
     segs = ctx.segments
     if not segs:
         raise ValueError("No segment to propagate: open MPR on the series and make a segment first")
-    k = int(round(ctx.params["segment"])) - 1
+    k = ctx.params["segment"] - 1
     if not 0 <= k < len(segs):
         raise ValueError("The series has %d segment(s); segment %d does not exist" % (len(segs), k + 1))
     mask = segs[k].mask()
     zs = np.nonzero(mask.reshape(mask.shape[0], -1).any(axis=1))[0]
     if zs.size == 0:
         raise ValueError("Segment '%s' is empty" % segs[k].name)
-    ctx.progress(0.02, "Loading SAM ViT-B (first run downloads ~190 MB)")
+    ctx.progress(0.02, rp.tr("Loading SAM ViT-B (first run downloads ~190 MB)"))
     sam = Sam()
     out = mask.copy()
     rng = random.Random(0)  # same points every run
-    steps = int(round(ctx.params["slices"]))
+    steps = ctx.params["slices"]
     total = 2 * steps
     done = 0
     for z_from, direction in ((int(zs[0]), -1), (int(zs[-1]), 1)):
@@ -170,7 +170,7 @@ def propagate(volume, ctx):
             done += 1
             if not 0 <= z < a.shape[0]:
                 break
-            ctx.progress(0.1 + 0.85 * done / total, "Slice %d" % z)
+            ctx.progress(0.1 + 0.85 * done / total, rp.tr("Slice {slice}", slice=z))
             ys, xs = np.nonzero(prev)
             pick = rng.sample(range(len(ys)), min(POINTS, len(ys)))
             x, scale = model_input(a[z], ctx.params["center"], ctx.params["width"])
@@ -259,7 +259,7 @@ def bidirectional(volume, ctx):
     if not ctx.segments:
         raise ValueError("No segments: open MPR on the series and make a segment first")
     sx, sy = volume.spacing[0], volume.spacing[1]
-    rows, rois = [["Segment", "Slice", "Long axis (mm)", "Short axis (mm)"]], []
+    rows, rois = [[rp.tr("Segment"), rp.tr("Slice"), rp.tr("Long axis (mm)"), rp.tr("Short axis (mm)")]], []
     for s in ctx.segments:
         m = s.mask()
         areas = m.reshape(m.shape[0], -1).sum(axis=1)
@@ -270,4 +270,4 @@ def bidirectional(volume, ctx):
         a, b, c, d, lmm, smm = bidirectional_axes(m[z], sx, sy)
         rois.append(rp.Roi("bidimensional", z, [(float(p[0]), float(p[1])) for p in (a, b, c, d)]))
         rows.append([s.name, z, round(float(lmm), 1), round(float(smm), 1)])
-    return rp.Result(table=rows, rois=rois, message="%d measurement(s) added" % len(rois))
+    return rp.Result(table=rows, rois=rois, message=rp.trn(len(rois), "{n} measurement added", "{n} measurements added"))
