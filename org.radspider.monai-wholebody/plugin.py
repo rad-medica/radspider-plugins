@@ -126,7 +126,7 @@ def wholebody(volume, ctx):
 
     if volume.unit not in (None, "HU"):
         raise ValueError("This model needs a CT in Hounsfield units (the series is in %s)" % volume.unit)
-    highres = ctx.params["highres"] >= 0.5
+    highres = ctx.params["resolution"] == "1.5 mm"
     pix = 1.5 if highres else 3.0
     a = volume.numpy()
     if np.isnan(a).any():
@@ -134,19 +134,20 @@ def wholebody(volume, ctx):
     dims = volume.dims  # x, y, z
     size = tuple(max(1, int(round(n * s / pix))) for n, s in zip(dims, volume.spacing))
 
-    ctx.progress(0.02, "Preparing the volume at %.1f mm" % pix)
+    ctx.progress(0.02, rp.tr("Preparing the volume at {mm} mm", mm="%.1f" % pix))
     t = torch.from_numpy(np.ascontiguousarray(np.transpose(a, (2, 1, 0))[::-1, ::-1, :].copy()))  # (x, y, z) in RAS
     del a
     t = F.interpolate(t[None, None], size=size, mode="trilinear", align_corners=False)
     t[0, 0] = normalise(t[0, 0])
 
-    ctx.progress(0.05, "Loading the model (first run downloads 71 MB)")
+    ctx.progress(0.05, rp.tr("Loading the model (first run downloads 71 MB)"))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     net = load_net(device, highres)
-    ctx.progress(0.08, "Segmenting on %s" % device.type)
-    lab = sliding_window(net, t, float(ctx.params["overlap"]), device, lambda f: ctx.progress(0.08 + 0.85 * f, "Segmenting on %s" % device.type))
+    segmenting = rp.tr("Segmenting on {device}", device=device.type)
+    ctx.progress(0.08, segmenting)
+    lab = sliding_window(net, t, float(ctx.params["overlap"]), device, lambda f: ctx.progress(0.08 + 0.85 * f, segmenting))
 
-    ctx.progress(0.95, "Back to the series grid")
+    ctx.progress(0.95, rp.tr("Back to the series grid"))
     full = F.interpolate(torch.from_numpy(lab)[None, None].float(), size=dims, mode="nearest")[0, 0].to(torch.uint8).numpy()
     out = np.ascontiguousarray(np.transpose(full[::-1, ::-1, :], (2, 1, 0)))
     return out, NAMES
