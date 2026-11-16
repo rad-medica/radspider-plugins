@@ -14,7 +14,6 @@ import radspider_plugin as rp
 # Class names and limits of the extension: a voxel of class i has limits[i-1] <= HU < limits[i].
 CLASSES = ("Emphysema", "Inflated", "Infiltration", "Collapsed", "Vessels")
 LIMIT_PARAMS = ("emphysema_max", "inflated_max", "infiltrated_max", "collapsed_max")
-LIMIT_LABELS = ("Emphysema below (HU)", "Inflated below (HU)", "Infiltrated below (HU)", "Collapsed below (HU)")
 LIMIT_DEFAULTS = (-950.0, -750.0, -400.0, 0.0)
 LIMIT_RANGE = (-1100.0, 3000.0)
 
@@ -102,7 +101,7 @@ def _internal_air(a, upper, progress):
         body = ndimage.binary_fill_holes(lab == _largest(sizes)[0])
         air[z] = body & (a[z] < upper)
         if z % 16 == 0:
-            progress(0.35 * z / a.shape[0], "Body outline")
+            progress(0.35 * z / a.shape[0], rp.tr("Body outline"))
     return air
 
 
@@ -239,7 +238,7 @@ def _segment_lungs(volume, a, upper, closing_mm, smooth_mm, want_trachea, progre
             "No lungs found: less than 100 ml of air below %g HU inside the body. Run it on a chest CT, or raise "
             "the lung threshold." % upper
         )
-    progress(0.45, "Airways")
+    progress(0.45, rp.tr("Airways"))
     margin = tuple(int(np.ceil((0.5 * closing_mm + 3.0 * smooth_mm) / s)) + 2 for s in sampling)
     box = _bbox(air, margin)
     air_box = air[box]
@@ -256,13 +255,13 @@ def _segment_lungs(volume, a, upper, closing_mm, smooth_mm, want_trachea, progre
             print("No trachea found: nothing of tracheal size near the midline in the cranial third of the lungs")
     lungs = air_box if trachea is None else air_box & ~trachea
 
-    progress(0.55, "Splitting the lungs")
+    progress(0.55, rp.tr("Splitting the lungs"))
     low, high = _split_lungs(lungs, sampling, lr_axis)
     right, left = (low, high) if lr_sign > 0 else (high, low)
 
     done = []
     for n, lung in enumerate((right, left)):
-        progress(0.65 + 0.15 * n, "Closing and smoothing")
+        progress(0.65 + 0.15 * n, rp.tr("Closing and smoothing"))
         # Slicer's kernel size is a diameter; closing fills the vessels and other holes the threshold left.
         lung = _ball_close(lung, 0.5 * closing_mm, sampling)
         if smooth_mm > 0 and lung.any():
@@ -287,7 +286,7 @@ def lungs(volume, ctx):
     a = _hu(volume)
     p = ctx.params
     right, left, trachea = _segment_lungs(
-        volume, a, p["upper_hu"], p["closing_mm"], p["smooth_mm"], p["trachea"] >= 0.5, ctx.progress
+        volume, a, p["upper_hu"], p["closing_mm"], p["smooth_mm"], p["trachea"], ctx.progress
     )
     labels = np.zeros(a.shape, dtype=np.uint8)
     labels[right] = 1
@@ -304,7 +303,8 @@ def _words(name):
 
 
 def _masks_from_segments(volume, segments):
-    """Lung masks from the series' segments, by name: (right, left, lobes, names used) or None. Understands
+    """Lung masks from the series' segments, by name: (right, left, lobes, names used, split) or None;
+    ``split`` is True when one whole-lungs segment was cut in two. Understands
     'Right lung', 'left lung mask', 'lung_upper_lobe_left' (TotalSegmentator, MONAI), 'right upper lobe'; one segment
     named 'lungs' is split into two."""
     sides = {"right": None, "left": None}
@@ -331,11 +331,11 @@ def _masks_from_segments(volume, segments):
         lr_axis, lr_sign = _left_right_axis(volume)
         low, high = _split_lungs(whole.mask(), _spacing_zyx(volume), lr_axis)
         right, left = (low, high) if lr_sign > 0 else (high, low)
-        return right, left, [], [whole.name + " (split in two)"]
+        return right, left, [], [whole.name], True
     shape = (volume.dims[2], volume.dims[1], volume.dims[0])
     right = sides["right"] if sides["right"] is not None else np.zeros(shape, dtype=bool)
     left = sides["left"] if sides["left"] is not None else np.zeros(shape, dtype=bool)
-    return right, left & ~right, lobes, used
+    return right, left & ~right, lobes, used, False
 
 
 def _limits(ctx):
@@ -373,17 +373,30 @@ def analyze(volume, ctx):
 
     found = _masks_from_segments(volume, ctx.segments)
     if found is not None:
-        right, left, lobes, used = found
-        source = "Lung masks: segments " + ", ".join(used)
+        right, left, lobes, used, split = found
+        names = ", ".join(used)[:900]
+        if split:
+            message = rp.tr(
+                "Lung masks: segment {names} split in two. "
+                "Not clinically evaluated: do not base treatment decisions on these values.", names=names
+            )
+        else:
+            message = rp.tr(
+                "Lung masks: segments {names}. "
+                "Not clinically evaluated: do not base treatment decisions on these values.", names=names
+            )
     else:
         # The extension's own defaults for the threshold path (LungCTSegmenter.py).
         right, left, _ = _segment_lungs(volume, a, -400.0, 12.0, 2.0, True, ctx.progress)
         lobes = []
-        source = "Lung masks: made by thresholding (the series has no segment named right / left lung or lobe)"
+        message = rp.tr(
+            "Lung masks: made by thresholding (the series has no segment named right / left lung or lobe). "
+            "Not clinically evaluated: do not base treatment decisions on these values."
+        )
     if not right.any() and not left.any():
         raise ValueError("The lung segments are empty: segment the lungs first, or delete the empty segments.")
 
-    ctx.progress(0.9, "Classifying")
+    ctx.progress(0.9, rp.tr("Classifying"))
     # 1..5 right, 6..10 left; np.digitize gives the class with limits[i-1] <= HU < limits[i]. Upstream sets the
     # lower emphysema limit to the volume's minimum and its upper vessel limit (3000 HU) has no effect, so every
     # voxel of the masks that holds data gets a class.
@@ -395,14 +408,21 @@ def analyze(volume, ctx):
     counts = np.bincount(labels.ravel(), minlength=11)
     right_counts, left_counts = counts[1:6], counts[6:11]
 
-    header = ["Lung area", "Total (ml)"]
-    for column in ("Functional", "Emphysema", "Inflated", "Infiltrated", "Collapsed", "Affected"):
-        header += [column + " (ml)", column + " (%)"]
+    header = [
+        rp.tr("Lung area"), rp.tr("Total (ml)"),
+        rp.tr("Functional (ml)"), rp.tr("Functional (%)"),
+        rp.tr("Emphysema (ml)"), rp.tr("Emphysema (%)"),
+        rp.tr("Inflated (ml)"), rp.tr("Inflated (%)"),
+        rp.tr("Infiltrated (ml)"), rp.tr("Infiltrated (%)"),
+        rp.tr("Collapsed (ml)"), rp.tr("Collapsed (%)"),
+        rp.tr("Affected (ml)"), rp.tr("Affected (%)"),
+        rp.tr("Vessels (ml)"), rp.tr("AF-Q (affected / functional)"),
+    ]
     table = [
-        header + ["Vessels (ml)", "AF-Q (affected / functional)"],
-        _row("Total lungs", right_counts + left_counts, voxel_ml, bullae),
-        _row("Right lung", right_counts, voxel_ml, bullae),
-        _row("Left lung", left_counts, voxel_ml, bullae),
+        header,
+        _row(rp.tr("Total lungs"), right_counts + left_counts, voxel_ml, bullae),
+        _row(rp.tr("Right lung"), right_counts, voxel_ml, bullae),
+        _row(rp.tr("Left lung"), left_counts, voxel_ml, bullae),
     ]
     for name, side, mask in lobes:
         inside = labels[mask & (right if side == "right" else left)]
@@ -414,36 +434,44 @@ def analyze(volume, ctx):
     hist, edges = np.histogram(in_lungs, bins=np.arange(-1100.0, 210.0, 10.0))
     plots = [
         rp.Plot(
-            "Volume per class",
+            rp.tr("Volume per class"),
             [
-                rp.Series("Right lung", x - 0.2, right_counts * voxel_ml, kind="bars"),
-                rp.Series("Left lung", x + 0.2, left_counts * voxel_ml, kind="bars"),
+                rp.Series(rp.tr("Right lung"), x - 0.2, right_counts * voxel_ml, kind="bars"),
+                rp.Series(rp.tr("Left lung"), x + 0.2, left_counts * voxel_ml, kind="bars"),
             ],
-            x_label="1 emphysema, 2 inflated, 3 infiltrated, 4 collapsed, 5 vessels",
-            y_label="ml",
+            x_label=rp.tr("1 emphysema, 2 inflated, 3 infiltrated, 4 collapsed, 5 vessels"),
+            y_label=rp.tr("ml"),
         ),
         rp.Plot(
-            "Density inside the lung masks",
-            [rp.Series("Voxels", 0.5 * (edges[:-1] + edges[1:]), hist * voxel_ml, kind="line")],
-            x_label="HU (10 HU bins)",
-            y_label="ml",
+            rp.tr("Density inside the lung masks"),
+            [rp.Series(rp.tr("Voxels"), 0.5 * (edges[:-1] + edges[1:]), hist * voxel_ml, kind="line")],
+            x_label=rp.tr("HU (10 HU bins)"),
+            y_label=rp.tr("ml"),
         ),
     ]
 
+    limit_labels = (
+        rp.tr("Emphysema below (HU)"), rp.tr("Inflated below (HU)"), rp.tr("Infiltrated below (HU)"),
+        rp.tr("Collapsed below (HU)"),
+    )
     controls = [
         rp.Slider(n, label, v, LIMIT_RANGE[0], LIMIT_RANGE[1], step=1)
-        for n, label, v in zip(LIMIT_PARAMS, LIMIT_LABELS, limits)
+        for n, label, v in zip(LIMIT_PARAMS, limit_labels, limits)
     ]
     controls += [
-        rp.Checkbox("count_bullae", "Count emphysema as affected", bullae, help="Off: emphysema counts as functional"),
-        rp.Button("segments", "Add segments", help="One segment per class and lung, with the limits shown"),
+        rp.Checkbox(
+            "count_bullae", rp.tr("Count emphysema as affected"), bullae, help=rp.tr("Off: emphysema counts as functional")
+        ),
+        rp.Button(
+            "segments", rp.tr("Add segments"), help=rp.tr("One segment per class and lung, with the limits shown")
+        ),
     ]
 
     result = rp.Result(
         table=table,
         plots=plots,
         controls=controls,
-        message=source + ". Not clinically evaluated: do not base treatment decisions on these values.",
+        message=message,
     )
     # Segments are added on every run that returns them: only on the first run and on the button, not per slider move.
     if ctx.event in (None, "segments"):
