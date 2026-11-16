@@ -18,7 +18,7 @@
 
 | | |
 |---|---|
-| State | Design, 2026-11-16. Not implemented. Blocked on the host addition above |
+| State | Implemented 2026-11-16 on branch `series-identifier` (plan `docs/superpowers/plans/2026-11-16-series-identifier.md`), plugin 1.0.0. Where the build differs from this design, the sections below say so. Parity with the reference and the radspider GUI pass were not run at the time of writing; see the Verified row of `docs/plugins/series-identifier.md` |
 | Owner's input | "Identify the series and projection in every modality, with a brief explanation; use the new API being merged"; host change over accepting the radiography gap; "Rules + dcm-classifier" over rules only |
 | Research (2026-11-16) | dcm-classifier: Apache-2.0, ONNX shipped, header-only, MR only — **used**. TotalSegmentator `totalseg_get_phase`: CT phase, but needs a full segmentation (minutes, torch) — not used, belongs in the TotalSegmentator plugin. `ianpan/chest-x-ray-basic` (AP/PA/lateral): **no licence** — not usable. DICOM-Imaging-Router: weights not published. CardiSort, HD-SEQ-ID, Helm et al.: no weights found. Nothing for MG, US, NM, PET, XA |
 | ONNX checked | Downloaded at commit `5dcb37384572416da806db69c90bbabcec9819c9`, 312 427 bytes, SHA-256 `808fcd58e237ecc3fa657942d325c12ddbbaaf496cc1f849913e99248cba13e0`. skl2onnx 1.16.0, opsets ai.onnx 19 + ai.onnx.ml 1, no metadata. Input `float_input` float `[N, 28]`; outputs `output_label` int64 `[N]`, `output_probability` seq(map(int64 → float)), classes 0–9. Ran on onnxruntime 1.32.0, Python 3.13.17 |
@@ -79,7 +79,7 @@ answer row carries **evidence**: the tag values that decided it.
 | CT | Localizer (ImageType LOCALIZER) · derived MPR / MIP / MinIP / VRT (ImageType DERIVED + keyword) · non-contrast vs contrast (ContrastBolusAgent; description keywords: arterial, portal, venous, delayed, nephro, angio / CTA, native, sin contraste, …) · kernel family: bone / lung / soft tissue / brain from ConvolutionKernel tables per manufacturer (Siemens Bxx/Ixx/Hr, GE BONE/LUNG/STANDARD/SOFT, Philips letters, Canon FCxx) · dual-energy / mono keV from ImageType | Localizer: frontal / lateral from ImageOrientation; else plane |
 | MR | T1, T2, PD, FLAIR, STIR, T2*/SWI, DWI (trace / b-value / directions), ADC, eADC, FA, perfusion, MRA (TOF / PC / CE), 3D vs 2D, fat suppressed (SequenceVariant / ScanOptions-free keywords), post-contrast; from TR / TE / TI / flip angle / ScanningSequence / SequenceVariant / SequenceName / ImageType / description; **plus model** | Plane |
 | PT | Attenuation corrected or not (ImageType, description), static / dynamic / gated (SeriesType), SUV vs counts (Units) | Plane (MIP when ImageType says so) |
-| NM | Static / whole body / dynamic / gated / tomo (ImageType second value) | ANT / POST / lateral from description and PatientOrientation |
+| NM | Static / whole body / dynamic / gated / tomo (ImageType value 3, the one after PRIMARY / ORIGINAL) | ANT / POST / lateral from description and PatientOrientation |
 | CR, DX, RF, PX, IO | Radiograph; region from BodyPartExamined | ViewPosition (AP, PA, LL, RL, LAT, OBL, …) with laterality; else PatientOrientation pair (e.g. `L\F` frontal); else *not determined: ViewPosition empty* |
 | MG | Screening view, tomosynthesis (description / ImageType), synthetic 2D | ViewPosition CC / MLO / ML / LM / XCCL / XCCM / AT / SIO … + ImageLaterality → "Left MLO" |
 | US | Ultrasound; region from BodyPartExamined / description; colour Doppler if the frame is colour | Not determined from headers; says so |
@@ -104,8 +104,11 @@ written as data tables in `seriesid_rules.py` with a comment naming the source o
   model runs; ScanningSequence stays `None` there, which feeds the reference's own `SE = 1` default. The *Model
   detail* section shows each feature's `volume.tag_source`, and the docs Limits say that whether the model saw
   enhanced MR in training is not stated by its authors.
-- Not run (shown as *model not run: <tag> missing*) when a required field is missing: EchoTime, RepetitionTime,
-  FlipAngle, PixelBandwidth, Image Orientation, Pixel Spacing, SliceThickness — the reference marks the volume INVALID.
+- **As built:** a missing or empty EchoTime / RepetitionTime does **not** stop the model: both become `-12345` and it
+  runs, as the reference does (`utility_functions.py:460-470`). Only FlipAngle, PixelBandwidth, Image Orientation,
+  Pixel Spacing and SliceThickness missing give *model not run: <tag> missing* (the reference marks the volume INVALID).
+  A kind for which the model has no class (e.g. MRA, perfusion) gets the verdict `no_class` ("no model class") instead
+  of *differs*.
 - Classes 0–9: `t1w, gret2star, t2w, flair, b0, tracew, adc, fa, eadc, dwig`. Below 0.4 → *low probability*.
 - Series step as the reference: when `ctx.series.b_values` has a value > 0 and the class is not a diffusion class,
   ≥ 3 `gradient_directions` → `dwig`, else `tracew`.
@@ -145,7 +148,7 @@ Table columns: *Item · Result · Evidence*. Sections: *What this means* (one pa
 One entry per identifiable item (≈ 70: each CT phase and kernel family, each MR class and modifier, PET/NM kinds,
 each radiographic and mammographic view, XA angulations, each plane, "not determined" reasons). 1–3 sentences,
 what it is and what it is typically used for, no findings, no dosing, no clinical advice. English ids in
-`seriesid_rules.py`; Spanish in `lang/es.toml`; `lang/template.toml` from `python -m radspider_plugin template`.
+`seriesid_rules.py`; Spanish in `lang/es.toml`; `lang/template.toml` is regenerated with `python tools/series_identifier_template.py` (which runs the SDK's generator and appends the table-driven ids it cannot see, because the plugin translates them through an alias). Result ids that are not of the "<tag> missing" form (reasons, ranges such as TR / TE cut-offs) are also translatable ids.
 
 ## 6. Tests and verification
 

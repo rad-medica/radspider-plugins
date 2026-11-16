@@ -8,3 +8,4 @@
 "org.radspider.sam-med3d" = "Downloads the SAM-Med3D turbo checkpoint (about 400 MB) from Hugging Face on first run."
 "org.radspider.sam-slices" = "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."
 "org.radspider.cads" = "Downloads the model weights of a task group the first time that group runs: about 762 MB per group and weight set, from the CADS GitHub releases."
+"org.radspider.series-identifier" = "Downloads the 305 KB dcm-classifier ONNX model (MR only) from GitHub on first run; everything else works offline."

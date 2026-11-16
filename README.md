@@ -41,6 +41,7 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 | Path | What |
 |---|---|
 | `org.radspider.*/` | The plugins. Installable as-is |
+| `org.radspider.series-identifier` | 6 | numpy, onnxruntime | Says what the image on screen is: series kind, plane or projection, region, laterality, contrast, each with its evidence and a plain explanation (English, Spanish). Rules for every modality; on MR a second opinion from the dcm-classifier ONNX. Educational aid | [series-identifier](docs/plugins/series-identifier.md) |
 | `docs/` | Architecture, development guide, one page per model plugin (limits, licences, "Verified" rows) |
 | `tools/validate_plugins.py` | Static checks of every manifest against its module (stdlib only) |
 | `tools/marketplace.py`, `marketplace/index.json`, `marketplace/extra.toml` | Package builder, the version index, and the index facts `plugin.toml` cannot carry (`first_run_download`) |

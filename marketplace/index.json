@@ -304,12 +304,13 @@
       "package": {
         "file": "org.radspider.series-identifier-1.0.0.zip",
         "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.series-identifier-v1.0.0/org.radspider.series-identifier-1.0.0.zip",
-        "sha256": "ed41a4a410450c133a01bd251b577bdb630b276df3d6316246b7d4178b2160a4",
+        "sha256": "041250dc80a66aff1e503a57400d6be024d38bcfd38c0a275662329e63826e35",
         "size": 189220
       },
       "tag": "org.radspider.series-identifier-v1.0.0",
       "second_volume": false,
-      "icon": "identification-card"
+      "icon": "identification-card",
+      "first_run_download": "Downloads the 305 KB dcm-classifier ONNX model (MR only) from GitHub on first run; everything else works offline."
     },
     {
       "id": "org.radspider.skeletal-radiology",
