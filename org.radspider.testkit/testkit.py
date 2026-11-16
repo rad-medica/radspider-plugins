@@ -1,4 +1,7 @@
-"""radspider test kit: every plugin feature in one module. Uses numpy (see requirements.txt)."""
+"""radspider test kit: every plugin feature in one module. Uses numpy (see requirements.txt).
+
+The texts of `windows_demo` are marked with rp.tr / rp.trc / rp.trn: the viewer translates them through lang/<tag>.toml.
+The other entries return plain strings (data the tests compare as written)."""
 
 import time
 
@@ -358,3 +361,68 @@ def explorer(volume, ctx):
         controls=controls,
         message="Explorer: %s" % (ctx.event or "first run"),
     )
+
+
+# ------------------------------------------------------------------ API 6: several windows, marked texts
+
+
+@rp.tool("windows_demo")
+def windows_demo(volume, ctx):
+    """Three windows from one run, the Python twin of the Rust test kit's windows_demo: main (a row, a table, the
+    request echoed, a section of controls), residuals (tabs with a chart, a picture and a closed section) and a log
+    kept as the run that opened it left it. *Show residuals* off drops the residuals window from the answer (it
+    closes); *Reopen residuals* lists it with reopen=True (it comes back even when the user closed it). A series of
+    zeros comes back on a first run and from *Apply*, not from the other controls. The entry opens with a form (its
+    `gain` parameter) and reuses its window (plugin.toml)."""
+    ctx.progress(0.5, rp.tr("Halfway {p}", p=50))
+    c = ctx.controls
+    gain = ctx.params.get("gain")
+    echo = "%s|%s|%s|gain %g" % (ctx.lang, ctx.window or "-", ",".join(ctx.windows), gain if gain is not None else float("nan"))
+    level = float(c.get("level", 50.0))
+    reopen = ctx.event == "reopen"
+    show = reopen or bool(c.get("show_residuals", True))
+    nx, ny, nz = volume.dims
+    main = rp.Window("main", rp.tr("Fit"), [
+        rp.Row([
+            rp.Choice("model", rp.tr("Model"), [rp.tr("Mono"), "offset"], c.get("model")),
+            rp.Button("apply", rp.tr("Apply {what}", what="fit"), icon="plus", help=rp.tr("Adds a series of zeros")),
+        ]),
+        rp.Table([
+            [rp.tr("Quantity"), rp.trc("short", "Value")],
+            [rp.trn(nz, "{n} slice", "{n} slices"), "%d × %d" % (nx, ny)],
+            [rp.tr("Level"), level],
+        ]),
+        rp.Label(echo, weak=True),
+        rp.Section(rp.tr("Display"), [
+            rp.Slider("level", rp.tr("Level"), level, 0, 100, step=1, help=rp.tr("Moves the line of the chart")),
+            rp.Row([
+                rp.Checkbox("show_residuals", rp.tr("Show residuals"), show, help=rp.tr("Off closes the residuals window")),
+                rp.Button("reopen", rp.tr("Reopen residuals"), icon="arrow-counter-clockwise",
+                          help=rp.tr("Shows the residuals window again, also after you closed it")),
+            ]),
+            rp.TextField("note", rp.tr("Note"), c.get("note", "hi"), max_length=20),
+        ]),
+    ], size=(520, 420), icon="plus")
+    residuals = None
+    if show:
+        x = list(range(11))
+        chart = rp.Plot(rp.tr("Chart"), [rp.Series(rp.tr("Level"), x, [level * i / 10.0 for i in x])],
+                        x_label=rp.tr("Step"), y_label=rp.tr("Level"))
+        shade = int(round(level * 2.55))
+        picture = rp.Image(rp.tr("Level {level} as grey", level=level), 16, 16,
+                           bytes([shade if (i // 3) % 16 < 8 else 255 - shade for i in range(16 * 16 * 3)]))
+        residuals = rp.Window("residuals", rp.tr("Residuals"), [
+            rp.Tabs([
+                (rp.tr("Map"), [chart]),
+                (rp.tr("Picture"), [picture, rp.Section(rp.tr("About"), [rp.Label(rp.tr("Closed on the first run"))], open=False)]),
+            ]),
+        ], size=(420, 360), reopen=reopen)
+    # Nothing to recompute: once on screen, the log stays as the run that opened it left it.
+    if "log" in ctx.windows:
+        log = rp.Window("log", keep=True)
+    else:
+        log = rp.Window("log", rp.tr("Log"), [rp.Label(rp.tr("Opened by the first run"))])
+    volumes = []
+    if ctx.event in (None, "apply"):
+        volumes.append(rp.NewVolume(np.zeros(len(volume), np.float32), rp.tr("Fit {n}", n=1)))
+    return rp.Result(windows=[main, residuals, log], volumes=volumes)

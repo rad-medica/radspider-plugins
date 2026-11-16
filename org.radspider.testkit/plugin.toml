@@ -3,9 +3,10 @@
 # Install: Settings → Modules → Install folder… → this folder.
 id = "org.radspider.testkit"
 name = "Test kit"
-version = "1.0.0"
-api = 2                        # 2: reads and edits ROIs and segments, interactive windows
-description = "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window."
+version = "1.2.0"
+api = 6                        # 6: icons, translations (lang/), several windows per tool run
+description = "Exercises every plugin feature: three kinds, parameters, units, progress, messages, errors, cancel, reading and editing ROIs and segments, an interactive window, icons, translations, several windows per run."
+icon = "flask"                 # a Phosphor icon: the entries without an icon of their own take it
 author = "radspider"
 module = "testkit"            # a module name other than the default plugin.py
 requirements = "requirements.txt"
@@ -79,6 +80,7 @@ description = "Returns no labelled voxel: the viewer must say so and add no segm
 [[tool]]
 name = "summary"
 label = "Summary"
+icon = "chart-bar"             # a Phosphor icon of its own
 description = "Count, mean, SD, percentiles and the volume of the voxels with data, with the series' unit. Sets a status message."
 
 [[tool]]
@@ -114,4 +116,13 @@ params = [{ name = "delete_last", label = "Delete last (0 / 1)", default = 0.0, 
 [[tool]]
 name = "explorer"
 label = "Slice explorer"
+icon = "icons/testkit.png"     # a PNG of its own: 32 × 32, only its alpha is used (a mask the viewer tints)
 description = "An interactive window: pick a slice, a threshold, bins, log scale and a profile; the chart and picture follow. Mark adds a note on the slice."
+
+[[tool]]
+name = "windows_demo"
+label = "Windows demo"
+icon = "app-window"
+description = "Several windows from one run: a form first, then a main window (row, table, section), a residuals window with tabs and a log window kept as it is. A checkbox closes the residuals window, a button reopens it. Every text is translated (lang/)."
+window = { title = "Windows demo", width = 520, height = 420, reuse = true, open = "form" }
+params = [{ name = "gain", label = "Gain", default = 1.0, min = 0.0, max = 10.0 }]

@@ -37,7 +37,7 @@ The plugin folders sit at the repository root because radspider's integration te
 - `ctx.params` holds the values of the manifest `params` (`name`, optional `label`, `default`, `min`, `max`).
 - `ctx.progress(fraction, message)` reports progress; cancel is cooperative.
 - `volume` exposes `values`, `dims`, `spacing`, `origin`, `row`, `col`, `normal`, `unit`, `numpy()`.
-- API level: 1 = the three kinds; 2 = + reading and editing ROIs and segments, interactive windows; 3 = + `second_volume` tools (`ctx.other`).
+- API level: 1 = the three kinds; 2 = + reading and editing ROIs and segments, interactive windows; 3 = + `second_volume` tools (`ctx.other`); 4 = native executables (`command`); 5 = the stack, tags, more series, series on any grid, typed parameters; 6 = icons, translations (`lang/<tag>.toml`, `rp.tr` / `rp.trc` / `rp.trn`), several windows per tool run (`rp.Window`, rows, sections, tabs), `window = { reuse, open }`. radspider's `docs/PLUGINS.md` is the reference.
 - The manifest and the module must declare the same entry names. `tools/validate_plugins.py` enforces it.
 
 ## Conventions between plugins

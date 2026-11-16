@@ -3,7 +3,7 @@
 
 Checks, per ``org.radspider.*`` folder:
 
-* ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-3;
+* ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-6;
 * the module (``module`` key, default ``plugin``) exists and compiles;
 * ``requirements`` points at an existing file, and every line is a plain pip requirement (a name, extras, version
   specifiers, an environment marker): no options (``-r``, ``-e``, ``--index-url``, ``--extra-index-url``,
@@ -12,6 +12,8 @@ Checks, per ``org.radspider.*`` folder:
   module registers exactly the same names with ``@rp.<kind>("name")``;
 * parameter ``name`` is unique per entry and ``min <= default <= max`` when bounds are given;
 * ``second_volume`` is only used with ``api >= 3``;
+* ``icon`` (plugin and entries) and ``window`` (tools) only with ``api >= 6``; a PNG ``icon`` is a file inside the
+  plugin folder;
 * the plugin has a page in ``docs/plugins/`` (or none required for ``examples`` / ``numpy-demo`` / ``testkit``,
   which are documented in the README) and is listed in the README table.
 
@@ -132,8 +134,9 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     if "version" in manifest and not SEMVER.match(str(manifest["version"])):
         errors.append(f"{plugin.name}: version {manifest['version']!r} is not semver")
     api = manifest.get("api")
-    if api not in (1, 2, 3):
-        errors.append(f"{plugin.name}: api must be 1, 2 or 3, got {api!r}")
+    if api not in (1, 2, 3, 4, 5, 6):
+        errors.append(f"{plugin.name}: api must be 1 to 6, got {api!r}")
+    check_icon(plugin, plugin.name, manifest, api, errors)
 
     module = plugin / f"{manifest.get('module', 'plugin')}.py"
     if not module.is_file():
@@ -159,6 +162,9 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
                 errors.append(f"{where}: no label")
             if entry.get("second_volume") and isinstance(api, int) and api < 3:
                 errors.append(f"{where}: second_volume needs api >= 3")
+            check_icon(plugin, where, entry, api, errors)
+            if "window" in entry and not (isinstance(api, int) and api >= 6):
+                errors.append(f"{where}: window needs api >= 6")
             check_params(where, entry, errors)
         for name in sorted(declared[kind] - registered[kind]):
             errors.append(f"{plugin.name}: {kind} {name!r} is in plugin.toml but not registered in the module")
@@ -172,6 +178,22 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     if short not in DOC_OPTIONAL and not (root / "docs" / "plugins" / f"{short}.md").is_file():
         errors.append(f"{plugin.name}: docs/plugins/{short}.md missing")
     return errors
+
+
+def check_icon(plugin: Path, where: str, table: dict, api: object, errors: list[str]) -> None:
+    """``icon`` needs api 6; a PNG one must be a file inside the plugin folder (radspider checks the rest: a known
+    Phosphor name, size, alpha)."""
+    icon = table.get("icon")
+    if icon is None:
+        return
+    if not (isinstance(api, int) and api >= 6):
+        errors.append(f"{where}: icon needs api >= 6")
+    if not isinstance(icon, str) or not icon:
+        errors.append(f"{where}: icon must be a non-empty string")
+    elif icon.lower().endswith(".png"):
+        path = (plugin / icon).resolve()
+        if not path.is_relative_to(plugin.resolve()) or not path.is_file():
+            errors.append(f"{where}: icon {icon!r} is not a file inside the plugin folder")
 
 
 def main(argv: list[str]) -> int:

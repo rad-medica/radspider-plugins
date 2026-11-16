@@ -320,7 +320,8 @@
         "size": 20449
       },
       "tag": "org.radspider.testkit-v1.0.0",
-      "second_volume": false
+      "second_volume": false,
+      "icon": "flask"
     },
     {
       "id": "org.radspider.totalsegmentator",

@@ -91,6 +91,15 @@ def load_extra(path: Path = EXTRA) -> dict[str, str]:
     return extra
 
 
+def index_icon(manifest: dict) -> str | None:
+    """The plugin's `icon` when it is a Phosphor name: the index carries no pictures (nothing is downloaded before
+    install), so a PNG icon (a path ending in `.png`) is left out and the client shows its default."""
+    icon = manifest.get("icon")
+    if isinstance(icon, str) and icon and not icon.lower().endswith(".png"):
+        return icon
+    return None
+
+
 def has_second_volume(manifest: dict) -> bool:
     return any(e.get("second_volume") is True for k in ("synth_node", "segmentation", "tool") for e in manifest.get(k, []))
 
@@ -126,6 +135,9 @@ def describe(plugin: Path, extra: dict[str, str] | None = None) -> dict:
         "tag": tag,
         "second_volume": has_second_volume(manifest),
     }
+    icon = index_icon(manifest)
+    if icon:
+        described["icon"] = icon
     first_run = (extra or {}).get(plugin.name)
     if first_run:
         described["first_run_download"] = first_run

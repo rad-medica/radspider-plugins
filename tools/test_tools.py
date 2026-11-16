@@ -132,6 +132,11 @@ class IndexExtras(unittest.TestCase):
         self.assertTrue(marketplace.has_second_volume({"tool": [{"name": "a"}, {"name": "b", "second_volume": True}]}))
         self.assertFalse(marketplace.has_second_volume({"tool": [{"name": "a"}], "segmentation": []}))
 
+    def test_icon_is_a_phosphor_name_only(self):
+        self.assertEqual(marketplace.index_icon({"icon": "flask"}), "flask")
+        self.assertIsNone(marketplace.index_icon({"icon": "icons/own.png"}))
+        self.assertIsNone(marketplace.index_icon({}))
+
     def test_extra_must_be_non_empty_strings(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "extra.toml"
