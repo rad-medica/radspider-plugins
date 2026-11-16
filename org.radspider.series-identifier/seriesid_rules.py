@@ -10,11 +10,11 @@ from dataclasses import dataclass
 
 import seriesid_tables as T
 from seriesid_tables import (CT_KERNELS, CT_PHASE_WORDS, EXPLAIN, ITEMS, MG_VIEWS, MR_WORDS, NM_KINDS, TAGS,
-                             XR_VIEWS, all_result_ids, word_re)
+                             XR_VIEWS, all_explain_ids, all_result_ids, explain_for, word_re)
 
 __all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "EXPLAIN", "ITEMS", "MG_VIEWS", "MR_WORDS", "NM_KINDS", "TAGS",
-           "XR_VIEWS", "Finding", "all_result_ids", "identify", "kernel_family", "number",
-           "numbers", "plane", "text"]
+           "XR_VIEWS", "Finding", "all_explain_ids", "all_result_ids", "explain_for", "identify",
+           "kernel_family", "number", "numbers", "plane", "text"]
 
 AXIS_TOLERANCE_DEG = 10.0
 _EPS = 1e-9
@@ -188,9 +188,9 @@ def _fmt(x):
     return str(int(round(x))) if abs(x - round(x)) < 1e-6 else f"{x:g}"
 
 
-def _f(item, result, evidence, *extra, **args):
-    """Finding whose explanation is the result itself plus `extra` ids."""
-    return Finding(item, result, evidence, (result, *extra), tuple((k, str(v)) for k, v in args.items()))
+def _f(item, result, evidence, **args):
+    """Finding whose explanation ids come from seriesid_tables.explain_for(result)."""
+    return Finding(item, result, evidence, T.explain_for(result), tuple((k, str(v)) for k, v in args.items()))
 
 
 def _search(pattern, s):
@@ -206,10 +206,32 @@ def _first(table, s):
     return None
 
 
-def _description(t):
-    """Series Description + Protocol Name, upper case, '_' read as a space."""
-    parts = [t.text(SERIES_DESC), t.text(PROTOCOL)]
-    return " | ".join(p for p in parts if p).replace("_", " ")
+class _Desc(str):
+    """Description text for keywords (upper case, '_' read as a space) that remembers the tag it came from."""
+
+    def __new__(cls, value, tag):
+        obj = super().__new__(cls, (value or "").replace("_", " "))
+        obj.tag = tag
+        return obj
+
+
+def _descriptions(t):
+    """(kind text, series text).
+
+    Kind keywords read Series Description; Protocol Name (exam-level, shared by every series of the exam) only when
+    Series Description is missing. The series text is Series Description alone: Protocol Name never decides
+    pre/post-contrast.
+    """
+    sd = t.text(SERIES_DESC)
+    series_desc = _Desc(sd, SERIES_DESC)
+    return (series_desc if sd else _Desc(t.text(PROTOCOL), PROTOCOL)), series_desc
+
+
+def _dev(desc):
+    """Evidence for a description text."""
+    if not desc:
+        return "Series Description (0008,103E) and Protocol Name (0018,1030) missing"
+    return f"{TAGS[desc.tag]} ({desc.tag}) = {desc}"
 
 
 # --- Common rows ---------------------------------------------------------------------------------------------------
@@ -234,17 +256,18 @@ def _region_row(t):
     return _f("region", T.REGION_OTHER, t.ev(BODY_PART), part=part)
 
 
-def _contrast_row(t, desc, allow_description=True):
+def _contrast_row(t, series_desc, allow_description=True):
     agent = t.text(CONTRAST)
     if agent is not None:
         return _f("contrast", T.CONTRAST_RECORDED, t.ev(CONTRAST), agent=agent)
-    if allow_description and _post_contrast_words(desc):
-        return _f("contrast", T.CONTRAST_DESCRIPTION, f"{t.ev(CONTRAST)}; description: {desc}")
+    if allow_description and _post_contrast_words(series_desc):
+        return _f("contrast", T.CONTRAST_DESCRIPTION, f"{t.ev(CONTRAST)}; {_dev(series_desc)}")
     return _f("contrast", T.ND_CONTRAST, t.ev(CONTRAST))
 
 
-def _post_contrast_words(desc):
-    return _search(T.POST_CONTRAST_WORDS, desc) and not _search(T.CT_PHASE_WORDS[0][0], desc)
+def _post_contrast_words(series_desc):
+    """Series Description says post-contrast and does not also say no or pre contrast."""
+    return _search(T.POST_CONTRAST_WORDS, series_desc) and not _search(T.NEGATED_CONTRAST, series_desc)
 
 
 def _orientation_projection(t):
@@ -273,7 +296,8 @@ def _mg_code(code):
     c = code.replace(" ", "")
     if c in T.MG_VIEWS:
         return c, ""
-    if c[:1] in T.MG_SIDES and c[1:] in T.MG_VIEWS:
+    # A radiography code is never split into side + view ("LAT" is lateral, not Left + AT).
+    if c not in T.XR_VIEWS and c[:1] in T.MG_SIDES and c[1:] in T.MG_VIEWS:
         return c[1:], c[:1]
     return None, ""
 
@@ -323,7 +347,7 @@ def kernel_family(manufacturer, kernel):
     return None, f"kernel {k} not in the tables for manufacturer {m or 'missing'}"
 
 
-def _ct(t, desc, row, col):
+def _ct(t, desc, series_desc, row, col):
     out = []
     image_type = t.text(IMAGE_TYPE) or ""
     words = t.words(IMAGE_TYPE)
@@ -341,20 +365,20 @@ def _ct(t, desc, row, col):
     if words[:1] == ["DERIVED"]:
         derived = _first(T.CT_DERIVED_WORDS, search)
         if derived:
-            out.append(_f("series", derived, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+            out.append(_f("series", derived, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     phase = _first(T.CT_PHASE_WORDS, desc)
     agent = t.text(CONTRAST)
     if phase:
-        out.append(_f("series", phase, f"description: {desc}; {t.ev(CONTRAST)}"))
+        out.append(_f("series", phase, f"{_dev(desc)}; {t.ev(CONTRAST)}"))
     elif agent is not None:
         out.append(_f("series", T.CT_PHASE_UNSTATED, f"{t.ev(CONTRAST)}; no phase word in the description"))
     else:
         out.append(_f("series", T.ND_CONTRAST, f"{t.ev(CONTRAST)}; no phase word in the description"))
     if _search(T.CT_DUAL_ENERGY_IMAGE_TYPE, " ".join(words)) or _search(T.CT_DUAL_ENERGY_WORDS, desc):
-        out.append(_f("series", T.CT_DUAL_ENERGY, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+        out.append(_f("series", T.CT_DUAL_ENERGY, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     kev = re.search(T.CT_KEV, desc or "")
     if kev:
-        out.append(_f("series", T.CT_MONO, f"description: {desc}", kev=kev.group(1)))
+        out.append(_f("series", T.CT_MONO, f"{_dev(desc)}", kev=kev.group(1)))
     family, why = kernel_family(t.raw(MANUFACTURER), t.raw(KERNEL))
     if family:
         out.append(_f("series", T.KERNEL_IDS[family], f"{t.ev(KERNEL, MANUFACTURER)}; {why}"))
@@ -364,7 +388,7 @@ def _ct(t, desc, row, col):
     else:
         out.append(_f("series", T.ND_KERNEL, t.ev(KERNEL)))
     if agent is not None:
-        out.append(_contrast_row(t, desc))
+        out.append(_contrast_row(t, series_desc))
     out.append(_plane_row(row, col))
     return out
 
@@ -372,30 +396,31 @@ def _ct(t, desc, row, col):
 # --- MR ------------------------------------------------------------------------------------------------------------
 
 
-def _mr_kind(t, series, desc):
+def _mr_kind(t, series, desc, series_desc):
     """(result id, evidence) of the MR series kind."""
     words = set(t.words(IMAGE_TYPE))
-    image_type = " ".join(sorted(words))
     names = " | ".join(p for p in (desc, (t.text(SEQ_NAME) or "").replace("_", " ")) if p)
-    both = f"{image_type} | {names}"
+    names_ev = f"{_dev(desc)}; {t.ev(SEQ_NAME)}" if t.has(SEQ_NAME) else _dev(desc)
     tr, te, ti, flip = t.number(TR), t.number(TE), t.number(TI), t.number(FLIP)
     seq = set(t.words(SCANNING_SEQ))
     timing = t.ev(TR, TE, TI, SCANNING_SEQ)
-    post = t.has(CONTRAST) or _post_contrast_words(desc)
+    post = t.has(CONTRAST) or _post_contrast_words(series_desc)
 
-    if _search(T.MR_WORDS["eadc"], both):
-        return T.MR["eadc"], f"{t.ev(IMAGE_TYPE)}; description: {names or 'missing'}"
-    if _search(T.MR_WORDS["adc"], both):
-        return T.MR["adc"], f"{t.ev(IMAGE_TYPE)}; description: {names or 'missing'}"
-    if _search(T.MR_WORDS["fa"], image_type):
-        return T.MR["fa"], t.ev(IMAGE_TYPE)
-
+    # Diffusion maps: Image Type decides; the description only when Image Type says neither map nor diffusion
+    # and no b-value is above 0 (a "DWI ADC" description on a DIFFUSION image is the diffusion series).
+    for key in ("eadc", "adc", "fa"):
+        if key.upper() in words:
+            return T.MR[key], t.ev(IMAGE_TYPE)
     s = series or {}
     b_values = numbers(s.get("b_values")) or []
     b_image = t.number(B_VALUE)
     directions = number(s.get("gradient_directions"))
-    if ({"DIFFUSION", "TRACEW"} & words or (b_image or 0) > 0 or any(b > 0 for b in b_values)
-            or _search(T.MR_WORDS["diffusion"], names)):
+    diffusion_tags = bool({"DIFFUSION", "TRACEW"} & words) or (b_image or 0) > 0 or any(b > 0 for b in b_values)
+    if not diffusion_tags:
+        for key in ("eadc", "adc"):
+            if _search(T.MR_WORDS[key], names):
+                return T.MR[key], f"{t.ev(IMAGE_TYPE)}; {names_ev}"
+    if diffusion_tags or _search(T.MR_WORDS["diffusion"], names):
         ev = (f"{t.ev(IMAGE_TYPE, B_VALUE)}; series b-values "
               f"{', '.join(_fmt(b) for b in b_values) or 'missing'}; gradient directions "
               f"{_fmt(directions) if directions is not None else 'missing'}")
@@ -411,12 +436,12 @@ def _mr_kind(t, series, desc):
 
     for key in ("perfusion", "tof", "pc"):
         if _search(T.MR_WORDS[key], names):
-            return T.MR[key], f"description: {names}"
+            return T.MR[key], names_ev
     if _search(T.MR_WORDS["mra"], names):
         return (T.MR["ce_mra"] if t.has(CONTRAST) or _search(r"CE ?-?MRA", names) else T.MR["mra"]), \
-            f"description: {names}; {t.ev(CONTRAST)}"
+            f"{names_ev}; {t.ev(CONTRAST)}"
     if _search(T.MR_WORDS["swi"], names):
-        return T.MR["swi"], f"description: {names}"
+        return T.MR["swi"], names_ev
 
     if ti is not None and ti > 0:
         if ti <= T.STIR_TI_MAX:
@@ -424,12 +449,12 @@ def _mr_kind(t, series, desc):
         if ti >= T.FLAIR_TI_MIN:
             return T.MR["flair"], timing
         return T.MR["t1_ir_post" if post else "t1_ir"], timing
-    for key in ("flair", "stir", "t1ir"):
+    for key in ("t1flair", "flair", "stir", "t1ir"):
         if _search(T.MR_WORDS[key], names):
-            rid = T.MR["t1_ir_post" if post else "t1_ir"] if key == "t1ir" else T.MR[key]
-            return rid, f"{timing}; description: {names}"
+            rid = T.MR["t1_ir_post" if post else "t1_ir"] if key in ("t1ir", "t1flair") else T.MR[key]
+            return rid, f"{timing}; {names_ev}"
     if _search(T.MR_WORDS["ssfp"], names):
-        return T.MR["ssfp"], f"description: {names}"
+        return T.MR["ssfp"], names_ev
 
     if "GR" in seq and te is not None:
         ev = f"{timing}; {t.ev(FLIP)}" if flip is not None else timing
@@ -448,21 +473,21 @@ def _mr_kind(t, series, desc):
     if keyword:
         if keyword == "t1" and post:
             keyword = "t1_post"
-        return T.MR[keyword], f"{timing}; description: {names}"
+        return T.MR[keyword], f"{timing}; {names_ev}"
     if tr is not None and te is not None:
         return T.ND_TR_TE_RANGE, timing
     return T.ND_TR_TE, timing
 
 
-def _mr(t, series, desc, row, col):
-    kind, ev = _mr_kind(t, series, desc)
+def _mr(t, series, desc, series_desc, row, col):
+    kind, ev = _mr_kind(t, series, desc, series_desc)
     out = [_f("series", kind, ev)]
     acq = t.text(MR_ACQ)
     if acq in ("2D", "3D"):
         out.append(_f("series", T.MR[acq.lower()], t.ev(MR_ACQ)))
     if kind != T.MR["stir"] and _search(T.MR_WORDS["fatsat"], desc):
-        out.append(_f("series", T.MR["fatsat"], f"description: {desc}"))
-    out.append(_contrast_row(t, desc))
+        out.append(_f("series", T.MR["fatsat"], f"{_dev(desc)}"))
+    out.append(_contrast_row(t, series_desc))
     out.append(_plane_row(row, col))
     return out
 
@@ -476,9 +501,9 @@ def _pt(t, desc, row, col):
     search = f"{image_type} | {desc}"
     units = t.text(UNITS)
     if _search(T.PET_NAC_WORDS, search):
-        out.append(_f("series", T.PET_NAC, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+        out.append(_f("series", T.PET_NAC, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     elif _search(T.PET_AC_WORDS, search):
-        out.append(_f("series", T.PET_AC, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+        out.append(_f("series", T.PET_AC, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     elif units in T.PET_UNITS_AC:
         out.append(_f("series", T.PET_AC, f"{t.ev(UNITS)}: quantitative units; no AC/NAC word"))
     elif units in T.PET_UNITS_NAC:
@@ -517,7 +542,7 @@ def _nm(t, desc, row, col):
         return out
     view = _first(T.NM_VIEW_WORDS, desc)
     if view:
-        out.append(_f("projection", view, f"description: {desc}"))
+        out.append(_f("projection", view, f"{_dev(desc)}"))
         return out
     oriented = _orientation_projection(t)
     if oriented:
@@ -559,9 +584,9 @@ def _mg(t, desc):
     out = []
     search = f"{(t.text(IMAGE_TYPE) or '').replace(chr(92), ' ')} | {desc}"
     if _search(T.MG_SYNTHETIC_WORDS, search):
-        out.append(_f("series", T.MG_SYNTHETIC, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+        out.append(_f("series", T.MG_SYNTHETIC, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     elif _search(T.MG_TOMO_WORDS, search):
-        out.append(_f("series", T.MG_TOMO, f"{t.ev(IMAGE_TYPE)}; description: {desc or 'missing'}"))
+        out.append(_f("series", T.MG_TOMO, f"{t.ev(IMAGE_TYPE)}; {_dev(desc)}"))
     else:
         out.append(_f("series", T.MG_SERIES, "Modality MG"))
     side_tag = next((tag for tag in (IMAGE_LATERALITY, LATERALITY) if t.text(tag) in T.MG_LATERALITY), None)
@@ -572,6 +597,8 @@ def _mg(t, desc):
         side, side_tag = prefix, VIEW_POSITION
     if raw is None:
         out.append(_f("projection", T.ND_VIEW, t.ev(VIEW_POSITION)))
+    elif code is None and raw.replace(" ", "") in T.XR_VIEWS:
+        out.append(_f("projection", T.XR_VIEWS[raw.replace(" ", "")], t.ev(VIEW_POSITION)))
     elif code is None:
         out.append(_f("projection", T.VIEW_UNKNOWN, t.ev(VIEW_POSITION), code=raw))
     else:
@@ -631,12 +658,12 @@ def identify(tags, series, row, col, color):
     out = [inferred] if inferred else []
     if modality is None:
         return [_f("series", T.ND_MODALITY, "ctx.series has no modality and no modality-specific tag is present")]
-    desc = _description(t)
+    desc, series_desc = _descriptions(t)
     if modality == "CT":
-        out += _ct(t, desc, row, col)
+        out += _ct(t, desc, series_desc, row, col)
         out.append(_region_row(t))
     elif modality == "MR":
-        out += _mr(t, series, desc, row, col)
+        out += _mr(t, series, desc, series_desc, row, col)
         out.append(_region_row(t))
     elif modality == "PT":
         out += _pt(t, desc, row, col)

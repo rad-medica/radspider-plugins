@@ -129,6 +129,45 @@ CASES = {
     "nm_wholebody": ({"0008,0008": "ORIGINAL\\PRIMARY\\WHOLE BODY\\EMISSION"}, {"modality": "NM"}, NONE, False),
     "nm_spect": ({"0008,0008": "ORIGINAL\\PRIMARY\\RECON TOMO\\EMISSION"}, {"modality": "NM"}, AXIAL, False),
     "other_modality": ({}, {"modality": "SR"}, NONE, False),
+    # Fix round 1: negations, Protocol Name, ADC description, T1 FLAIR, MG AT/CV vs XR LAT.
+    "mr_no_contrast": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "T1 NO CONTRAST"}, {"modality": "MR"},
+                       AXIAL, False),
+    "mr_without_contrast": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "T1 WITHOUT CONTRAST"},
+                            {"modality": "MR"}, AXIAL, False),
+    "mr_pre_gad": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "T1 PRE GAD"}, {"modality": "MR"}, AXIAL,
+                   False),
+    "mr_sin_gadolinio": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "T1 SIN GADOLINIO"},
+                         {"modality": "MR"}, AXIAL, False),
+    "mr_post_op": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "T1 POST OP"}, {"modality": "MR"}, AXIAL,
+                   False),
+    "mr_post_gad": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "AX T1 POST GAD"}, {"modality": "MR"},
+                    AXIAL, False),
+    "mr_protocol_gad": ({"0018,0080": 500.0, "0018,0081": 10.0, "0008,103E": "AX T1",
+                         "0018,1030": "BRAIN W WO GAD"}, {"modality": "MR"}, AXIAL, False),
+    "mr_protocol_only": ({"0018,1030": "AX FLAIR"}, {"modality": "MR"}, AXIAL, False),
+    "mr_dwi_adc_description": ({"0008,0008": "ORIGINAL\\PRIMARY\\DIFFUSION\\NONE", "0018,9087": 1000.0,
+                                "0008,103E": "DWI ADC"},
+                               {"modality": "MR", "b_values": [0, 1000], "gradient_directions": 3}, AXIAL, False),
+    "mr_adc_description_only": ({"0008,103E": "ADC"}, {"modality": "MR"}, AXIAL, False),
+    "mr_exp_word": ({"0018,0080": 4000.0, "0018,0081": 100.0, "0008,103E": "T2 EXP 2"}, {"modality": "MR"}, AXIAL,
+                    False),
+    "mr_t1_flair": ({"0018,0080": 2000.0, "0018,0081": 10.0, "0008,103E": "AX T1 FLAIR"}, {"modality": "MR"},
+                    AXIAL, False),
+    "ct_protocol_cta": ({"0008,103E": "ABDOMEN 3.0 B30F", "0018,1030": "CTA AORTA"}, {"modality": "CT"}, AXIAL,
+                        False),
+    "ct_arterial_protocol_cta": ({"0008,103E": "ARTERIAL", "0018,1030": "CTA LIVER"}, {"modality": "CT"}, AXIAL,
+                                 False),
+    "ct_protocol_only": ({"0018,1030": "CTA AORTA"}, {"modality": "CT"}, AXIAL, False),
+    "ct_no_contrast": ({"0008,103E": "ABD NO CONTRAST"}, {"modality": "CT"}, AXIAL, False),
+    "ct_without_contrast": ({"0008,103E": "CHEST WITHOUT CONTRAST"}, {"modality": "CT"}, AXIAL, False),
+    "ct_w_o": ({"0008,103E": "HEAD W/O"}, {"modality": "CT"}, AXIAL, False),
+    "ct_wo_contrast": ({"0008,103E": "ABD WO CONTRAST"}, {"modality": "CT"}, AXIAL, False),
+    "ct_sin_contraste_iv": ({"0008,103E": "TORAX SIN CONTRASTE IV"}, {"modality": "CT"}, AXIAL, False),
+    "inferred_lat": ({"0018,5101": "LAT"}, None, NONE, False),
+    "mg_lat": ({"0018,5101": "LAT", "0020,0062": "L"}, {"modality": "MG"}, NONE, False),
+    "mg_at": ({"0018,5101": "AT", "0020,0062": "R"}, {"modality": "MG"}, NONE, False),
+    "mg_cv": ({"0018,5101": "CV"}, {"modality": "MG"}, NONE, False),
+    "mg_prefixed": ({"0018,5101": "LCC"}, {"modality": "MG"}, NONE, False),
     "ct_spanish_de": ({"0008,103E": "TC DE TORAX SIN CONTRASTE"}, {"modality": "CT"}, AXIAL, False),
     "nm_post_void": ({"0008,0008": "ORIGINAL\\PRIMARY\\STATIC\\EMISSION", "0008,103E": "PELVIS POST VOID"},
                      {"modality": "NM"}, NONE, False),
@@ -201,8 +240,8 @@ class IdentifyTests(unittest.TestCase):
 
     def test_ct_localizer(self):
         self.assertHas("ct_localizer", "series", "CT localizer (scout)")
-        self.assertHas("ct_localizer", "projection", "lateral")
-        self.assertHas("ct_localizer_frontal", "projection", "frontal")
+        self.assertHas("ct_localizer", "projection", "Lateral localizer")
+        self.assertHas("ct_localizer_frontal", "projection", "Frontal localizer")
         self.assertEqual(texts(run("ct_localizer"), "plane"), [])
 
     def test_ct_contrast_and_reconstructions(self):
@@ -290,6 +329,38 @@ class IdentifyTests(unittest.TestCase):
         self.assertHas("mr_flow_comp", "series", "T2-weighted")
         self.assertNotIn("Contrast-enhanced CT, arterial phase", texts(run("ct_portal"), "series"))
 
+    def test_fix_round_1(self):
+        for name in ("mr_no_contrast", "mr_without_contrast", "mr_pre_gad", "mr_sin_gadolinio", "mr_post_op",
+                     "mr_protocol_gad"):
+            self.assertHas(name, "series", "T1-weighted")
+            self.assertHas(name, "contrast", "not determined: Contrast/Bolus Agent missing")
+        self.assertHas("mr_post_gad", "series", "T1-weighted, post-contrast")
+        self.assertHas("mr_post_gad", "contrast", "Contrast suggested by the description")
+        self.assertHas("mr_protocol_only", "series", "T2 FLAIR")
+        f = next(f for f in run("mr_protocol_only") if f.item == "series")
+        self.assertIn("(0018,1030)", f.evidence)
+        self.assertHas("mr_dwi_adc_description", "series", "Diffusion-weighted (trace)")
+        self.assertHas("mr_adc_description_only", "series", "ADC map")
+        self.assertHas("mr_exp_word", "series", "T2-weighted")
+        self.assertHas("mr_t1_flair", "series", "T1-weighted, inversion recovery prepared")
+        self.assertHas("ct_protocol_cta", "series", "not determined: Contrast/Bolus Agent missing")
+        self.assertHas("ct_arterial_protocol_cta", "series", "Contrast-enhanced CT, arterial phase")
+        self.assertHas("ct_protocol_only", "series", "Contrast-enhanced CT, angiographic phase (CTA)")
+        for name in ("ct_no_contrast", "ct_without_contrast", "ct_w_o", "ct_wo_contrast", "ct_sin_contraste_iv",
+                     "ct_spanish_de"):
+            self.assertHas(name, "series", "Non-contrast CT")
+        self.assertHas("inferred_lat", "series", "Modality inferred from the tags: DX")
+        self.assertHas("inferred_lat", "projection", "Lateral")
+        self.assertHas("mg_lat", "projection", "Lateral")
+        self.assertHas("mg_lat", "laterality", "Left breast")
+        self.assertHas("mg_at", "projection", "Right AT (axillary tail)")
+        self.assertHas("mg_cv", "projection", "CV (cleavage view)")
+        self.assertHas("mg_prefixed", "projection", "Left CC")
+        sided = next(f for f in run("mg_lmlo") if f.item == "projection")
+        self.assertEqual(sided.explain, ("MLO", "Left breast"))
+        region = next(f for f in run("cxr_pa") if f.item == "region")
+        self.assertEqual(region.explain, ("Body part examined",))
+
     def test_tables_are_module_constants(self):
         for name in ("CT_KERNELS", "CT_PHASE_WORDS", "MR_WORDS", "XR_VIEWS", "MG_VIEWS", "NM_KINDS"):
             self.assertTrue(getattr(R, name), name)
@@ -350,16 +421,21 @@ class IdentifyTests(unittest.TestCase):
         for name in CASES:
             for f in run(name):
                 self.assertIn(f.item, R.ITEMS, name)
-                self.assertIn(f.result, R.EXPLAIN, f"{name}: result {f.result!r}")
+                self.assertIn(f.result, R.all_result_ids(), f"{name}: result {f.result!r}")
                 self.assertTrue(f.explain, f"{name}: {f.result!r} has no explanation")
+                self.assertEqual(f.explain, R.explain_for(f.result), name)
                 for e in f.explain:
                     self.assertIn(e, R.EXPLAIN, f"{name}: explain {e!r}")
                 self.assertEqual(set(placeholder.findall(f.result)), {k for k, _ in f.args}, name)
                 self.assertNotIn("{", f.english, name)
 
     def test_tables_explained(self):
-        for rid in R.all_result_ids():
-            self.assertIn(rid, R.EXPLAIN, rid)
+        self.assertEqual(set(R.EXPLAIN), R.all_explain_ids())
+        ids = R.all_result_ids() | set(R.EXPLAIN)
+        folded = {}
+        for i in ids:
+            self.assertNotIn(i.casefold(), folded, f"{i!r} vs {folded.get(i.casefold())!r} differ only by case")
+            folded[i.casefold()] = i
         for key, para in R.EXPLAIN.items():
             self.assertTrue(para and para.strip() == para, key)
             sentences = [s for s in re.split(r"(?<=[.!?])\s+", para) if s]

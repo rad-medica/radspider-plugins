@@ -69,10 +69,14 @@ OBLIQUE_IDS = {
 # Name. HEURISTIC: no standard governs series naming; these are common English and Spanish site/vendor names.
 # Order matters: the first match wins ("PORTAL VENOUS" must hit portal before venous; native first so that
 # "NON CONTRAST" is never read as contrast).
+# HEURISTIC words for "no contrast" (English, Spanish, German): a negation or "pre" before a contrast noun, or a
+# word that means unenhanced on its own. Shared by CT native detection and the MR post-contrast exclusion.
+CONTRAST_NOUNS = r"CONTRAST\w*|GAD\w*|GD|GADOLINIO|KM|CONT|C|IV"
+NEGATED_CONTRAST = (rf"(NO|NON|NOT|WITHOUT|W/O|WO|SIN|PRE|OHNE) ?-?(IV ?)?({CONTRAST_NOUNS})|PRECONTRAST|NONCON|"
+                    r"NATIVE?|NATIVA|NATIVO|UNENHANCED|NON ?-?ENHANCED|S/C|SIMPLE|PLAIN|W/O")
 CT_NATIVE = "Non-contrast CT"
 CT_PHASE_WORDS = (
-    (r"NATIVE?|NATIVA|NON ?-?CONTRAST|NONCON|UNENHANCED|PRE ?-?CONTRAST|PRECONTRAST|SIN CONTRASTE|SIN CONT|"
-     r"S/C|SIMPLE|PLAIN", CT_NATIVE),
+    (NEGATED_CONTRAST, CT_NATIVE),
     (r"CTA|ANGIO\w*|ANGIOTC|ANGIO-?TC", "Contrast-enhanced CT, angiographic phase (CTA)"),
     (r"PORTAL|PORTO ?-?VENOUS|PORTOVENOSA|PV", "Contrast-enhanced CT, portal venous phase"),
     (r"(LATE |EARLY )?ARTERIAL|ARTERIAL|ARTERIELLE?|ART", "Contrast-enhanced CT, arterial phase"),
@@ -137,8 +141,11 @@ KERNEL_UNKNOWN = "Kernel not in the tables ({kernel})"
 
 CONTRAST_RECORDED = "Contrast agent recorded ({agent})"
 CONTRAST_DESCRIPTION = "Contrast suggested by the description"
-# HEURISTIC: post-contrast words in descriptions (GD/GAD = gadolinium, +C / C+ = with contrast, KM = Kontrastmittel).
-POST_CONTRAST_WORDS = r"POST|POSTGAD|\+C|C\+|GD|GAD\w*|KM|CONTRAST|CONTRASTE|CON CONTRASTE|CE|ENHANCED"
+# HEURISTIC: post-contrast words in Series Description (GD/GAD = gadolinium, +C / C+ = with contrast, KM =
+# Kontrastmittel). Bare POST is not enough ("POST OP"); it must be followed by a contrast noun. Never read when
+# NEGATED_CONTRAST also matches, and never from Protocol Name (exam-level, e.g. "BRAIN W WO GAD").
+POST_CONTRAST_WORDS = (rf"POST ?-?({CONTRAST_NOUNS})|POSTGAD|POSTCONTRAST|\+C|C\+|\+GD|GD\+|GAD\w*|GD|"
+                       r"GADOLINIO|CON CONTRASTE|WITH CONTRAST|W/ ?CONTRAST|MIT KM|CE|ENHANCED")
 
 # --- MR ------------------------------------------------------------------------------------------------------------
 
@@ -167,7 +174,7 @@ TRACE_DIRECTIONS = 3
 # Keyword ids. Searched as whole words, upper case, in Image Type (where noted), Series Description, Protocol Name and
 # Sequence Name. HEURISTIC lists of common vendor sequence and series names.
 MR_WORDS = {
-    "eadc": r"EADC|EXP|EXPADC",
+    "eadc": r"EADC|EXPADC|EXP ADC",  # description fallback only; Image Type words decide first
     "adc": r"ADC",
     "fa": r"FA",  # Image Type only
     "diffusion": r"DWI|DIFFUSION|DTI|DIFF|EP2D DIFF|TRACEW|DW",
@@ -177,6 +184,7 @@ MR_WORDS = {
     "mra": r"MRA|ANGIO\w*|CE ?-?MRA",
     "swi": r"SWI|SWAN|SWIP|VENBOLD|SUSCEPT\w*",
     "ssfp": r"TRUFI|TRUE ?-?FISP|FIESTA|B-?FFE|BSSFP|SSFP|BALANCED",
+    "t1flair": r"T1\w* ?-?FLAIR",  # checked before "flair": T1 FLAIR is an IR-prepared T1
     "flair": r"FLAIR|DARK ?-?FLUID",
     "stir": r"STIR|TIRM",
     "t1ir": r"MPRAGE|MP-?RAGE|BRAVO|IR ?-?FSPGR|3D ?-?TFE|MP2RAGE",
@@ -307,6 +315,10 @@ MG_VIEWS = {
     "ISO": "ISO",
     "XCCL": "Exaggerated CC (laterally)",
     "XCCM": "Exaggerated CC (medially)",
+    # HEURISTIC additions: ACR MQCM abbreviations seen in View Position (spec §2) that the fetched CID 4014 does
+    # not list (probably view modifiers, CID 4015, not fetched).
+    "AT": "AT (axillary tail)",
+    "CV": "CV (cleavage view)",
 }
 MG_SIDES = {"L": "Left", "R": "Right"}
 # Image Laterality (0020,0062) enumerated values R, L, B (PS3.3 C.8.11.7).
@@ -410,7 +422,7 @@ ND_SECONDARY = "not determined: Positioner Secondary Angle missing"
 ND_BODY_PART = "not determined: Body Part Examined missing"
 ND_LOCALIZER = "not determined: localizer is neither frontal nor lateral"
 
-LOCALIZER_VIEWS = {"coronal": "frontal", "sagittal": "lateral"}
+LOCALIZER_VIEWS = {"coronal": "Frontal localizer", "sagittal": "Lateral localizer"}
 
 # --- Explanations (spec §5): what it is and what it is typically used for. No findings, no advice. ----------------
 
@@ -436,8 +448,8 @@ EXPLAIN = {
     # CT
     CT_LOCALIZER: "A localizer (scout or topogram) is a quick projection image taken before the CT scan. It is "
                   "used to plan where the slices will be taken.",
-    "frontal": "The localizer was taken from the front, like a frontal radiograph.",
-    "lateral": "The localizer was taken from the side, like a lateral radiograph.",
+    "Frontal localizer": "The localizer was taken from the front, like a frontal radiograph.",
+    "Lateral localizer": "The localizer was taken from the side, like a lateral radiograph.",
     ND_LOCALIZER: "The localizer orientation is neither front-on nor side-on within 10 degrees. " + _ND,
     CT_NATIVE: "A CT acquired without intravenous contrast. It shows tissue density without the effect of contrast and "
                "is often the reference for later contrast phases.",
@@ -664,20 +676,36 @@ _MG_TEXT = {
     "ISO": "Inferomedial to superolateral oblique view: an angled view from the lower inner side.",
     "XCCL": "Exaggerated cranio-caudal view, turned to include the outer part of the breast.",
     "XCCM": "Exaggerated cranio-caudal view, turned to include the inner part of the breast.",
+    "AT": "Axillary tail view: an angled view of the outer upper part of the breast, toward the armpit.",
+    "CV": "Cleavage view: both breasts are imaged together to show the tissue near the breastbone.",
 }
 for _code, _para in _MG_TEXT.items():
     EXPLAIN[mg_view_id(_code, "")] = _para + " Screening uses mainly CC and MLO."
-    for _s, _word in MG_SIDES.items():
-        EXPLAIN[mg_view_id(_code, _s)] = f"{_para} This image is of the {_word.lower()} breast."
 
-for _name in REGIONS.values():
-    EXPLAIN[_name] = f"The body part recorded in the header is: {_name.lower()}."
-EXPLAIN[REGION_OTHER] = "The body part is shown as recorded in the header; it is not in the tool's table."
+REGION_EXPLAIN = "Body part examined"
+EXPLAIN[REGION_EXPLAIN] = ("The body part as recorded in the header (Body Part Examined), chosen or typed at the "
+                           "scanner. It can be missing or too general.")
 
 
 def word_re(pattern):
     """Compile `pattern` (an alternation) to match whole words only."""
     return re.compile(rf"(?<![A-Z0-9])(?:{pattern})(?![A-Z0-9])")
+
+
+def explain_for(result):
+    """Explanation ids of a result id: its own paragraph, except sided MG views (the unsided view + the breast) and
+    regions (one shared paragraph)."""
+    if result in _REGION_RESULTS:
+        return (REGION_EXPLAIN,)
+    sided = _MG_SIDED.get(result)
+    if sided:
+        return sided
+    return (result,)
+
+
+def all_explain_ids():
+    """Every explanation id reachable from all_result_ids(); equals the keys of EXPLAIN."""
+    return {e for rid in all_result_ids() for e in explain_for(rid)}
 
 
 def all_result_ids():
@@ -697,3 +725,7 @@ def all_result_ids():
             ND_IMAGE_TYPE, ND_XR_VIEW, ND_VIEW, ND_LATERALITY, ND_PRIMARY, ND_SECONDARY, ND_BODY_PART,
             ND_LOCALIZER}
     return ids
+
+
+_REGION_RESULTS = frozenset(REGIONS.values()) | {REGION_OTHER}
+_MG_SIDED = {mg_view_id(c, side): (mg_view_id(c, ""), MG_LATERALITY[side]) for c in MG_VIEWS for side in MG_SIDES}
