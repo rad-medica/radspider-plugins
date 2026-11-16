@@ -42,7 +42,7 @@ class RulesCoreTests(unittest.TestCase):
         self.assertEqual(R.text(12.0), "12")
         self.assertIsNone(R.text(""))
         self.assertIsNone(R.text(None))
-        self.assertEqual(R.text(["a", " b "]), "A\B")
+        self.assertEqual(R.text(["a", " b "]), "A\\B")
         self.assertIsNone(R.text(["", None]))
         self.assertEqual(R.numbers([0.5, 0.5]), [0.5, 0.5])
         self.assertIsNone(R.number("x"))
@@ -50,7 +50,7 @@ class RulesCoreTests(unittest.TestCase):
         self.assertEqual(R.number([3]), 3.0)
         self.assertIsNone(R.number(None))
         self.assertIsNone(R.number(math.nan))
-        self.assertEqual(R.numbers("1\2.5"), [1.0, 2.5])
+        self.assertEqual(R.numbers("1\\2.5"), [1.0, 2.5])
         self.assertIsNone(R.numbers([1, "x"]))
         self.assertIsNone(R.numbers([]))
 
