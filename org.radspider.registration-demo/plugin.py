@@ -60,10 +60,10 @@ def _trilinear(a, x, y, z):
 
 
 def on_fixed_grid(fixed, moving, progress):
-    """The moving image sampled at the voxel centres of the fixed grid, and how it got there."""
+    """The moving image sampled at the voxel centres of the fixed grid, and whether it had to be resampled."""
     a = moving.numpy()
     if _same_grid(fixed, moving):
-        return a.astype(np.float32), "same grid"
+        return a.astype(np.float32), False
     if fixed.origin is None or moving.origin is None:
         raise ValueError("the two series have different grids and no place in the patient to relate them")
     (mf, of), (mm, om) = _matrix(fixed), _matrix(moving)
@@ -77,8 +77,8 @@ def on_fixed_grid(fixed, moving, progress):
         c = [m[i, 0] * xs + m[i, 1] * ys + m[i, 2] * k + t[i] for i in range(3)]
         out[k] = _trilinear(a, c[0], c[1], c[2])
         if k % 16 == 0:
-            progress(0.4 * k / nz, "Resampling the second series")
-    return out, "resampled through patient coordinates"
+            progress(0.4 * k / nz, rp.tr("Resampling the second series"))
+    return out, True
 
 
 def _filled(a):
@@ -153,13 +153,13 @@ def match(f, m):
 def find_shift(f, m, subvoxel, progress):
     """The translation of ``m`` onto ``f`` in voxels (z, y, x): ``moved(m, shift)`` lies over ``f``."""
     step = max(1, int(np.ceil((f.size / COARSE_VOXELS) ** (1 / 3))))
-    progress(0.45, "Coarse search")
+    progress(0.45, rp.tr("Coarse search"))
     shift = np.rint(find_peak(f[::step, ::step, ::step], m[::step, ::step, ::step], False) * step)
     block = tuple(slice(max(0, (n - BLOCK) // 2), max(0, (n - BLOCK) // 2) + min(n, BLOCK)) for n in f.shape)
     # Content the shift pushed out of the picture pulls the first peak towards zero: look again from where it
     # points, whole voxels first, the fraction last.
     for i in range(REFINE):
-        progress(0.55 + 0.3 * i / REFINE, "Refining")
+        progress(0.55 + 0.3 * i / REFINE, rp.tr("Refining"))
         last = i == REFINE - 1
         more = find_peak(f[block], moved(m, shift)[block], subvoxel and last)
         shift = shift + (more if last else np.rint(more))
@@ -172,39 +172,49 @@ def translate(volume, ctx):
     if other is None:
         raise ValueError("this tool needs a second series")
     fixed = volume.numpy()
-    start, how = on_fixed_grid(volume, other, ctx.progress)
-    shift = find_shift(fixed, start, ctx.params["subvoxel"] >= 0.5, ctx.progress)
-    ctx.progress(0.85, "Moving the second series")
+    start, resampled = on_fixed_grid(volume, other, ctx.progress)
+    shift = find_shift(fixed, start, bool(ctx.params["subvoxel"]), ctx.progress)
+    ctx.progress(0.85, rp.tr("Moving the second series"))
     result = moved(start, shift)
     before, after = match(fixed, start), match(fixed, result)
     # Where the second series' content lies from the fixed one's, along the fixed grid's x, y and slice axes.
     x, y, z = (float(shift[2]), float(shift[1]), float(shift[0]))
     mm = (x * volume.spacing[0], y * volume.spacing[1], z * volume.spacing[2])
     frames = (
-        "unknown" if not (volume.frame_of_reference and other.frame_of_reference)
-        else "same" if volume.frame_of_reference == other.frame_of_reference
-        else "different"
+        rp.tr("unknown") if not (volume.frame_of_reference and other.frame_of_reference)
+        else rp.tr("same") if volume.frame_of_reference == other.frame_of_reference
+        else rp.tr("different")
     )
     unit = other.unit or ""
+    nx, ny, nz = other.dims
+    series = (
+        rp.tr("{x} × {y} × {z}, resampled through patient coordinates", x=nx, y=ny, z=nz) if resampled
+        else rp.tr("{x} × {y} × {z}, same grid", x=nx, y=ny, z=nz)
+    )
+    diff_before = rp.tr("Mean |difference| before ({unit})", unit=unit) if unit else rp.tr("Mean |difference| before")
+    diff_after = rp.tr("Mean |difference| after ({unit})", unit=unit) if unit else rp.tr("Mean |difference| after")
     table = [
-        ["Quantity", "Value"],
-        ["Second series", "%d × %d × %d, %s" % (other.dims + (how,))],
-        ["Frames of Reference", frames],
-        ["Offset x (mm)", round(mm[0], 3)],
-        ["Offset y (mm)", round(mm[1], 3)],
-        ["Offset z (mm)", round(mm[2], 3)],
-        ["Offset x (voxels)", round(x, 3)],
-        ["Offset y (voxels)", round(y, 3)],
-        ["Offset z (voxels)", round(z, 3)],
-        ["Correlation before", round(before[0], 4)],
-        ["Correlation after", round(after[0], 4)],
-        [("Mean |difference| before (%s)" % unit).replace(" ()", ""), round(before[1], 3)],
-        [("Mean |difference| after (%s)" % unit).replace(" ()", ""), round(after[1], 3)],
-        ["Voxels compared after", after[2]],
+        [rp.tr("Quantity"), rp.tr("Value")],
+        [rp.tr("Second series"), series],
+        [rp.tr("Frames of Reference"), frames],
+        [rp.tr("Offset x (mm)"), round(mm[0], 3)],
+        [rp.tr("Offset y (mm)"), round(mm[1], 3)],
+        [rp.tr("Offset z (mm)"), round(mm[2], 3)],
+        [rp.tr("Offset x (voxels)"), round(x, 3)],
+        [rp.tr("Offset y (voxels)"), round(y, 3)],
+        [rp.tr("Offset z (voxels)"), round(z, 3)],
+        [rp.tr("Correlation before"), round(before[0], 4)],
+        [rp.tr("Correlation after"), round(after[0], 4)],
+        [diff_before, round(before[1], 3)],
+        [diff_after, round(after[1], 3)],
+        [rp.tr("Voxels compared after"), after[2]],
     ]
     return rp.Result(
         volume=result,
-        volume_name="Registered (translation)",
+        volume_name=rp.tr("Registered (translation)"),
         table=table,
-        message="Offset %.1f, %.1f, %.1f mm; correlation %.3f → %.3f" % (mm + (before[0], after[0])),
+        message=rp.tr(
+            "Offset {x}, {y}, {z} mm; correlation {before} → {after}",
+            x="%.1f" % mm[0], y="%.1f" % mm[1], z="%.1f" % mm[2], before="%.3f" % before[0], after="%.3f" % after[0],
+        ),
     )
