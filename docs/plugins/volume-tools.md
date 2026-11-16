@@ -16,6 +16,16 @@ the active series is the first / fixed one, the result is a new series on its gr
 | *Cardiac Tagging MRI* `merge_tag_grids` | two-volume tool | Product of two tagged series, slice maxima equalised | Cardiac Tagging MRI |
 | *PetSpectFusion* `rigid_register` | two-volume tool | 6-parameter rigid registration by mutual information, multi-resolution | PetSpectFusion |
 
+## API 6 (1.1.0)
+
+| Item | |
+|---|---|
+| API | `api = 6` (was 3): icons, typed parameters, Spanish catalog. Algorithms and outputs are those of 1.0.0 |
+| Icons | Plugin `cube`. Nodes: `invert` `circle-half`, `scale` `ruler`. Tools: `normalize` `scales`, `delta_r2_map` `drop-half`, `merge_tag_grids` `grid-four`, `rigid_register` `intersect` |
+| Parameters | `normalize.segment`, `delta_r2_map.region`: `integer`. `merge_tag_grids.equalize` (0 / 1): `bool`, default on. `rigid_register`: `levels`, `bins`, `samples` are `integer`; `start` (0 / 1) is a `choice`: *auto* (default) or *centres of mass*. The builder node `scale` keeps its plain number `factor`. Values saved for 1.0.0 do not carry over |
+| Translations | `lang/es.toml` (103 texts): manifest, progress and result messages, table headers and labels, chart title, axis labels and series name, series names. Segment names inside a message (`segment 2 “Liver”`) are data inside a translated sentence. Error texts are not marked. `lang/template.toml`: `python -m radspider_plugin template org.radspider.volume-tools` |
+| Known gap | The ΔR2 result message carries the region text (*whole volume*, *segment n “…”*, …) as an argument: that part stays English in the message; the *Region* row of the table is translated |
+
 ## Invert Data
 
 | Item | |
@@ -50,7 +60,7 @@ the active series is the first / fixed one, the result is a new series on its gr
 
 | Item | |
 |---|---|
-| Combination | **Product** (not minimum, not mean): `slice = v1 · v2 ÷ (max − min of the v1 slice)`, then, with *Equalize* 1 (as the original), every slice is multiplied by `largest slice maximum ÷ its own maximum` |
+| Combination | **Product** (not minimum, not mean): `slice = v1 · v2 ÷ (max − min of the v1 slice)`, then, with *Equalize slice maxima* on (as the original), every slice is multiplied by `largest slice maximum ÷ its own maximum` |
 | Series | The original takes **one** stack and multiplies its first half by its second half, image by image. Here the two halves must be **two series**: active = one tag direction, second = the other, same slices. A volume is one phase of a cine: run it per phase |
 | Second series | Same rule as the ratio map: identical grid, or same Frame of Reference (resampled), else refused |
 | Differences | The original stores each slice maximum as an integer before dividing (truncation); here it is not truncated. A slice whose maximum is not above 0 is left unscaled (the original divides by 0). Output unit `none` |
@@ -63,7 +73,7 @@ the active series is the first / fixed one, the result is a new series on its gr
 | Metric | Mutual information (nats) of a joint histogram, *Histogram bins* per image over the 0.5th–99.5th percentile, each sample spread linearly over the two nearest bins of both images (first-order Parzen window). Samples: voxels of the fixed copy, at most *Samples per level* (a fixed-seed random subset). Poses leaving < 25 % of the samples inside the moving image are not scored |
 | Pyramid | *Pyramid levels* copies by block means; the finest has voxels of max(smallest fixed voxel, ∛(volume / 2 M)) mm, each coarser level twice that. Work is on these copies, never on the full volume |
 | Search | `scipy.optimize.minimize(method="Powell")` per level, ≤ 500 evaluations, parameters scaled so one unit moves the image edge by one voxel of the level. Progress per level |
-| Start | Same Frame of Reference: identity (patient coordinates). Otherwise, or *Start* 1: centres of mass laid on each other |
+| Start | Same Frame of Reference: identity (patient coordinates). Otherwise, or *Start* = centres of mass: the centres of mass laid on each other |
 | Output | Series *Registered (rigid)*: the second series on the active grid (trilinear, NaN outside, z bands), unit of the second series (`keep`). Table: angles, translation, MI before and after on the finest copies, coverage, one row per level |
 | Differences | The original runs ITK: Mattes MI with B-spline Parzen windows (75 bins, 70 % of voxels), versor rigid transform, regular-step gradient descent (≤ 250 iterations), multi-resolution optional (3 levels from shrink 8), start from the geometric centres, and manual nudging of the transform in its window. Here: linear Parzen windows, Euler angles, Powell, multi-resolution always, start from patient coordinates or centres of mass, no manual nudging. Results are not numerically comparable with ITK's |
 | Limits | Rigid only: no scaling, no deformation. A start more than about a quarter of the image away or rotated by tens of degrees is not found. Accuracy is bounded by the finest copy (2.7 mm voxels on a 512 × 512 × 300, 0.7 mm CT). `spacing[2]` is the mean slice step: gantry-tilted or uneven stacks are approximate. NaN in the moving image grows by one voxel when resampled |
