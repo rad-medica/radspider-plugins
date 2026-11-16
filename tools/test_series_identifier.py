@@ -663,8 +663,8 @@ class ResidualRuleTests(unittest.TestCase):
     CT = {"0008,0070": "GE MEDICAL SYSTEMS", "0018,1210": "STANDARD", "0008,103E": "TORAX"}
     MR = {"0008,0070": "SIEMENS", "0008,103E": "t1_se_tra", "0018,0020": "SE", "0018,0080": 500.0,
           "0018,0081": 12.0}
-    PET = {"0008,0008": "ORIGINAL\PRIMARY", "0008,0070": "SIEMENS", "0054,1001": "BQML",
-           "0054,1000": "WHOLE BODY\IMAGE"}
+    PET = {"0008,0008": "ORIGINAL\\PRIMARY", "0008,0070": "SIEMENS", "0054,1001": "BQML",
+           "0054,1000": "WHOLE BODY\\IMAGE"}
 
     def series(self, tags, modality):
         return R.identify(tags, {"modality": modality}, *AXIAL, False)
@@ -869,13 +869,33 @@ class ModelTests(unittest.TestCase):
             self.assertEqual(op.call_count, 2)
 
     def test_cleanup_failure_keeps_the_original_error(self):
-        with tempfile.TemporaryDirectory() as d,                 mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}),                 mock.patch.object(M, "_remove", side_effect=PermissionError("locked by antivirus")) as rm,                 mock.patch.object(M.urllib.request, "urlopen", side_effect=urllib.error.URLError("no route")):
+        locked = PermissionError("locked by antivirus")
+        with tempfile.TemporaryDirectory() as d,                 mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}),                 mock.patch.object(M.os, "remove", side_effect=locked) as rm,                 mock.patch.object(M.urllib.request, "urlopen", side_effect=urllib.error.URLError("no route")):
             os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
             with self.assertRaises(M.Unavailable) as cm:
                 M.model_path(None)
             self.assertIn("no route", str(cm.exception))
             self.assertNotIn("locked", str(cm.exception))
             self.assertTrue(rm.called)
+
+    def test_cleanup_failure_after_hash_mismatch_keeps_the_hash_reason(self):
+        with tempfile.TemporaryDirectory() as d,                 mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}),                 mock.patch.object(M.os, "remove", side_effect=PermissionError("locked by antivirus")) as rm,                 mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(b"not the model..")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("does not match the pinned SHA-256", str(cm.exception))
+            self.assertNotIn("locked", str(cm.exception))
+            self.assertTrue(rm.called)
+
+    def test_cleanup_failure_after_failed_store_keeps_the_store_reason(self):
+        body = b"a verified body"
+        with tempfile.TemporaryDirectory() as d,                 mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}),                 mock.patch.object(M, "SHA256", hashlib.sha256(body).hexdigest()),                 mock.patch.object(M.os, "replace", side_effect=OSError("cannot replace")),                 mock.patch.object(M.os, "remove", side_effect=PermissionError("locked by antivirus")),                 mock.patch.object(M.urllib.request, "urlopen", return_value=FakeResponse(body)):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("Could not store the model", str(cm.exception))
+            self.assertIn("cannot replace", str(cm.exception))
+            self.assertNotIn("locked", str(cm.exception))
 
     def test_classes(self):
         self.assertEqual(M.CLASSES, ("t1w", "gret2star", "t2w", "flair", "b0", "tracew", "adc", "fa", "eadc", "dwig"))

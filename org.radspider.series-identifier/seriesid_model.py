@@ -57,8 +57,8 @@ def sha256_of(path):
 def _remove(path):
     try:
         os.remove(path)
-    except FileNotFoundError:
-        pass
+    except OSError:
+        pass  # missing, or locked (antivirus, Windows): cleanup must never replace the error being reported
 
 
 def _offline_hint():
@@ -115,10 +115,7 @@ def model_path(progress):
     except BaseException as e:
         # Never leave a partial file, whatever stopped the download (KeyboardInterrupt included). The file is
         # closed by the with block before it is removed (Windows refuses to remove an open file).
-        try:
-            _remove(part)
-        except OSError:
-            pass  # a locked file (antivirus, Windows) must not replace the error being reported
+        _remove(part)
         # URLError, timeouts and disk errors are OSError; a truncated body is an http.client.HTTPException.
         if isinstance(e, (OSError, ValueError, http.client.HTTPException)):
             raise Unavailable("Could not download the dcm-classifier model (%s). %s" % (e, _offline_hint())) from e
