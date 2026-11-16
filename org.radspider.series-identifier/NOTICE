@@ -1,0 +1,13 @@
+org.radspider.series-identifier uses work of dcm-classifier.
+
+dcm-classifier
+Copyright 2024 Michal Brzus and Hans J. Johnson
+Licensed under the Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+https://github.com/BRAINSia/dcm-classifier
+Commit 5dcb37384572416da806db69c90bbabcec9819c9
+
+- The model file src/dcm_classifier/models/ova_rf_classifier.onnx at that commit is downloaded on first use, checked
+  against a pinned SHA-256 and run unchanged. It is not part of this folder.
+- The 28-value feature construction in seriesid_rules.py (FEATURES, features, series_class) was reimplemented from
+  dicom_volume.py / utility_functions.py at that commit (with dicom_config.py and image_type_inference.py for the
+  feature order, the classes and the series step). No dcm-classifier source file is copied here.

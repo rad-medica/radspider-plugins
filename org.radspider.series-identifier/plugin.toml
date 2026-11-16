@@ -1,0 +1,25 @@
+# Series identifier: what the image on screen is, its plane or projection, and what both mean. Rules over DICOM tags
+# for every modality; on MR a second opinion from the dcm-classifier random forest (ONNX, downloaded on first use).
+id = "org.radspider.series-identifier"
+name = "Series identifier"
+version = "1.0.0"
+api = 6                        # 6: input = "image", ctx.series, tag_source, windows, translations (lang/)
+icon = "identification-card"
+description = "Says what the series on screen is, its plane or projection, and explains both. Rules over DICOM tags for every modality; dcm-classifier (Apache-2.0) as a second opinion on MR."
+author = "radspider"
+module = "seriesid"
+requirements = "requirements.txt"
+
+[[tool]]
+name = "identify"
+label = "Identify series"
+description = "Runs on the image on screen: series type, plane or projection, region, laterality and contrast, each with the tag values that decided it and a short explanation. On MR, a second opinion from the dcm-classifier model. Educational aid; not for diagnosis."
+input = "image"
+window = { title = "Series identifier", width = 520, height = 560, reuse = true }
+# The 32 tags the rules and the model read: the API maximum. Modality, counts and b-values come from ctx.series.
+tags = [
+  "0008,0008", "0008,0070", "0008,103E", "0018,1030", "0018,0015", "0018,0050", "0018,0010", "0018,5101",
+  "0020,0060", "0020,0062", "0020,0020", "0018,1510", "0018,1511", "0018,1210", "0054,1000", "0054,1001",
+  "0018,0020", "0018,0021", "0018,0024", "0018,0023", "0018,0080", "0018,0081", "0018,0082", "0018,0083",
+  "0018,0084", "0018,0091", "0018,0095", "0018,1314", "0018,1316", "0018,1318", "0018,9087", "0018,9089",
+]

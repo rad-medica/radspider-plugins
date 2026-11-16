@@ -13,9 +13,10 @@ import seriesid_tables as T
 from seriesid_tables import (CT_KERNELS, CT_PHASE_WORDS, EXPLAIN, ITEMS, MG_VIEWS, MR_WORDS, NM_KINDS, TAGS,
                              XR_VIEWS, all_explain_ids, all_result_ids, explain_for, word_re)
 
-__all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "EXPLAIN", "FEATURES", "ITEMS", "MG_VIEWS", "MISSING", "MR_WORDS",
-           "NM_KINDS", "TAGS", "XR_VIEWS", "Finding", "all_explain_ids", "all_result_ids", "bvalue", "explain_for",
-           "features", "identify", "kernel_family", "number", "numbers", "plane", "series_class", "text"]
+__all__ = ["CT_KERNELS", "CT_PHASE_WORDS", "DIFFUSION_ACQUIRED", "EXPLAIN", "FEATURES", "FEATURE_TAGS", "ITEMS",
+           "MG_VIEWS", "MISSING", "MODEL_AGREES", "MR_KINDS", "MR_WORDS", "NM_KINDS", "TAGS", "XR_VIEWS", "Finding",
+           "all_explain_ids", "all_result_ids", "bvalue", "explain_for", "features", "identify", "is_mr",
+           "kernel_family", "model_verdict", "mr_kind", "number", "numbers", "plane", "series_class", "text"]
 
 AXIS_TOLERANCE_DEG = 10.0
 _EPS = 1e-9
@@ -896,3 +897,71 @@ def series_class(label, series):
         return label
     directions = number(series.get("gradient_directions"))
     return "dwig" if directions is not None and directions >= 3 else "tracew"
+
+
+# --- Model verdict -------------------------------------------------------------------------------------------------
+# How the dcm-classifier answer is set against the rules; seriesid.py turns the verdict into a translated text.
+
+# The tag each of the 28 features is read from, for the Model detail table (None: derived from several).
+FEATURE_TAGS = {
+    "Diffusionb-valueBool": B_VALUE, "EchoTime": TE, "EchoTrainLength": ECHO_TRAIN, "FlipAngle": FLIP,
+    "HasDiffusionGradientOrientation": GRADIENT, "ImageType_ADC": IMAGE_TYPE, "ImageType_DERIVED": IMAGE_TYPE,
+    "ImageType_DIFFUSION": IMAGE_TYPE, "ImageType_EADC": IMAGE_TYPE, "ImageType_FA": IMAGE_TYPE,
+    "ImageType_ORIGINAL": IMAGE_TYPE, "ImageType_TRACEW": IMAGE_TYPE, "ImagingFrequency": IMAGING_FREQ,
+    "InversionTime": TI, "Manufacturer_siemens": MANUFACTURER, "NumberOfAverages": NUM_AVERAGES,
+    "PixelBandwidth": PIXEL_BANDWIDTH, "RepetitionTime": TR, "SAR": SAR_TAG, "ScanningSequence_GR": SCANNING_SEQ,
+    "ScanningSequence_IR": SCANNING_SEQ, "ScanningSequence_SE": SCANNING_SEQ, "SequenceVariant_MP": SEQ_VARIANT,
+    "SequenceVariant_SP": SEQ_VARIANT, "dBdt": DB_DT, "has_b0": B_VALUE, "has_pos_b0": B_VALUE,
+    "likely_diffusion": None,
+}
+
+# Rules' MR kind -> the model classes (seriesid_model.CLASSES) that agree with it. A kind absent here (proton
+# density, STIR, bSSFP, perfusion, the MR angiographies) has no model class: any model answer differs from it.
+MODEL_AGREES = {
+    T.MR["t1"]: {"t1w"}, T.MR["t1_post"]: {"t1w"}, T.MR["t1_gre"]: {"t1w"}, T.MR["t1_gre_post"]: {"t1w"},
+    T.MR["t1_ir"]: {"t1w"}, T.MR["t1_ir_post"]: {"t1w"},
+    T.MR["t2"]: {"t2w"}, T.MR["flair"]: {"flair"},
+    T.MR["t2star"]: {"gret2star"}, T.MR["swi"]: {"gret2star"},
+    T.MR["dwi"]: {"tracew", "dwig"}, T.MR["trace"]: {"tracew"}, T.MR["dti"]: {"dwig"}, T.MR["b0"]: {"b0"},
+    T.MR["adc"]: {"adc"}, T.MR["eadc"]: {"eadc"}, T.MR["fa"]: {"fa"},
+}
+# The MR series kinds of _mr_kind (2D / 3D and fat suppression are modifiers, not kinds).
+MR_KINDS = frozenset(v for k, v in T.MR.items() if k not in ("2d", "3d", "fatsat"))
+# Acquired diffusion images: their b-value feeds four of the 28 features. The maps (ADC, eADC, FA) are named by
+# Image Type, which the model reads.
+DIFFUSION_ACQUIRED = frozenset(T.MR[k] for k in ("dwi", "trace", "dti", "b0"))
+
+
+def mr_kind(findings):
+    """The MR series kind among `identify`'s findings: a MR_KINDS id, "" when the rules could not tell (TR / TE
+    missing or between the ranges), None when there is no MR kind (not MR)."""
+    for f in findings:
+        if f.item == "series" and f.result in MR_KINDS:
+            return f.result
+        if f.item == "series" and f.result in (T.ND_TR_TE, T.ND_TR_TE_RANGE):
+            return ""
+    return None
+
+
+def is_mr(findings, series):
+    """The series is MR, as ctx.series says or as inferred from the tags."""
+    if text((series or {}).get("modality")) == "MR":
+        return True
+    return any(f.result == T.MODALITY_INFERRED and dict(f.args).get("modality") == "MR" for f in findings)
+
+
+def model_verdict(kind, b_value, label, probability, low_probability):
+    """How the model's `label` (after series_class) and its top `probability` read against the rules' `kind`.
+
+    "unreliable": the rules say acquired diffusion and the standard b-value (0018,9087) is absent, so four features
+    are blind (classic Siemens / GE / Philips keep it in private tags); "low": probability below `low_probability`
+    (seriesid_model.LOW_PROBABILITY); "agrees" / "differs": against MODEL_AGREES; "" when the rules have no kind to
+    compare with.
+    """
+    if kind in DIFFUSION_ACQUIRED and number(b_value) is None:
+        return "unreliable"
+    if probability < low_probability:
+        return "low"
+    if not kind:
+        return ""
+    return "agrees" if label in MODEL_AGREES.get(kind, ()) else "differs"

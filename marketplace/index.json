@@ -287,6 +287,31 @@
       "first_run_download": "Downloads two ONNX models on first run: encoder 171 MB and decoder 15 MB, from Hugging Face."
     },
     {
+      "id": "org.radspider.series-identifier",
+      "name": "Series identifier",
+      "version": "1.0.0",
+      "api": 6,
+      "description": "Says what the series on screen is, its plane or projection, and explains both. Rules over DICOM tags for every modality; dcm-classifier (Apache-2.0) as a second opinion on MR.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [
+        "numpy>=1.26",
+        "onnxruntime>=1.20"
+      ],
+      "package": {
+        "file": "org.radspider.series-identifier-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.series-identifier-v1.0.0/org.radspider.series-identifier-1.0.0.zip",
+        "sha256": "73213e99c767d7b63e34bac3319c77d73681191afb19c41a6a60b04b9655d066",
+        "size": 162449
+      },
+      "tag": "org.radspider.series-identifier-v1.0.0",
+      "second_volume": false,
+      "icon": "identification-card"
+    },
+    {
       "id": "org.radspider.skeletal-radiology",
       "name": "Skeletal radiology",
       "version": "1.1.0",

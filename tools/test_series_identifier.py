@@ -697,5 +697,233 @@ class ModelTests(unittest.TestCase):
             M.predict(T1_VECTOR[:-1])
 
 
+# --- Plugin shell: manifest, translations, the rp layer ------------------------------------------------------------
+
+_LANG = _DIR / "lang"
+
+
+def _toml(path):
+    import tomllib  # tools need Python >= 3.11 (validate_plugins.py)
+
+    with open(path, "rb") as fh:
+        return tomllib.load(fh)
+
+
+def _placeholders(s):
+    return set(re.findall(r"\{(\w+)\}", s))
+
+
+class ShellTests(unittest.TestCase):
+    def test_manifest_tags_are_the_32(self):
+        tool = _toml(_DIR / "plugin.toml")["tool"][0]
+        self.assertEqual(len(tool["tags"]), 32)
+        self.assertEqual(list(tool["tags"]), list(R.TAGS))
+
+    def test_spanish_catalog_is_complete(self):
+        """Every id the plugin can show has a Spanish text with the same placeholders. The template lists the literal
+        rp.tr ids and the manifest texts; the result and explanation ids come from the tables, which it cannot see."""
+        es = _toml(_LANG / "es.toml")
+        self.assertTrue(es["language"]["name"])
+        strings = es["strings"]
+        needed = set(_toml(_LANG / "template.toml")["strings"])
+        needed |= R.all_result_ids() | R.all_explain_ids() | set(R.EXPLAIN.values())
+        self.assertEqual(sorted(needed - set(strings)), [])
+        for key, value in strings.items():
+            self.assertIsInstance(value, str, key)
+            self.assertTrue(value.strip(), key)
+            self.assertEqual(_placeholders(key), _placeholders(value), key)
+
+    def test_verdict_tables(self):
+        self.assertEqual(set(R.FEATURE_TAGS), set(R.FEATURES))
+        self.assertTrue({t for t in R.FEATURE_TAGS.values() if t} <= set(R.TAGS))
+        self.assertTrue(set(R.MODEL_AGREES) <= R.MR_KINDS)
+        self.assertTrue(set().union(*R.MODEL_AGREES.values()) <= set(M.CLASSES))
+        self.assertTrue(R.DIFFUSION_ACQUIRED <= R.MR_KINDS)
+
+    def test_model_verdict(self):
+        t1, dwi, pd = "T1-weighted", "Diffusion-weighted", "Proton density-weighted"
+        low = M.LOW_PROBABILITY
+        self.assertEqual(R.model_verdict(t1, None, "t1w", 0.9, low), "agrees")
+        self.assertEqual(R.model_verdict(t1, None, "t2w", 0.9, low), "differs")
+        self.assertEqual(R.model_verdict(t1, None, "t1w", 0.39, low), "low")
+        self.assertEqual(R.model_verdict(pd, None, "t2w", 0.9, low), "differs")  # no model class for PD
+        self.assertEqual(R.model_verdict("", None, "t2w", 0.9, low), "")  # the rules could not tell
+        self.assertEqual(R.model_verdict(dwi, None, "tracew", 0.9, low), "unreliable")
+        self.assertEqual(R.model_verdict(dwi, None, "tracew", 0.1, low), "unreliable")
+        self.assertEqual(R.model_verdict(dwi, 1000.0, "dwig", 0.9, low), "agrees")
+        self.assertEqual(R.model_verdict("ADC map", None, "adc", 0.9, low), "agrees")  # maps: Image Type decides
+
+    def test_mr_kind_and_is_mr(self):
+        self.assertEqual(R.mr_kind(R.identify({"0018,0080": 500.0, "0018,0081": 10.0}, {"modality": "MR"}, *AXIAL,
+                                              False)), "T1-weighted")
+        self.assertIsNone(R.mr_kind(R.identify({}, {"modality": "CT"}, *AXIAL, False)))
+        self.assertEqual(R.mr_kind(R.identify({}, {"modality": "MR"}, None, None, False)), "")
+        self.assertTrue(R.is_mr([], {"modality": "mr"}))
+        self.assertFalse(R.is_mr([], {"modality": "CT"}))
+        self.assertTrue(R.is_mr(R.identify({"0018,0080": 500.0}, None, None, None, False), None))
+
+
+class _Text(str):
+    """Stands in for rp.Text: the English rendering, and the id it came from."""
+
+    def __new__(cls, id, args):
+        obj = super().__new__(cls, id.format(**args))
+        obj.id, obj.args = id, args
+        return obj
+
+
+class _Block:
+    def __init__(self, kind, *args, **kwargs):
+        self.kind, self.args, self.kwargs = kind, args, kwargs
+
+
+def _fake_rp():
+    rp = types.ModuleType("radspider_plugin")
+    rp.ids, rp.tools = [], {}
+
+    def tr(id, **args):
+        rp.ids.append(id)
+        return _Text(id, args)
+
+    def tool(name):
+        def wrap(fn):
+            rp.tools[name] = fn
+            return fn
+        return wrap
+
+    rp.tr, rp.tool = tr, tool
+    for kind in ("Label", "Table", "Row", "Section", "Button", "Window", "Result"):
+        setattr(rp, kind, lambda *a, _k=kind, **kw: _Block(_k, *a, **kw))
+    return rp
+
+
+class _Volume:
+    """What the host gives an image tool, as far as seriesid.py reads it."""
+
+    def __init__(self, tags, row, col, spacing_source="pixel"):
+        self.tags = {k.lower(): v for k, v in tags.items()}  # the host keys tags in lower case
+        self.slice_rows = None if row is None else [row]
+        self.slice_cols = None if col is None else [col]
+        self.spacing_source = spacing_source
+
+    def tag_source(self, tag):
+        if tag.upper() not in R.TAGS:
+            raise KeyError(tag)
+        return "top" if self.tags.get(tag.lower()) is not None else None
+
+    def rgb(self):
+        return None
+
+
+class _Series:
+    def __init__(self, d):
+        self.modality = d.get("modality")
+        self.images = self.frames = self.phases = 1
+        self.phase_axis = None
+        b = d.get("b_values")
+        self.b_values = tuple(b) if isinstance(b, (list, tuple)) else ()
+        g = d.get("gradient_directions")
+        self.gradient_directions = g if isinstance(g, int) else None
+        self.image_types = ()
+
+
+class _Ctx:
+    def __init__(self, series):
+        self.series = None if series is None else _Series(series)
+        self.image = self.event = None
+        self.progressed = []
+
+    def progress(self, fraction, message=""):
+        self.progressed.append((fraction, message))
+
+
+_MR_T1 = {"0008,0008": "ORIGINAL\\PRIMARY\\M\\ND", "0008,0070": "SIEMENS", "0018,0080": 500.0, "0018,0081": 10.0,
+          "0018,1314": 90.0, "0018,0095": 200.0, "0018,0050": 5.0, "0018,0020": "SE"}
+_MR_DWI = {"0008,0008": "ORIGINAL\\PRIMARY\\DIFFUSION\\NONE", "0018,0080": 5000.0, "0018,0081": 90.0,
+           "0018,1314": 90.0, "0018,0095": 1500.0, "0018,0050": 5.0}
+
+
+class LayerTests(unittest.TestCase):
+    """seriesid.py against a stand-in SDK: the window's shape, the model row, and that every id shown is in es.toml."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.rp = _fake_rp()
+        with mock.patch.dict(sys.modules, {"radspider_plugin": cls.rp, "seriesid_rules": R, "seriesid_model": M}):
+            spec = importlib.util.spec_from_file_location("seriesid", _DIR / "seriesid.py")
+            cls.S = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(cls.S)
+        cls.strings = _toml(_LANG / "es.toml")["strings"]
+
+    def setUp(self):
+        self.rp.ids.clear()
+
+    def call(self, tags, series, row, col, predict=None, download=False):
+        ctx = _Ctx(series) if series is not None else _Ctx(None)
+        predict = predict or mock.Mock(side_effect=M.Unavailable("offline"))
+        with mock.patch.object(M, "predict", predict), \
+                mock.patch.object(self.S, "_will_download", return_value=download):
+            result = self.rp.tools["identify"](_Volume(tags, row, col), ctx)
+        (window,) = result.kwargs["windows"]
+        self.assertEqual(window.args[:2], ("main", None))
+        return window.args[2], ctx
+
+    @staticmethod
+    def model_cell(blocks):
+        cells = [r[1] for r in blocks[1].args[0] if r[0] == "Model (MR)"]
+        return cells[0] if cells else None
+
+    def test_every_case_renders_and_is_translated(self):
+        for name, (tags, series, (row, col), _) in CASES.items():
+            with self.subTest(name):
+                blocks, _ = self.call(tags, series, row, col)
+                kinds = [b.kind for b in blocks]
+                self.assertEqual(kinds[:3], ["Row", "Table", "Section"])
+                self.assertEqual(kinds[-2:], ["Section", "Label"])
+                self.assertEqual(kinds.count("Section"), 3 if self.model_cell(blocks) is not None else 2)
+        self.assertEqual(sorted(set(self.rp.ids) - set(self.strings)), [])
+
+    def test_model_row(self):
+        mr = {"modality": "MR"}
+        top = mock.Mock(return_value=[("t1w", 0.91), ("t2w", 0.05), ("flair", 0.04)])
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, top)[0]), "t1w 0.91 · agrees")
+        top = mock.Mock(return_value=[("t2w", 0.81), ("t1w", 0.1)])
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, top)[0]), "t2w 0.81 · differs from the rules")
+        top = mock.Mock(return_value=[("flair", 0.35), ("t1w", 0.3), ("t2w", 0.2)])
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, top)[0]), "flair 0.35 · low probability")
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL)[0]), "Model not run: offline")
+        boom = mock.Mock(side_effect=RuntimeError("boom"))
+        self.assertEqual(self.model_cell(self.call(_MR_T1, mr, *AXIAL, boom)[0]), "Model not run: RuntimeError: boom")
+        self.assertIsNone(self.model_cell(self.call(_MR_T1, {"modality": "CT"}, *AXIAL)[0]))
+
+    def test_model_refusal_and_unreliable_b(self):
+        mr = {"modality": "MR"}
+        no_flip = {k: v for k, v in _MR_T1.items() if k != "0018,1314"}
+        blocks, _ = self.call(no_flip, mr, *AXIAL, mock.Mock(return_value=[("t1w", 0.9)]))
+        self.assertEqual(self.model_cell(blocks), "Model not run: FlipAngle missing")
+        blocks, _ = self.call(_MR_T1, mr, None, None, mock.Mock(return_value=[("t1w", 0.9)]))
+        self.assertEqual(self.model_cell(blocks), "Model not run: Image Orientation missing")
+        blocks, _ = self.call(_MR_DWI, mr, *AXIAL, mock.Mock(return_value=[("tracew", 0.8)]))
+        self.assertEqual(self.model_cell(blocks), "tracew · unreliable: no standard b-value")
+        dwi_b = dict(_MR_DWI, **{"0018,9087": 1000.0})
+        blocks, _ = self.call(dwi_b, dict(mr, b_values=[0.0, 1000.0]), *AXIAL,
+                              mock.Mock(return_value=[("t2w", 0.7)]))
+        self.assertEqual(self.model_cell(blocks), "tracew 0.70 · agrees")  # the series step rewrote t2w
+
+    def test_progress_only_around_a_download(self):
+        def predict(vector, progress):
+            if progress:
+                progress(0.5)
+            return [("t1w", 0.9)]
+
+        for download in (False, True):
+            _, ctx = self.call(_MR_T1, {"modality": "MR"}, *AXIAL, predict, download)
+            if download:
+                self.assertEqual([round(f, 2) for f, _ in ctx.progressed], [0.2, 0.55])
+                self.assertEqual(ctx.progressed[0][1], "Downloading the MR model (305 KB)…")
+            else:
+                self.assertEqual(ctx.progressed, [])
+
+
 if __name__ == "__main__":
     unittest.main()
