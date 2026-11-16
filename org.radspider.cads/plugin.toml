@@ -3,106 +3,116 @@
 # "research" variant CC BY-NC-SA 4.0 (non-commercial); the "reference" variant is not offered. See docs/plugins/cads.md.
 id = "org.radspider.cads"
 name = "CADS whole body CT"
-version = "1.0.0"
-api = 3
+version = "1.1.0"
+api = 6
+icon = "person-arms-spread"
 description = "167 anatomical structures on CT in nine groups (CADS-model, nnU-Net ResEnc L at 1.5 mm), run with PyTorch."
 requirements = "requirements.txt"
 
 [[segmentation]]
 name = "core_organs"
+icon = "stethoscope"
 label = "CADS: core organs (17 structures)"
 description = """CT only, task 551. Spleen, kidneys, gallbladder, liver, stomach, aorta, inferior vena cava, portal and splenic vein, pancreas, adrenal glands, the five lung lobes. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "spine"
+icon = "stack"
 label = "CADS: spine (24 structures)"
 description = """CT only, task 552. Vertebrae C1-C7, T1-T12, L1-L5. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "heart_vessels"
+icon = "heartbeat"
 label = "CADS: heart & vessels (18 structures)"
 description = """CT only, task 553. Esophagus, trachea, myocardium, heart atria and ventricles, pulmonary artery, brain, common iliac arteries and veins, small intestine, duodenum, colon, urinary bladder, face. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "trunk_muscles"
+icon = "person-simple"
 label = "CADS: trunk muscles (21 structures)"
 description = """CT only, task 554. Humeri, scapulae, clavicles, femora, hips, sacrum, gluteus maximus / medius / minimus, deep muscles of the back, iliopsoas. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "ribs"
+icon = "bone"
 label = "CADS: ribs (24 structures)"
 description = """CT only, task 555. Ribs 1-12, left and right. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "rt_risk_organs"
+icon = "target"
 label = "CADS: RT risk organs (15 structures)"
 description = """CT only, task 556. Spinal canal, larynx, heart, bowel space, sigmoid colon, rectum, prostate, seminal vesicle, mammary glands, sternum, psoas major and rectus abdominis muscles. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "brain_tissues"
+icon = "brain"
 label = "CADS: brain tissues (9 structures)"
 description = """CT only, task 557. White matter, gray matter, cerebrospinal fluid, scalp, eyeballs, compact and spongy bone, vascular structure of head, rectus eye muscles. Post-processing first runs task 553 to find the brain (a second 760 MB model) and returns nothing when the head is not in the scan. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "head_neck_organs"
+icon = "skull"
 label = "CADS: head-neck organs (29 structures)"
 description = """CT only, task 558. Carotid arteries, mandible, brain stem, oral cavity, cochleae, eyeball segments, lacrimal, submandibular, parotid, thyroid and pituitary glands, larynx parts, optic chiasm and nerves, and more. Post-processing first runs task 553 to find the brain (a second 760 MB model) and, without a brain, task 552 for the upper vertebrae (a third); it returns nothing when neither is in the scan. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
 
 [[segmentation]]
 name = "body_regions"
+icon = "bounding-box"
 label = "CADS: body regions (10 structures)"
 description = """CT only, task 559. Subcutaneous tissue, muscle, abdominopelvic and thoracic cavity, bone, gland structure, pericardium, breast implant, mediastinum, spinal cord. The first run of each task and weight variant downloads 760 MB (GitHub release, \
 SHA-256 checked). A GPU-class model: on 4 CPU cores a window takes about 20 s (minutes per task) and the run needs 9 GB of RAM."""
 params = [
   { name = "overlap_step", label = "Window step (fraction of the window)", default = 0.5, min = 0.25, max = 1.0 },
-  { name = "research_weights", label = "Weights: 0 = open (CC BY-SA 4.0), 1 = research (CC BY-NC-SA 4.0, non-commercial)", default = 0.0, min = 0.0, max = 1.0 },
-  { name = "postprocess", label = "CADS post-processing: 1 = on, 0 = off", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "weights", label = "Weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "postprocess", label = "CADS post-processing", kind = "bool", default = true },
 ]
