@@ -4,7 +4,7 @@ Plugin id: `org.radspider.roi-tools` · folder: [`../../org.radspider.roi-tools`
 
 TL;DR: ten tools that work on what the user drew (lines, probes, text notes, polygons, ellipses): they measure,
 export, edit the measurements, or turn them into segments. Each reproduces the behaviour of one plugin of the
-Horos / OsiriX plugin collection; the Python is written from that behaviour, not from its code. `api = 2`, numpy + scipy.
+Horos / OsiriX plugin collection; the Python is written from that behaviour, not from its code. `api = 6` (1.1.0), numpy + scipy. Plugin icon `ruler`, one Phosphor icon per tool, Spanish catalog `lang/es.toml`.
 
 | Tool (`name`) | Ribbon | Needs | Gives | After |
 |---|---|---|---|---|
@@ -59,7 +59,7 @@ Ten ribbon buttons is too many: the five without one (`button = false`) need par
 | | |
 |---|---|
 | Input | The most recent `polygon` or `line` on the slice on screen; *All on the slice* = 1 takes every polygon and line of that slice |
-| Params | `angle_deg` (default 90, −360…360), `all_on_slice` (0 / 1) |
+| Params | `angle_deg` (default 90, −360…360), `all_on_slice` (bool, default off) |
 | Formula | Each ROI turns about its own centre (polygon: area centroid; line: midpoint) in mm, then goes back to voxels: a square stays a square on 0.5 × 1.0 mm pixels. Positive = counter-clockwise as seen on screen |
 | Output | `replace_rois`; each is one `Ctrl+Z` step |
 | Original | Rotates the selected ROIs about their centroid by a typed angle or a dial. Its rotation itself is in the viewer's ROI class, which is not part of the plugin source: its sign convention and centroid definition could not be checked. Ellipses are not rotated (an ellipse here is an axis-aligned box) |
@@ -96,7 +96,7 @@ Ten ribbon buttons is too many: the five without one (`button = false`) need par
 | | |
 |---|---|
 | Input | Two `polygon` measurements on the slice on screen: the larger area is the epicardial contour, the smaller the endocardial one |
-| Params | `sectors` (default 6, 2–36), `layers` (default 1, 1–4), `reference_deg` (default 0), `outlines` (0 / 1, default 1) |
+| Params | `sectors` (integer, default 6, 2–36), `layers` (integer, default 1, 1–4), `reference_deg` (default 0), `outlines` (bool, default on) |
 | Geometry | Centre = area centroid of the endocardial contour. An angle is measured counter-clockwise on screen, 0° = towards +x (right). Sector *k* covers `reference + (k−1)·360/N … reference + k·360/N`. Wall = pixels inside the epicardial and outside the endocardial polygon. Layer = `floor(L · (r − r_endo) / (r_epi − r_endo))` along the ray from the centre, 1 = innermost; the two radii are found by ray casting at 0.5° steps (outermost crossing) |
 | Output | Table per sector and layer (mean, SD, min, max, area mm², pixels) plus the whole wall; a bar chart of the sector means (one series per layer); with `outlines` the N × L sector outlines as polygons (5° arc steps) and a note `S1…SN` outside each sector |
 | Order | Same as the original: sectors are numbered counter-clockwise on screen starting at the reference (the original builds them clockwise and names them N…1, which is the same numbering) |
@@ -116,10 +116,10 @@ Ten ribbon buttons is too many: the five without one (`button = false`) need par
 | | |
 |---|---|
 | Input | The most recent `probe` on the slice on screen; when it has none, the last probe of the series. Seed = nearest voxel |
-| Params | `mode`, `lower`, `upper`, `search_mm` |
-| Mode 0 | Values in `[seed − lower, seed + upper]` (default ± 50) |
-| Mode 1 | Values in `[lower, upper]` as absolute values |
-| Mode 2 | `lower` is a percentage: values in `[lower % · max, max]`, max = the maximum in a box of `search_mm` (default 70) around the seed. The original's cut-off mode (its default: 45 % within 70 mm), made for PET / SPECT uptake |
+| Params | `mode` (choice: *Seed value ± range*, *Absolute bounds*, *% of local maximum*), `lower`, `upper`, `search_mm` |
+| Mode *Seed value ± range* (was 0) | Values in `[seed − lower, seed + upper]` (default ± 50) |
+| Mode *Absolute bounds* (was 1) | Values in `[lower, upper]` as absolute values |
+| Mode *% of local maximum* (was 2) | `lower` is a percentage: values in `[lower % · max, max]`, max = the maximum in a box of `search_mm` (default 70) around the seed. The original's cut-off mode (its default: 45 % within 70 mm), made for PET / SPECT uptake |
 | Does | Thresholds the volume and keeps the 6-connected (face neighbours) region holding the seed: `scipy.ndimage.label`. Table: seed, range, voxels, volume ml, mean, SD, min, max |
 | Output | One segment (`labels`: needs MPR open on the series) |
 | Original | Four ITK algorithms. Reproduced: *Connected Threshold* with manual bounds (mode 1) and with the cut-off (mode 2). Mode 0 is an addition. Not reproduced: *Neighborhood Connected*, *Confidence Connected*, *Gradient Thresholding*, growing on a second registered series, the seed by mouse click (a probe instead), the ROI colour |
@@ -161,3 +161,14 @@ Ten ribbon buttons is too many: the five without one (`button = false`) need par
 | | |
 |---|---|
 | Verified | **Not run in radspider.** Run outside the viewer on synthetic volumes through the SDK's own request handler (`radspider_plugin._handle`: files on disk, one JSON request per call, the reply checked as JSON), numpy 2.5.4, scipy 1.18.1, Python 3.13: 73 assertions, all passed. *Cobb*: lines at 30° in mm on 0.5 × 1.0 mm pixels → 30.0° / 150.0°; perpendicular → 90°. *Export*: 10 × 10 px square on 0.5 × 2 mm pixels of an x-ramp → 100 mm², 50 mm, 100 px, mean 14.5, SD 2.872, min 10, max 19, patient coordinates with a rotated orientation; ellipse 157.08 mm², 48.442 mm. *Rotate*: 90° and 45° on 0.5 × 1.0 mm pixels keep edge lengths, diagonal and centroid; 360° is the identity. *Points*: probes on slices 2, 6, 8 → 4 interpolated probes, path 56.0 mm, a second run adds nothing. *Sphere*: 10 and 20 mm → 0.5236 and 4.1888 ml, +700 %, ×8. *Segments*: two squares and an ellipse → 3 named segments, 100 voxels = 0.3 ml each square. *Sectors*: ring of radii 10 and 20 mm on 0.5 × 1.0 mm pixels painted 100·sector + 10·layer → means within 1.5 (boundary pixels), areas within 5 % of the analytic ones, wall area within 1 %, numbering direction, outline area = table area within 3 %, same table with earlier outlines present. *Count*: counts and densities over a 10 mm line. *Grow*: a radius-5 ball (515 voxels, 1.030 ml on 1 × 1 × 2 mm) recovered exactly in the three modes; a second ball and an edge-touching voxel left out. *Calcium*: phantom of three lesions → 15.0 at 3 mm, 7.5 at 1.5 mm, 16.0 with the 0.25 mm² pixel allowed, per-slice scoring of a two-slice lesion, per-segment rows and the union total. Every tool's "nothing to work on" error was raised. Timing on 512 × 512 × 120 noise: calcium 4.8 s, grow 0.6 s. **Not checked:** the viewer drawing the `cobb` measurement, `replace_rois` and `labels` being applied, whether probes and polygons keep a `text`, real patient data, RAM on a full CT, and the originals' numbers (they need macOS; CalciumScore's and ROIRotation's maths are not in the plugin sources) |
+| Verified (1.1.0) | **1.1.0 (API 6), not run on real data and not run in the viewer.** Python 3.13 with numpy and scipy from another plugin's venv, the SDK from radspider `assets/python`: every entry ran on synthetic images or volumes and its reply was built with the SDK's own reply code (marked texts, controls, charts, pictures, ROIs, edits) without an exception; `lang/template.toml` regenerates byte-identical; `lang/es.toml` has exactly the template's keys; `python -I tools/validate_plugins.py`; `ruff check`; radspider `radspider-check --plugin-template` parsed the manifest. Measured numbers were not compared with 1.0.0 on real data; `tests/plugins.rs` does not load this plugin. |
+
+## API 6 (1.1.0)
+
+| | |
+|---|---|
+| `api` | 6 (was 2): icons, translations, typed parameters |
+| Icons | Plugin `ruler`; `cobb_angle` `angle`, `export_rois` `file-csv`, `rotate_roi` `arrow-clockwise`, `points_to_line` `line-segments`, `sphere_volumes` `sphere`, `rois_to_labels` `polygon`, `sector_statistics` `chart-pie-slice`, `count_points` `hash`, `grow_from_seed` `plant`, `calcium_score` `heartbeat` |
+| Spanish | `lang/es.toml`: every manifest text and every marked text (table headers and label cells, messages, progress, chart titles, axis labels, series names). `lang/template.toml`: `python -m radspider_plugin template org.radspider.roi-tools` (SDK on `PYTHONPATH`) |
+| Retyped parameters | `all_on_slice` and `outlines`: `bool` (were 0 / 1 numbers); `sectors`, `layers`: `integer`; `mode`: `choice` (was 0 / 1 / 2) |
+| Not translated | ROI text, segment names (study data) and the text of a raised error (an exception carries a plain string) |

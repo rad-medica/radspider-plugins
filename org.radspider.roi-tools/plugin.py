@@ -140,6 +140,10 @@ def _patient(volume, x, y, z):
     return p if p is not None else (x * volume.spacing[0], y * volume.spacing[1], z * volume.spacing[2])
 
 
+def _quantity_header():
+    return [rp.tr("Quantity"), rp.tr("Value"), rp.tr("Unit")]
+
+
 def _two_lines(lines, what):
     for r in lines:
         if _length_is_zero(r):
@@ -169,15 +173,18 @@ def cobb_angle(volume, ctx):
     cos = abs(float(u @ v)) / (float(np.hypot(*u)) * float(np.hypot(*v)))
     angle = math.degrees(math.acos(min(cos, 1.0)))
     table = [
-        ["Quantity", "Value", "Unit"],
-        ["Image", k + 1, ""],
-        ["Cobb angle", round(angle, 1), "°"],
-        ["Supplement", round(180.0 - angle, 1), "°"],
-        ["Line 1 length", round(float(np.hypot(*u)), 2), "mm"],
-        ["Line 2 length", round(float(np.hypot(*v)), 2), "mm"],
+        _quantity_header(),
+        [rp.tr("Image"), k + 1, ""],
+        [rp.tr("Cobb angle"), round(angle, 1), "°"],
+        [rp.tr("Supplement"), round(180.0 - angle, 1), "°"],
+        [rp.tr("Line 1 length"), round(float(np.hypot(*u)), 2), "mm"],
+        [rp.tr("Line 2 length"), round(float(np.hypot(*v)), 2), "mm"],
     ]
     roi = rp.Roi("cobb", k, [tuple(first.points[0]), tuple(first.points[1]), tuple(second.points[0]), tuple(second.points[1])])
-    return rp.Result(table=table, rois=[roi], message="Cobb angle %.1f° (supplement %.1f°)" % (angle, 180.0 - angle))
+    message = rp.tr(
+        "Cobb angle {angle}° (supplement {supplement}°)", angle="%.1f" % angle, supplement="%.1f" % (180.0 - angle)
+    )
+    return rp.Result(table=table, rois=[roi], message=message)
 
 
 # ------------------------------------------------------------------ 2. Export ROIs
@@ -190,9 +197,10 @@ def export_rois(volume, ctx):
     a = volume.numpy()
     nz, ny, nx = a.shape
     header = [
-        "Id", "Image", "Kind", "Text", "Points", "Length mm", "Area mm2", "Perimeter mm",
-        "Centre x mm", "Centre y mm", "Centre z mm", "Pixels", "Mean", "SD", "Min", "Max", "Total",
-        "Points voxel (x y z)", "Points patient mm (x y z)",
+        rp.tr("Id"), rp.tr("Image"), rp.tr("Kind"), rp.tr("Text"), rp.tr("Points"), rp.tr("Length mm"),
+        rp.tr("Area mm2"), rp.tr("Perimeter mm"), rp.tr("Centre x mm"), rp.tr("Centre y mm"),
+        rp.tr("Centre z mm"), rp.tr("Pixels"), rp.tr("Mean"), rp.tr("SD"), rp.tr("Min"), rp.tr("Max"),
+        rp.tr("Total"), rp.tr("Points voxel (x y z)"), rp.tr("Points patient mm (x y z)"),
     ]  # fmt: skip
     table = [header]
     for i, r in enumerate(ctx.rois):
@@ -215,9 +223,19 @@ def export_rois(volume, ctx):
             _r(c[0]), _r(c[1]), _r(c[2]), "" if n is None else n, _r(mean), _r(sd), _r(lo), _r(hi), _r(total),
             voxel, patient,
         ])  # fmt: skip
-        ctx.progress((i + 1) / len(ctx.rois), "measurement %d of %d" % (i + 1, len(ctx.rois)))
-    note = "" if volume.origin is not None else " (no place in the patient: mm are from the first voxel)"
-    return rp.Result(table=table, message="%d measurements: Save as CSV… writes the table%s" % (len(ctx.rois), note))
+        ctx.progress((i + 1) / len(ctx.rois), rp.tr("measurement {i} of {n}", i=i + 1, n=len(ctx.rois)))
+    count = len(ctx.rois)
+    if volume.origin is not None:
+        message = rp.trn(
+            count, "{n} measurement: Save as CSV… writes the table", "{n} measurements: Save as CSV… writes the table"
+        )
+    else:
+        message = rp.trn(
+            count,
+            "{n} measurement: Save as CSV… writes the table (no place in the patient: mm are from the first voxel)",
+            "{n} measurements: Save as CSV… writes the table (no place in the patient: mm are from the first voxel)",
+        )
+    return rp.Result(table=table, message=message)
 
 
 # ------------------------------------------------------------------ 3. Rotate ROI
@@ -230,11 +248,11 @@ def rotate_roi(volume, ctx):
     here = [r for r in ctx.rois if r.slice == k and r.kind in ("polygon", "line")]
     if not here:
         raise ValueError("No polygon or line on the slice on screen: draw one, or scroll to its image, and run again")
-    chosen = here if ctx.params["all_on_slice"] >= 0.5 else here[-1:]
+    chosen = here if ctx.params["all_on_slice"] else here[-1:]
     t = math.radians(angle)
     # Counter-clockwise as seen on screen, where y points down: (1, 0) turned by 90° must become (0, -1).
     turn = np.array([[math.cos(t), math.sin(t)], [-math.sin(t), math.cos(t)]])
-    table = [["Id", "Kind", "Centre x (voxel)", "Centre y (voxel)", "Rotated by °"]]
+    table = [[rp.tr("Id"), rp.tr("Kind"), rp.tr("Centre x (voxel)"), rp.tr("Centre y (voxel)"), rp.tr("Rotated by °")]]
     replace = {}
     for r in chosen:
         p = _mm(r.points, volume)
@@ -243,7 +261,10 @@ def rotate_roi(volume, ctx):
         replace[r.id] = rp.Roi(r.kind, r.slice, _voxels((p - centre) @ turn.T + centre, volume), r.text)
         cx, cy = centre / np.array(volume.spacing[:2])
         table.append([r.id, r.kind, round(float(cx), 2), round(float(cy), 2), angle])
-    return rp.Result(table=table, replace_rois=replace, message="Rotated %d measurement(s) by %g°" % (len(chosen), angle))
+    message = rp.trn(
+        len(chosen), "Rotated {n} measurement by {angle}°", "Rotated {n} measurements by {angle}°", angle="%g" % angle
+    )
+    return rp.Result(table=table, replace_rois=replace, message=message)
 
 
 # ------------------------------------------------------------------ 4. Points to line
@@ -255,23 +276,27 @@ def points_to_line(volume, ctx):
     if len({r.slice for r in probes}) < 2:
         raise ValueError("Points to line needs probes on at least two different slices (found %d probes)" % len(probes))
     added = []
-    table = [["Image", "x (voxel)", "y (voxel)", "x mm", "y mm", "z mm", "Point"]]
+    table = [
+        [rp.tr("Image"), rp.tr("x (voxel)"), rp.tr("y (voxel)"), rp.tr("x mm"), rp.tr("y mm"), rp.tr("z mm"), rp.tr("Point")]
+    ]
     length = 0.0
     for p, q in zip(probes, probes[1:]):
         (x0, y0), (x1, y1) = p.points[0], q.points[0]
         a, b = np.array(_patient(volume, x0, y0, p.slice)), np.array(_patient(volume, x1, y1, q.slice))
         length += float(np.linalg.norm(b - a))
-        table.append([p.slice + 1, _r(x0), _r(y0), *(_r(c) for c in a), "placed"])
+        table.append([p.slice + 1, _r(x0), _r(y0), *(_r(c) for c in a), rp.tr("placed")])
         for z in range(p.slice + 1, q.slice):
             # Linear in voxel indices = a straight line in the patient: the grid is regular.
             f = (z - p.slice) / (q.slice - p.slice)
             x, y = x0 + f * (x1 - x0), y0 + f * (y1 - y0)
             added.append(rp.Roi("probe", z, [(x, y)], text="generated"))
-            table.append([z + 1, _r(x), _r(y), *(_r(c) for c in _patient(volume, x, y, z)), "generated"])
+            table.append([z + 1, _r(x), _r(y), *(_r(c) for c in _patient(volume, x, y, z)), rp.tr("generated")])
     last = probes[-1]
     lx, ly = last.points[0]
-    table.append([last.slice + 1, _r(lx), _r(ly), *(_r(c) for c in _patient(volume, lx, ly, last.slice)), "placed"])
-    message = "%d probes joined: %d added, path length %.1f mm" % (len(probes), len(added), length)
+    table.append([last.slice + 1, _r(lx), _r(ly), *(_r(c) for c in _patient(volume, lx, ly, last.slice)), rp.tr("placed")])
+    message = rp.tr(
+        "{n} probes joined: {added} added, path length {length} mm", n=len(probes), added=len(added), length="%.1f" % length
+    )
     return rp.Result(table=table, rois=added, message=message)
 
 
@@ -290,17 +315,24 @@ def sphere_volumes(volume, ctx):
     v1, v2 = math.pi * d1**3 / 6.0, math.pi * d2**3 / 6.0  # mm³
     change = 100.0 * v2 / v1 - 100.0
     table = [
-        ["Quantity", "Value", "Unit"],
-        ["Diameter 1 (image %d)" % (first.slice + 1), round(d1, 2), "mm"],
-        ["Diameter 2 (image %d)" % (second.slice + 1), round(d2, 2), "mm"],
-        ["Volume 1", round(v1 / 1000.0, 4), "ml"],
-        ["Volume 2", round(v2 / 1000.0, 4), "ml"],
-        ["Change", round((v2 - v1) / 1000.0, 4), "ml"],
-        ["Change", round(change, 2), "%"],
-        ["Ratio volume 2 / volume 1", round(v2 / v1, 3), "×"],
-        ["Doublings (log2 of the ratio)", round(math.log2(v2 / v1), 3), ""],
+        _quantity_header(),
+        [rp.tr("Diameter 1 (image {image})", image=first.slice + 1), round(d1, 2), "mm"],
+        [rp.tr("Diameter 2 (image {image})", image=second.slice + 1), round(d2, 2), "mm"],
+        [rp.tr("Volume 1"), round(v1 / 1000.0, 4), "ml"],
+        [rp.tr("Volume 2"), round(v2 / 1000.0, 4), "ml"],
+        [rp.tr("Change"), round((v2 - v1) / 1000.0, 4), "ml"],
+        [rp.tr("Change"), round(change, 2), "%"],
+        [rp.tr("Ratio volume 2 / volume 1"), round(v2 / v1, 3), "×"],
+        [rp.tr("Doublings (log2 of the ratio)"), round(math.log2(v2 / v1), 3), ""],
     ]
-    return rp.Result(table=table, message="%.2f ml → %.2f ml: %+.2f %%, ×%.2f" % (v1 / 1000.0, v2 / 1000.0, change, v2 / v1))
+    message = rp.tr(
+        "{v1} ml → {v2} ml: {change} %, ×{ratio}",
+        v1="%.2f" % (v1 / 1000.0),
+        v2="%.2f" % (v2 / 1000.0),
+        change="%+.2f" % change,
+        ratio="%.2f" % (v2 / v1),
+    )
+    return rp.Result(table=table, message=message)
 
 
 # ------------------------------------------------------------------ 6. ROIs to labels
@@ -345,7 +377,7 @@ def rois_to_labels(volume, ctx):
             order.append(name)
         # A later shape wins where two with different names overlap: one label per voxel.
         labels[r.slice][_shape_mask(r, ny, nx)] = order.index(name) + 1
-        ctx.progress((i + 1) / len(shapes), "shape %d of %d" % (i + 1, len(shapes)))
+        ctx.progress((i + 1) / len(shapes), rp.tr("shape {i} of {n}", i=i + 1, n=len(shapes)))
     counts = np.bincount(labels.ravel(), minlength=len(order) + 1)
     kept = [i for i in range(1, len(order) + 1) if counts[i]]
     if not kept:
@@ -355,13 +387,19 @@ def rois_to_labels(volume, ctx):
     remap[kept] = np.arange(1, len(kept) + 1)
     labels = remap[labels]
     ml = volume.spacing[0] * volume.spacing[1] * volume.spacing[2] / 1000.0
-    table = [["Segment", "Shapes", "Slices", "Voxels", "Volume ml"]]
+    table = [[rp.tr("Segment"), rp.tr("Shapes"), rp.tr("Slices"), rp.tr("Voxels"), rp.tr("Volume ml")]]
     for old in kept:
         mine = [r for r, n in zip(shapes, names) if n == order[old - 1]]
         table.append([order[old - 1], len(mine), len({r.slice for r in mine}), int(counts[old]), round(counts[old] * ml, 3)])
     total = int(counts[1:].sum())
-    table.append(["Total", len(shapes), len({r.slice for r in shapes}), total, round(total * ml, 3)])
-    message = "%d segment(s), %.2f ml from %d shapes (segments need MPR open on the series)" % (len(kept), total * ml, len(shapes))
+    table.append([rp.tr("Total"), len(shapes), len({r.slice for r in shapes}), total, round(total * ml, 3)])
+    message = rp.trn(
+        len(kept),
+        "{n} segment, {ml} ml from {shapes} shapes (segments need MPR open on the series)",
+        "{n} segments, {ml} ml from {shapes} shapes (segments need MPR open on the series)",
+        ml="%.2f" % (total * ml),
+        shapes=len(shapes),
+    )
     return rp.Result(table=table, labels=(labels, [order[i - 1] for i in kept]), message=message)
 
 
@@ -423,7 +461,7 @@ def _contours(polygons, volume):
 @rp.tool("sector_statistics")
 def sector_statistics(volume, ctx):
     k = _screen_slice(volume, ctx)
-    sectors, layers = int(round(ctx.params["sectors"])), int(round(ctx.params["layers"]))
+    sectors, layers = ctx.params["sectors"], ctx.params["layers"]
     reference = float(ctx.params["reference_deg"])
     epi, endo, centre = _contours([r for r in ctx.rois if r.kind == "polygon" and r.slice == k], volume)
     s = volume.numpy()[k]
@@ -456,7 +494,12 @@ def sector_statistics(volume, ctx):
 
     unit = volume.unit or ""
     pixel_mm2 = float(spacing[0] * spacing[1])
-    table = [["Sector", "Layer", "Mean " + unit, "SD", "Min", "Max", "Area mm2", "Pixels"]]
+    table = [
+        [
+            rp.tr("Sector"), rp.tr("Layer"), rp.tr("Mean {unit}", unit=unit), rp.tr("SD"),
+            rp.tr("Min"), rp.tr("Max"), rp.tr("Area mm2"), rp.tr("Pixels"),
+        ]
+    ]  # fmt: skip
     means = np.full((layers, sectors), np.nan)
     for i in range(sectors):
         for j in range(layers):
@@ -466,14 +509,24 @@ def sector_statistics(volume, ctx):
                 means[j, i] = mean
             table.append([i + 1, j + 1, _r(mean), _r(sd), _r(lo), _r(hi), round(int(pick.sum()) * pixel_mm2, 2), int(pick.sum())])
     n, mean, sd, lo, hi, _ = _stats(values)
-    table.append(["All", "All", _r(mean), _r(sd), _r(lo), _r(hi), round(ys.size * pixel_mm2, 2), int(ys.size)])
+    table.append([rp.tr("All"), rp.tr("All"), _r(mean), _r(sd), _r(lo), _r(hi), round(ys.size * pixel_mm2, 2), int(ys.size)])
 
     x = np.arange(1, sectors + 1)
-    series = [rp.Series("layer %d" % (j + 1) if layers > 1 else "mean", x, np.nan_to_num(means[j]), kind="bars") for j in range(layers)]
-    plots = [rp.Plot("Sector means, image %d" % (k + 1), series, x_label="sector", y_label=unit or "value")]
+    series = [
+        rp.Series(rp.tr("layer {j}", j=j + 1) if layers > 1 else rp.tr("mean"), x, np.nan_to_num(means[j]), kind="bars")
+        for j in range(layers)
+    ]
+    plots = [
+        rp.Plot(
+            rp.tr("Sector means, image {image}", image=k + 1),
+            series,
+            x_label=rp.tr("sector"),
+            y_label=unit or rp.tr("value"),
+        )
+    ]
 
     rois = []
-    if ctx.params["outlines"] >= 0.5:
+    if ctx.params["outlines"]:
         arc = max(2, int(math.ceil(step / 5.0))) + 1
         for i in range(sectors):
             a = reference + np.linspace(i * step, (i + 1) * step, arc)
@@ -487,7 +540,14 @@ def sector_statistics(volume, ctx):
             mid = math.radians(reference + (i + 0.5) * step)
             at = centre + np.array([math.cos(mid), -math.sin(mid)]) * (radii([math.degrees(mid)])[1][0] + 3.0)
             rois.append(rp.Roi("text", k, _voxels([at], volume), text="S%d" % (i + 1)))
-    message = "%d sectors × %d layer(s) on image %d, %d pixels in the wall" % (sectors, layers, k + 1, ys.size)
+    message = rp.trn(
+        layers,
+        "{sectors} sectors × {n} layer on image {image}, {pixels} pixels in the wall",
+        "{sectors} sectors × {n} layers on image {image}, {pixels} pixels in the wall",
+        sectors=sectors,
+        image=k + 1,
+        pixels=int(ys.size),
+    )
     return rp.Result(table=table, plots=plots, rois=rois, message=message)
 
 
@@ -505,13 +565,15 @@ def count_points(volume, ctx):
             line_mm[r.slice] = line_mm.get(r.slice, 0.0) + _length_mm(r, volume)
 
     def type_of(r):
-        return (r.text or "").strip() or ("Probe" if r.kind == "probe" else "Note")
+        return (r.text or "").strip() or (rp.tr("Probe") if r.kind == "probe" else rp.tr("Note"))
 
     def row(image, name, count, length):
         density = round(count / length, 4) if length else ""
         return [image, name, count, round(length, 2) if length else "", density, round(10.0 * count / length, 3) if length else ""]
 
-    table = [["Image", "Type", "Count", "Line length mm", "Per mm", "Per 10 mm"]]
+    table = [
+        [rp.tr("Image"), rp.tr("Type"), rp.tr("Count"), rp.tr("Line length mm"), rp.tr("Per mm"), rp.tr("Per 10 mm")]
+    ]
     totals = {}
     for k in sorted({r.slice for r in marks}):
         here = {}
@@ -522,16 +584,38 @@ def count_points(volume, ctx):
             table.append(row(k + 1, name, here[name], line_mm.get(k, 0.0)))
             totals[name] = totals.get(name, 0) + here[name]
         if len(here) > 1:
-            table.append(row(k + 1, "All types", sum(here.values()), line_mm.get(k, 0.0)))
+            table.append(row(k + 1, rp.tr("All types"), sum(here.values()), line_mm.get(k, 0.0)))
     length = sum(line_mm.values())
     for name in sorted(totals):
-        table.append(row("All", name, totals[name], length))
-    table.append(row("All", "All types", len(marks), length))
+        table.append(row(rp.tr("All"), name, totals[name], length))
+    table.append(row(rp.tr("All"), rp.tr("All types"), len(marks), length))
     names = sorted(totals)
-    plots = [rp.Plot("Count by type", [rp.Series("count", np.arange(1, len(names) + 1), [totals[n] for n in names], kind="bars")],
-                     x_label="type (table order)", y_label="count")]  # fmt: skip
-    density = ", %.3f per mm over %.1f mm of lines" % (len(marks) / length, length) if length else ", no line to give a density"
-    return rp.Result(table=table, plots=plots, message="%d marks of %d type(s)%s" % (len(marks), len(totals), density))
+    counts = [totals[n] for n in names]
+    plots = [
+        rp.Plot(
+            rp.tr("Count by type"),
+            [rp.Series(rp.tr("count"), np.arange(1, len(names) + 1), counts, kind="bars")],
+            x_label=rp.tr("type (table order)"),
+            y_label=rp.tr("count"),
+        )
+    ]
+    if length:
+        message = rp.trn(
+            len(marks),
+            "{n} mark of {types} type(s), {density} per mm over {length} mm of lines",
+            "{n} marks of {types} type(s), {density} per mm over {length} mm of lines",
+            types=len(totals),
+            density="%.3f" % (len(marks) / length),
+            length="%.1f" % length,
+        )
+    else:
+        message = rp.trn(
+            len(marks),
+            "{n} mark of {types} type(s), no line to give a density",
+            "{n} marks of {types} type(s), no line to give a density",
+            types=len(totals),
+        )
+    return rp.Result(table=table, plots=plots, message=message)
 
 
 # ------------------------------------------------------------------ 9. Grow from seed
@@ -552,49 +636,56 @@ def grow_from_seed(volume, ctx):
     value = float(a[z, y, x])
     if math.isnan(value):
         raise ValueError("The probe is on a voxel without data: place it inside the structure")
-    mode = int(round(ctx.params["mode"]))
+    mode = ctx.params["mode"]
     lower, upper = float(ctx.params["lower"]), float(ctx.params["upper"])
     unit = volume.unit or ""
-    if mode == 0:
-        lo, hi, how = value - lower, value + upper, "seed value − %g … + %g" % (lower, upper)
-    elif mode == 1:
-        lo, hi, how = lower, upper, "absolute bounds"
+    if mode == "Seed value ± range":
+        lo, hi = value - lower, value + upper
+        how = rp.tr("seed value − {lower} … + {upper}", lower="%g" % lower, upper="%g" % upper)
+    elif mode == "Absolute bounds":
+        lo, hi, how = lower, upper, rp.tr("absolute bounds")
         if lo > hi:
             raise ValueError("Lower bound (%g) is above the upper bound (%g): swap them" % (lo, hi))
     else:
         if not 0 < lower <= 100:
-            raise ValueError("Mode 2 takes Lower as a percentage of the local maximum (1–100), got %g" % lower)
+            raise ValueError("The “% of local maximum” mode takes Lower as a percentage of the maximum (1–100), got %g" % lower)
         half = [max(int(float(ctx.params["search_mm"]) / s / 2.0), 0) for s in volume.spacing]
         box = a[max(z - half[2], 0) : z + half[2] + 1, max(y - half[1], 0) : y + half[1] + 1, max(x - half[0], 0) : x + half[0] + 1]
         hi = float(np.nanmax(box))
-        lo, how = hi * lower / 100.0, "%g %% of the maximum within %g mm" % (lower, ctx.params["search_mm"])
+        lo = hi * lower / 100.0
+        how = rp.tr("{percent} % of the maximum within {mm} mm", percent="%g" % lower, mm="%g" % ctx.params["search_mm"])
     if not lo <= value <= hi:
         raise ValueError(
             "The probe's value (%g) is outside the range %g … %g (%s): move the probe or widen the range" % (value, lo, hi, how)
         )
-    ctx.progress(0.2, "thresholding")
+    ctx.progress(0.2, rp.tr("thresholding"))
     with np.errstate(invalid="ignore"):
         inside = (a >= lo) & (a <= hi)
     regions, _ = ndimage.label(inside)  # default structure: face neighbours, 6-connected
-    ctx.progress(0.8, "selecting the region of the probe")
+    ctx.progress(0.8, rp.tr("selecting the region of the probe"))
     region = regions == regions[z, y, x]
     n, mean, sd, vmin, vmax, _ = _stats(a[region])
     ml = n * volume.spacing[0] * volume.spacing[1] * volume.spacing[2] / 1000.0
     table = [
-        ["Quantity", "Value", "Unit"],
-        ["Seed voxel (x, y, image)", "%d, %d, %d" % (x, y, z + 1), ""],
-        ["Seed value", round(value, 3), unit],
-        ["Range", "%g … %g" % (lo, hi), unit],
-        ["Range from", how, ""],
-        ["Voxels", n, ""],
-        ["Volume", round(ml, 3), "ml"],
-        ["Mean", _r(mean), unit],
-        ["SD", _r(sd), unit],
-        ["Minimum", _r(vmin), unit],
-        ["Maximum", _r(vmax), unit],
+        _quantity_header(),
+        [rp.tr("Seed voxel (x, y, image)"), "%d, %d, %d" % (x, y, z + 1), ""],
+        [rp.tr("Seed value"), round(value, 3), unit],
+        [rp.tr("Range"), "%g … %g" % (lo, hi), unit],
+        [rp.tr("Range from"), how, ""],
+        [rp.tr("Voxels"), n, ""],
+        [rp.tr("Volume"), round(ml, 3), "ml"],
+        [rp.tr("Mean"), _r(mean), unit],
+        [rp.tr("SD"), _r(sd), unit],
+        [rp.tr("Minimum"), _r(vmin), unit],
+        [rp.tr("Maximum"), _r(vmax), unit],
     ]
     name = "Grown from (%d, %d, %d): %g … %g%s" % (x, y, z + 1, lo, hi, (" " + unit) if unit else "")
-    message = "%d voxels, %.2f ml (segment needs MPR open on the series)" % (n, ml)
+    message = rp.trn(
+        n,
+        "{n} voxel, {ml} ml (segment needs MPR open on the series)",
+        "{n} voxels, {ml} ml (segment needs MPR open on the series)",
+        ml="%.2f" % ml,
+    )
     return rp.Result(table=table, labels=(region.astype(np.uint8), [name]), message=message)
 
 
@@ -646,7 +737,12 @@ def calcium_score(volume, ctx):
     a = volume.numpy()
     min_area = float(ctx.params["min_area_mm2"])
     segments = list(ctx.segments or [])
-    table = [["Region", "Agatston score", "Volume mm3", "Lesions (per slice)", "Lesions (3D)", "Peak HU"]]
+    table = [
+        [
+            rp.tr("Region"), rp.tr("Agatston score"), rp.tr("Volume mm3"),
+            rp.tr("Lesions (per slice)"), rp.tr("Lesions (3D)"), rp.tr("Peak HU"),
+        ]
+    ]  # fmt: skip
 
     def row(name, region, lo, hi):
         score, mm3, lesions, peak, scored = _agatston(
@@ -663,11 +759,23 @@ def calcium_score(volume, ctx):
             union |= mask
             row(s.name, mask, i / (len(segments) + 1), (i + 1) / (len(segments) + 1))
         # The union, not the sum of the rows: a voxel in two overlapping segments is scored once.
-        score, mm3 = row("Total (all segments)", union, len(segments) / (len(segments) + 1), 1.0)
-        where = "inside %d segment(s)" % len(segments)
+        score, mm3 = row(rp.tr("Total (all segments)"), union, len(segments) / (len(segments) + 1), 1.0)
+        message = rp.trn(
+            len(segments),
+            "Agatston {score}, volume {mm3} mm³, inside {n} segment; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
+            "Agatston {score}, volume {mm3} mm³, inside {n} segments; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
+            score="%.1f" % score,
+            mm3="%.1f" % mm3,
+            area="%g" % min_area,
+            spacing="%.2f" % volume.spacing[2],
+        )
     else:
-        score, mm3 = row("Whole volume", None, 0.0, 1.0)
-        where = "WHOLE VOLUME: bone and everything else ≥ 130 HU is counted. Segment the coronaries (or the heart) first"
-    thickness = "slice spacing %.2f mm / 3 mm" % volume.spacing[2]
-    message = "Agatston %.1f, volume %.1f mm³, %s; lesions ≥ %g mm², scaled by %s" % (score, mm3, where, min_area, thickness)
+        score, mm3 = row(rp.tr("Whole volume"), None, 0.0, 1.0)
+        message = rp.tr(
+            "Agatston {score}, volume {mm3} mm³, WHOLE VOLUME: bone and everything else ≥ 130 HU is counted. Segment the coronaries (or the heart) first; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
+            score="%.1f" % score,
+            mm3="%.1f" % mm3,
+            area="%g" % min_area,
+            spacing="%.2f" % volume.spacing[2],
+        )
     return rp.Result(table=table, message=message)
