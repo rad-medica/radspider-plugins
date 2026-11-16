@@ -23,18 +23,18 @@ def threshold(volume, ctx):
 def stats(volume, ctx):
     vals = [v for v in volume.values if not math.isnan(v)]
     if not vals:
-        return rp.Result(table=[["Statistic", "Value"], ["Voxels with data", 0]])
+        return rp.Result(table=[[rp.tr("Statistic"), rp.tr("Value")], [rp.tr("Voxels with data"), 0]])
     sx, sy, sz = volume.spacing
     mean = sum(vals) / len(vals)
     unit = volume.unit or ""
     return rp.Result(
         table=[
-            ["Statistic", "Value"],
-            ["Voxels with data", len(vals)],
-            ["Mean " + unit, round(mean, 3)],
-            ["Minimum " + unit, min(vals)],
-            ["Maximum " + unit, max(vals)],
-            ["Volume (ml)", round(len(vals) * sx * sy * sz / 1000.0, 3)],
+            [rp.tr("Statistic"), rp.tr("Value")],
+            [rp.tr("Voxels with data"), len(vals)],
+            [rp.tr("Mean {unit}", unit=unit), round(mean, 3)],
+            [rp.tr("Minimum {unit}", unit=unit), min(vals)],
+            [rp.tr("Maximum {unit}", unit=unit), max(vals)],
+            [rp.tr("Volume (ml)"), round(len(vals) * sx * sy * sz / 1000.0, 3)],
         ],
-        message="%d voxels" % len(vals),
+        message=rp.trn(len(vals), "{n} voxel", "{n} voxels"),
     )

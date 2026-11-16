@@ -1,0 +1,26 @@
+# Examples: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+
+[language]
+name = "Español"
+
+[strings]
+
+# plugin.toml
+"Examples" = "Ejemplos"
+"One entry of each kind, standard library only." = "Una entrada de cada tipo, solo con la biblioteca estándar."
+"Window clip" = "Recorte de ventana"
+"Values outside [lo, hi] become no data (NaN)." = "Los valores fuera de [lo, hi] pasan a ser sin datos (NaN)."
+"Threshold" = "Umbral"
+"Label 1: voxels at or above the threshold." = "Etiqueta 1: vóxeles en el umbral o por encima."
+"Volume statistics" = "Estadísticas del volumen"
+"Count, mean, minimum, maximum and the volume of voxels with data." = "Recuento, media, mínimo, máximo y volumen de los vóxeles con datos."
+
+# plugin.py
+"Statistic" = "Estadístico"
+"Value" = "Valor"
+"Voxels with data" = "Vóxeles con datos"
+"Mean {unit}" = "Media {unit}"
+"Minimum {unit}" = "Mínimo {unit}"
+"Maximum {unit}" = "Máximo {unit}"
+"Volume (ml)" = "Volumen (ml)"
+"{n} voxel" = { one = "{n} vóxel", other = "{n} vóxeles" }

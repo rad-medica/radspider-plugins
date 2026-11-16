@@ -1,15 +1,17 @@
 # Example plugin: pure standard library, no requirements. Copy this folder to start your own.
 id = "org.radspider.examples"
 name = "Examples"
-version = "1.0.0"
-api = 1
+version = "1.1.0"
+api = 6
 description = "One entry of each kind, standard library only."
+icon = "book-open"
 
 [[synth_node]]
 name = "window_clip"
 label = "Window clip"
 description = "Values outside [lo, hi] become no data (NaN)."
 unit = "keep"
+icon = "scissors"
 params = [
   { name = "lo", default = -100.0 },
   { name = "hi", default = 300.0 },
@@ -19,9 +21,11 @@ params = [
 name = "threshold"
 label = "Threshold"
 description = "Label 1: voxels at or above the threshold."
+icon = "sliders-horizontal"
 params = [{ name = "threshold", default = 200.0 }]
 
 [[tool]]
 name = "stats"
 label = "Volume statistics"
 description = "Count, mean, minimum, maximum and the volume of voxels with data."
+icon = "chart-bar"
