@@ -195,7 +195,9 @@ def identify(volume, ctx):
     series = _series_dict(ctx.series)
     tags = {str(k).lower(): v for k, v in volume.tags.items()}
     row, col = _first(volume.slice_rows), _first(volume.slice_cols)
-    findings = R.identify(tags, series, row, col, *_colour(volume))
+    # Chroma is read for ultrasound only (colour Doppler); every other modality skips the pixel read.
+    is_us = R.text((series or {}).get("modality")) == "US"
+    findings = R.identify(tags, series, row, col, *(_colour(volume) if is_us else (False, None)))
 
     modality = (series or {}).get("modality")
     for f in findings:

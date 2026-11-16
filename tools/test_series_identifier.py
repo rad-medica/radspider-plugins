@@ -659,6 +659,40 @@ T1_VECTOR = [
 ]
 
 
+class ResidualRuleTests(unittest.TestCase):
+    CT = {"0008,0070": "GE MEDICAL SYSTEMS", "0018,1210": "STANDARD", "0008,103E": "TORAX"}
+    MR = {"0008,0070": "SIEMENS", "0008,103E": "t1_se_tra", "0018,0020": "SE", "0018,0080": 500.0,
+          "0018,0081": 12.0}
+    PET = {"0008,0008": "ORIGINAL\PRIMARY", "0008,0070": "SIEMENS", "0054,1001": "BQML",
+           "0054,1000": "WHOLE BODY\IMAGE"}
+
+    def series(self, tags, modality):
+        return R.identify(tags, {"modality": modality}, *AXIAL, False)
+
+    def test_spanish_no_agent_values_read_as_absent(self):
+        for value in ("NINGUNO", "NINGUNA", "NO APLICA", "N/A", "SIN", "SIN CONTRASTE", "Ninguno"):
+            with self.subTest(value):
+                found = texts(self.series(dict(self.CT, **{"0018,0010": value}), "CT"), "series")
+                self.assertNotIn("Contrast-enhanced CT, phase not stated", found)
+                mr = texts(self.series(dict(self.MR, **{"0018,0010": value}), "MR"), "contrast")
+                self.assertNotIn("Contrast agent recorded", [m.split(" (")[0] for m in mr])
+                self.assertIn("not determined: Contrast/Bolus Agent missing", mr)
+
+    def test_a_real_agent_is_still_recorded(self):
+        found = texts(self.series(dict(self.CT, **{"0018,0010": "OMNIPAQUE 350"}), "CT"), "series")
+        self.assertIn("Contrast-enhanced CT, phase not stated", found)
+
+    def test_pet_negated_correction_is_nac(self):
+        for desc, expected in (("PET SIN CORR", "PET, not attenuation corrected"),
+                               ("PET NO CORR", "PET, not attenuation corrected"),
+                               ("PET sin corr.", "PET, not attenuation corrected"),
+                               ("PET CORR", "PET, attenuation corrected")):
+            with self.subTest(desc):
+                found = texts(self.series(dict(self.PET, **{"0008,103E": desc}), "PT"), "series")
+                self.assertIn(expected, found)
+                self.assertEqual(sum(f.startswith("PET, ") and "attenuation" in f for f in found), 1)
+
+
 def feats(tags, geometry=True, spacing=True, **extra):
     vec, why = R.features({**tags, **extra}, geometry, spacing)
     return (dict(zip(R.FEATURES, vec)) if vec is not None else None), why
@@ -833,6 +867,15 @@ class ModelTests(unittest.TestCase):
             with self.assertRaises(M.Unavailable):
                 M.predict(T1_VECTOR)
             self.assertEqual(op.call_count, 2)
+
+    def test_cleanup_failure_keeps_the_original_error(self):
+        with tempfile.TemporaryDirectory() as d,                 mock.patch.dict(os.environ, {"RADSPIDER_SERIES_ID_DIR": d}),                 mock.patch.object(M, "_remove", side_effect=PermissionError("locked by antivirus")) as rm,                 mock.patch.object(M.urllib.request, "urlopen", side_effect=urllib.error.URLError("no route")):
+            os.environ.pop("RADSPIDER_SERIES_ID_MODEL", None)
+            with self.assertRaises(M.Unavailable) as cm:
+                M.model_path(None)
+            self.assertIn("no route", str(cm.exception))
+            self.assertNotIn("locked", str(cm.exception))
+            self.assertTrue(rm.called)
 
     def test_classes(self):
         self.assertEqual(M.CLASSES, ("t1w", "gret2star", "t2w", "flair", "b0", "tracew", "adc", "fa", "eadc", "dwig"))
@@ -1252,6 +1295,22 @@ class LayerTests(unittest.TestCase):
         self.assertEqual(result, "Ultrasound, greyscale")
         self.assertIn("colour data unreadable", evidence)
         self.assertEqual(self.us_series(None), ("Ultrasound, greyscale", "image is greyscale"))
+
+    def test_chroma_pass_runs_for_ultrasound_only(self):
+        ct = {"0008,0070": "GE MEDICAL SYSTEMS", "0018,1210": "STANDARD", "0008,103E": "TORAX"}
+        for modality in ("CT", "MR", "SC", "PT", None):
+            with self.subTest(modality), mock.patch.object(self.S, "_chroma_fraction") as chroma:
+                series = None if modality is None else {"modality": modality}
+                self.call(ct, series, *AXIAL, rgb=bytes(30))
+                chroma.assert_not_called()
+        volume = _Volume(ct, *AXIAL, rgb=RuntimeError("rgb() must not be read"))
+        volume.rgb = mock.Mock(side_effect=RuntimeError("rgb() must not be read"))
+        with mock.patch.object(M, "predict", mock.Mock(side_effect=M.Unavailable("offline"))),                 mock.patch.object(self.S, "_will_download", return_value=False):
+            self.rp.tools["identify"](volume, _Ctx({"modality": "SC"}))
+        volume.rgb.assert_not_called()
+        with mock.patch.object(self.S, "_chroma_fraction", return_value=0.0) as chroma:
+            self.call({"0008,103E": "Abdomen"}, {"modality": "us"}, None, None, rgb=bytes(30))
+            chroma.assert_called_once()
 
     @unittest.skipUnless(importlib.util.find_spec("numpy"), "needs numpy")
     def test_ultrasound_colour_numpy(self):

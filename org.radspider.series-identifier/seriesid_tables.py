@@ -146,7 +146,9 @@ KERNEL_UNKNOWN = "Kernel not in the tables ({kernel})"
 CONTRAST_RECORDED = "Contrast agent recorded ({agent})"
 # Contrast/Bolus Agent (0018,0010) values that say no agent was given; read as if the tag were missing, like any
 # value that matches NEGATED_CONTRAST ("NO CONTRAST", "SIN CONTRASTE"). HEURISTIC list of values seen in practice.
-CONTRAST_ABSENT_VALUES = frozenset({"NONE", "NO", "N", "NIL", "-", "0", "N/A", "NO CONTRAST"})
+# Whole-value no-agent words, English and Spanish ("SIN CONTRASTE" and the like are caught by NEGATED_CONTRAST).
+CONTRAST_ABSENT_VALUES = frozenset({"NONE", "NO", "N", "NIL", "-", "0", "N/A", "NO CONTRAST", "NINGUNO", "NINGUNA",
+                                    "NO APLICA", "SIN"})
 CONTRAST_DESCRIPTION = "Contrast suggested by the description"
 # HEURISTIC: post-contrast words in Series Description (GD/GAD = gadolinium, +C / C+ = with contrast, KM =
 # Kontrastmittel). Bare POST is not enough ("POST OP"); it must be followed by a contrast noun. Never read when
@@ -252,7 +254,7 @@ MR = {
 # ATTN, is not among the 32 tags). NAC words are tried first.
 # Spanish words too ("SIN CORRECCION", "NO CORREGIDO" / "CORREGIDO").
 PET_NAC_WORDS = (r"NAC|NO ?-?AC|NON ?-?AC|NOAC|UNCORR\w*|NOT CORRECTED|NO ATTN|NONATTN|SIN CORRECCI\w*|"
-                 r"NO CORREGID\w*|SIN AC")
+                 r"NO CORREGID\w*|SIN AC|SIN CORR\w*|NO CORR\w*")
 PET_AC_WORDS = r"AC|CTAC|MAC|ATTN|ATTENUATION CORRECTED|CORR|CORRECTED|QCFX|CORREGID\w*|CON CORRECCI\w*"
 PET_AC = "PET, attenuation corrected"
 PET_NAC = "PET, not attenuation corrected"
