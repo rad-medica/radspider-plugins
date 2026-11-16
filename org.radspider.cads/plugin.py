@@ -242,11 +242,12 @@ def load_model(variant, task, progress):
     if not os.path.exists(path):
         release, licence = VARIANTS[variant]
         with tempfile.TemporaryDirectory(dir=folder) as tmp:
-            message = "Downloading CADS task %d weights (%s, %s, 760 MB)" % (task, release, licence)
+            message = rp.tr("Downloading CADS task {task} weights ({release}, {licence}, 760 MB)", task=task,
+                            release=release, licence=licence)
             z = fetch_zip(variant, task, os.path.join(tmp, "weights.zip"), lambda f: progress(0.8 * f, message))
-            progress(0.8, "Converting the weights of task %d (once)" % task)
+            progress(0.8, rp.tr("Converting the weights of task {task} (once)", task=task))
             convert(z, task, path, tmp)
-    progress(0.9, "Loading the model of task %d" % task)
+    progress(0.9, rp.tr("Loading the model of task {task}", task=task))
     m = torch.load(path, map_location="cpu", weights_only=True)
     net = ResidualEncoderUNet(1, len(m["features"]), m["features"], nn.Conv3d, m["kernels"], m["strides"], m["blocks"],
                               m["classes"], m["decoder_convs"], m["conv_bias"], nn.InstanceNorm3d,
@@ -390,7 +391,10 @@ def run_task(hu, variant, task, step, progress):
     box = nonzero_box(hu)
     lo, hi = m["clip"]
     x = ((np.clip(hu[box], lo, hi) - m["mean"]) / max(m["std"], 1e-8)).astype(np.float32)
-    message = "Segmenting (CADS task %d, %s)" % (task, "GPU" if cuda else "CPU, slow")
+    if cuda:
+        message = rp.tr("Segmenting (CADS task {task}, GPU)", task=task)
+    else:
+        message = rp.tr("Segmenting (CADS task {task}, CPU, slow)", task=task)
     progress(0.1, message)
     out = np.zeros(hu.shape, dtype=np.uint8)
     out[box] = segment_array(predict, x, m["patch"], m["classes"], step, lambda f: progress(0.1 + 0.9 * f, message))
@@ -470,14 +474,14 @@ def head_region(hu, variant, task, step, progress):
 def run(volume, ctx, task):
     if volume.unit not in (None, "HU"):
         raise ValueError("This model needs a CT in Hounsfield units (the series is in %s)" % volume.unit)
-    variant = "research" if ctx.params["research_weights"] >= 0.5 else "open"
-    post = ctx.params["postprocess"] >= 0.5
+    variant = "research" if ctx.params["weights"].startswith("research") else "open"
+    post = ctx.params["postprocess"]
     step = float(ctx.params["overlap_step"])
 
     a = volume.numpy()  # (z, y, x) of the series
     if np.isnan(a).any():
         a = np.where(np.isnan(a), np.nanmin(a) if not np.isnan(a).all() else 0.0, a).astype(np.float32)
-    ctx.progress(0.01, "Preparing the volume at 1.5 mm")
+    ctx.progress(0.01, rp.tr("Preparing the volume at 1.5 mm"))
     order, flip = ras_axes(volume)
     ras = np.ascontiguousarray(to_ras(a, order, flip))
     spacing = [(volume.spacing[2], volume.spacing[1], volume.spacing[0])[i] for i in order]
@@ -497,10 +501,10 @@ def run(volume, ctx, task):
         del full
     del hu
     if post and task in MIN_VOLUME:
-        ctx.progress(0.97, "Post-processing")
+        ctx.progress(0.97, rp.tr("Post-processing"))
         filter_components(lab, task)
 
-    ctx.progress(0.98, "Back to the series grid")
+    ctx.progress(0.98, rp.tr("Back to the series grid"))
     out = from_ras(resample_out(lab, grid), order, flip)
     return np.ascontiguousarray(out).astype(np.uint8), NAMES[task]
 

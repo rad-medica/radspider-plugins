@@ -2,13 +2,15 @@
 # and scipy. CT in Hounsfield units only. Not clinically evaluated. See docs/plugins/lung-ct-analyzer.md.
 id = "org.radspider.lung-ct-analyzer"
 name = "Lung CT analyzer"
-version = "1.0.0"
-api = 2                        # 2: reads the series' segments (lung masks), interactive window
+version = "1.1.0"
+api = 6                        # 6: icons, translations (lang/); 2: reads the series' segments (lung masks), interactive window
+icon = "wind"
 description = "Lung volumes by density on CT: emphysema, inflated, infiltrated, collapsed, vessels per lung, functional and affected volume. Lung masks without AI."
 requirements = "requirements.txt"
 
 [[segmentation]]
 name = "lungs"
+icon = "wind"
 label = "Lungs (threshold, no AI)"
 description = """CT in HU only. Right lung, left lung and trachea from the air inside the body below the threshold: connected \
 components, airway tracked down from the top slices, lungs split, holes closed, outline smoothed."""
@@ -16,11 +18,12 @@ params = [
   { name = "upper_hu", label = "Lung threshold (HU, below = air)", default = -400.0, min = -1000.0, max = 0.0 },
   { name = "closing_mm", label = "Close holes: kernel (mm, 0 = off)", default = 12.0, min = 0.0, max = 40.0 },
   { name = "smooth_mm", label = "Smooth outline: Gaussian SD (mm, 0 = off)", default = 2.0, min = 0.0, max = 10.0 },
-  { name = "trachea", label = "Trachea segment (0 / 1)", default = 1.0, min = 0.0, max = 1.0 },
+  { name = "trachea", label = "Trachea segment", kind = "bool", default = true },
 ]
 
 [[tool]]
 name = "analyze"
+icon = "chart-bar"
 label = "Lung CT analysis"
 description = """CT in HU only. Uses the segments named right / left lung (or lung lobes) when the series has them, otherwise makes \
 the lung masks by thresholding. Table of volumes in ml and % per lung, bar chart, one segment per class and lung. \

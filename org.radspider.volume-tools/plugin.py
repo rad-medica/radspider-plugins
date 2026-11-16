@@ -117,13 +117,19 @@ def rois_mask(volume, rois):
 def stats_rows(values, unit=""):
     """Mean, SD (population), minimum, maximum and count of a 1-D array of finite values."""
     v = values.astype(np.float64)
-    u = (" (%s)" % unit) if unit else ""
+    if unit:
+        names = (
+            rp.tr("Mean ({unit})", unit=unit), rp.tr("SD ({unit})", unit=unit),
+            rp.tr("Minimum ({unit})", unit=unit), rp.tr("Maximum ({unit})", unit=unit),
+        )
+    else:
+        names = (rp.tr("Mean"), rp.tr("SD"), rp.tr("Minimum"), rp.tr("Maximum"))
     return [
-        ["Mean" + u, _sig(v.mean())],
-        ["SD" + u, _sig(v.std())],
-        ["Minimum" + u, _sig(v.min())],
-        ["Maximum" + u, _sig(v.max())],
-        ["Voxels", int(v.size)],
+        [names[0], _sig(v.mean())],
+        [names[1], _sig(v.std())],
+        [names[2], _sig(v.min())],
+        [names[3], _sig(v.max())],
+        [rp.tr("Voxels"), int(v.size)],
     ]
 
 
@@ -137,15 +143,27 @@ def _sig(x, digits=6):
 # ---------------------------------------------------------------------------------------------------------------
 
 
+def _roi_place(roi, on_screen):
+    """Where the measurement used by Normalize lies: its kind, its slice, and why this one was picked."""
+    n = roi.slice + 1
+    if roi.kind == "polygon":
+        if on_screen:
+            return rp.tr("polygon on slice {n} (the slice on screen)", n=n)
+        return rp.tr("polygon on slice {n} (last listed)", n=n)
+    if on_screen:
+        return rp.tr("ellipse on slice {n} (the slice on screen)", n=n)
+    return rp.tr("ellipse on slice {n} (last listed)", n=n)
+
+
 @rp.tool("normalize")
 def normalize(volume, ctx):
     target = float(ctx.params["target"])
-    number = int(round(ctx.params["segment"]))
+    number = ctx.params["segment"]
     a = volume.numpy()
     if number >= 1:
         seg = segment_by_number(ctx, number)
         inside = a[seg.mask()]
-        where = "segment %d “%s”" % (number, seg.name)
+        where = rp.tr("segment {n} “{name}”", n=number, name=seg.name[:200])
     else:
         rois = closed_rois(volume, ctx)
         if not rois:
@@ -158,7 +176,7 @@ def normalize(volume, ctx):
         here = [r for r in rois if ctx.slice is not None and r.slice == ctx.slice]
         roi = (here or rois)[-1]
         inside = a[roi.slice][roi_mask(roi, volume.dims[1], volume.dims[0])]
-        where = "%s on slice %d (%s)" % (roi.kind, roi.slice + 1, "the slice on screen" if here else "last listed")
+        where = _roi_place(roi, bool(here))
     inside = inside[np.isfinite(inside)]
     if inside.size == 0:
         raise ValueError("The region (%s) holds no voxel with data: make it larger or move it onto the image" % where)
@@ -167,12 +185,16 @@ def normalize(volume, ctx):
         raise ValueError("The mean inside the region (%s) is 0: no factor can bring it to %g" % (where, target))
     factor = target / mean
     text = 'plugin("org.radspider.volume-tools/scale", x, %.9g)' % factor
-    table = [["Quantity", "Value"], ["Region", where]]
+    table = [[rp.tr("Quantity"), rp.tr("Value")], [rp.tr("Region"), where]]
     table += stats_rows(inside, volume.unit or "")
-    table += [["Target mean", target], ["Factor (target / mean)", _sig(factor, 9)], ["Series builder", text]]
+    table += [[rp.tr("Target mean"), target], [rp.tr("Factor (target / mean)"), _sig(factor, 9)],
+              [rp.tr("Series builder"), text]]
     return rp.Result(
         table=table,
-        message="Mean %.6g → factor %.9g. Series builder: Volume tools · Scale with that factor" % (mean, factor),
+        message=rp.tr(
+            "Mean {mean} → factor {factor}. Series builder: Volume tools · Scale with that factor",
+            mean="%.6g" % mean, factor="%.9g" % factor,
+        ),
     )
 
 
@@ -204,8 +226,16 @@ def same_frame(a, b):
 
 def frames_text(a, b):
     if not (a.frame_of_reference and b.frame_of_reference):
-        return "unknown"
-    return "same" if a.frame_of_reference == b.frame_of_reference else "different"
+        return rp.tr("unknown")
+    return rp.tr("same") if a.frame_of_reference == b.frame_of_reference else rp.tr("different")
+
+
+def second_text(other, resampled):
+    """The second series' size and how it was put on the grid of the active one."""
+    x, y, z = other.dims
+    if resampled:
+        return rp.tr("{x} × {y} × {z}, resampled through patient coordinates", x=x, y=y, z=z)
+    return rp.tr("{x} × {y} × {z}, same grid", x=x, y=y, z=z)
 
 
 def voxel_map(fixed_affine, moving_affine, rotation=None, translation=None, centre=None):
@@ -281,21 +311,23 @@ def region_of(volume, ctx, choice):
     """The voxels a map is limited to, and how to call them. ``choice``: −1 whole volume, 0 automatic (closed
     measurements, else visible segments, else everything), n ≥ 1 segment n."""
     if choice < 0:
-        return None, "whole volume"
+        return None, rp.tr("whole volume")
     if choice >= 1:
         seg = segment_by_number(ctx, choice)
-        return seg.mask(), "segment %d “%s”" % (choice, seg.name)
+        return seg.mask(), rp.tr("segment {n} “{name}”", n=choice, name=seg.name[:200])
     rois = closed_rois(volume, ctx)
     if rois:
         slices = sorted({r.slice for r in rois})
-        return rois_mask(volume, rois), "%d closed measurement(s) on %d slice(s)" % (len(rois), len(slices))
+        return rois_mask(volume, rois), rp.tr(
+            "{n} closed measurement(s) on {slices} slice(s)", n=len(rois), slices=len(slices)
+        )
     visible = [s for s in ctx.segments or [] if s.visible]
     if visible:
         mask = visible[0].mask().copy()
         for s in visible[1:]:
             mask |= s.mask()
-        return mask, "%d visible segment(s)" % len(visible)
-    return None, "whole volume (no closed measurement, no visible segment)"
+        return mask, rp.trn(len(visible), "{n} visible segment", "{n} visible segments")
+    return None, rp.tr("whole volume (no closed measurement, no visible segment)")
 
 
 @rp.tool("delta_r2_map")
@@ -306,7 +338,7 @@ def delta_r2_map(volume, ctx):
     if not te > 0:
         raise ValueError("TE must be above 0 ms")
     how = second_on_grid(volume, ctx.other, "T2 Ratio Map")
-    region, where = region_of(volume, ctx, int(round(ctx.params["region"])))
+    region, where = region_of(volume, ctx, ctx.params["region"])
     pre = volume.numpy()
     nx, ny, nz = volume.dims
     out = np.full((nz, ny, nx), np.nan, dtype=np.float32)
@@ -321,7 +353,7 @@ def delta_r2_map(volume, ctx):
             ok &= region[z0:z1]
         band = out[z0:z1]
         band[ok] = (gain * np.log(v2[ok] / v1[ok])).astype(np.float32)
-        ctx.progress(0.9 * z1 / nz, "ΔR2: slice %d of %d" % (z1, nz))
+        ctx.progress(0.9 * z1 / nz, rp.tr("ΔR2: slice {z} of {n}", z=z1, n=nz))
     values = out[np.isfinite(out)]
     if values.size == 0:
         raise ValueError(
@@ -330,11 +362,11 @@ def delta_r2_map(volume, ctx):
         )
     unit = "1/s" if factor == 1000.0 else "1/ms" if factor == 1.0 else "%g/ms" % factor
     table = [
-        ["Quantity", "Value"],
-        ["Formula", "−(%g / %g ms) · ln(second / active)" % (factor, te)],
-        ["Second series", "%d × %d × %d, %s" % (ctx.other.dims + ("same grid" if how is None else "resampled through patient coordinates",))],
-        ["Region", where],
-        ["Threshold (both series above)", threshold],
+        [rp.tr("Quantity"), rp.tr("Value")],
+        [rp.tr("Formula"), rp.tr("−({factor} / {te} ms) · ln(second / active)", factor="%g" % factor, te="%g" % te)],
+        [rp.tr("Second series"), second_text(ctx.other, how is not None)],
+        [rp.tr("Region"), where],
+        [rp.tr("Threshold (both series above)"), threshold],
     ]
     table += stats_rows(values, "ΔR2, " + unit)
     lo, hi = np.percentile(values, [0.5, 99.5])
@@ -342,17 +374,21 @@ def delta_r2_map(volume, ctx):
         lo, hi = float(values.min()) - 0.5, float(values.max()) + 0.5
     counts, edges = np.histogram(values, bins=64, range=(float(lo), float(hi)))
     plot = rp.Plot(
-        "ΔR2 histogram (0.5th to 99.5th percentile)",
-        [rp.Series("voxels", (edges[:-1] + edges[1:]) / 2, counts, kind="bars")],
-        x_label="ΔR2 (%s)" % unit,
-        y_label="voxels",
+        rp.tr("ΔR2 histogram (0.5th to 99.5th percentile)"),
+        [rp.Series(rp.tr("voxels"), (edges[:-1] + edges[1:]) / 2, counts, kind="bars")],
+        x_label=rp.tr("ΔR2 ({unit})", unit=unit),
+        y_label=rp.tr("voxels"),
     )
     return rp.Result(
         volume=out,
-        volume_name="Delta R2 map (TE %g ms)" % te,
+        volume_name=rp.tr("Delta R2 map (TE {te} ms)", te="%g" % te),
         table=table,
         plots=[plot],
-        message="ΔR2 mean %.4g %s over %d voxels (%s)" % (values.astype(np.float64).mean(), unit, values.size, where),
+        message=rp.trn(
+            int(values.size), "ΔR2 mean {mean} {unit} over {n} voxel ({where})",
+            "ΔR2 mean {mean} {unit} over {n} voxels ({where})",
+            mean="%.4g" % values.astype(np.float64).mean(), unit=unit, where=str(where)[:300],
+        ),
     )
 
 
@@ -364,7 +400,7 @@ def delta_r2_map(volume, ctx):
 @rp.tool("merge_tag_grids")
 def merge_tag_grids(volume, ctx):
     how = second_on_grid(volume, ctx.other, "Cardiac Tagging MRI")
-    equalize = ctx.params["equalize"] >= 0.5
+    equalize = ctx.params["equalize"]
     first = volume.numpy()
     nx, ny, nz = volume.dims
     out = np.empty((nz, ny, nx), dtype=np.float32)
@@ -381,7 +417,7 @@ def merge_tag_grids(volume, ctx):
             good = product[k][np.isfinite(product[k])]
             peaks[z0 + k] = max(float(good.max()), 0.0) if good.size else 0.0
         out[z0:z1] = product.astype(np.float32)
-        ctx.progress(0.9 * z1 / nz, "Tag grid: slice %d of %d" % (z1, nz))
+        ctx.progress(0.9 * z1 / nz, rp.tr("Tag grid: slice {z} of {n}", z=z1, n=nz))
     if not np.isfinite(out).any():
         raise ValueError("The two series share no voxel with data: check that the second series covers the active one")
     top = float(peaks.max())
@@ -392,16 +428,26 @@ def merge_tag_grids(volume, ctx):
         for k in np.flatnonzero(peaks > 0):
             out[k] *= np.float32(top / peaks[k])
             scaled += 1
+    if equalize:
+        equalised = rp.trn(
+            nz, "yes, {scaled} of {n} slice to {top}", "yes, {scaled} of {n} slices to {top}",
+            scaled=scaled, top="%.6g" % top,
+        )
+    else:
+        equalised = rp.tr("no")
     table = [
-        ["Quantity", "Value"],
-        ["Combination", "product of the two series ÷ range of the active series' slice"],
-        ["Second series", "%d × %d × %d, %s" % (ctx.other.dims + ("same grid" if how is None else "resampled through patient coordinates",))],
-        ["Slices", nz],
-        ["Slice maxima equalised", ("yes, %d of %d slices to %.6g" % (scaled, nz, top)) if equalize else "no"],
-        ["Smallest slice maximum before", _sig(peaks.min())],
-        ["Largest slice maximum before", _sig(top)],
+        [rp.tr("Quantity"), rp.tr("Value")],
+        [rp.tr("Combination"), rp.tr("product of the two series ÷ range of the active series' slice")],
+        [rp.tr("Second series"), second_text(ctx.other, how is not None)],
+        [rp.tr("Slices"), nz],
+        [rp.tr("Slice maxima equalised"), equalised],
+        [rp.tr("Smallest slice maximum before"), _sig(peaks.min())],
+        [rp.tr("Largest slice maximum before"), _sig(top)],
     ]
-    return rp.Result(volume=out, volume_name="Tag grid", table=table, message="Tag grid of %d slices" % nz)
+    return rp.Result(
+        volume=out, volume_name=rp.tr("Tag grid"), table=table,
+        message=rp.trn(nz, "Tag grid of {n} slice", "Tag grid of {n} slices"),
+    )
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -544,7 +590,11 @@ def register(fixed, fixed_affine, moving, moving_affine, levels, bins, samples, 
     for level in range(levels):
         target = fine * 2 ** (levels - 1 - level)
         base = level / levels
-        progress(0.05 + 0.75 * base, "Level %d of %d: building %.1f mm copies" % (level + 1, levels, target))
+        progress(
+            0.05 + 0.75 * base,
+            rp.tr("Level {level} of {levels}: building {mm} mm copies", level=level + 1, levels=levels,
+                  mm="%.1f" % target),
+        )
         f, fa = shrunk(fixed, fixed_affine, target)
         m, ma = shrunk(moving, moving_affine, target)
         metric = Metric(f, fa, m, ma, bins, samples, centre)
@@ -566,7 +616,10 @@ def register(fixed, fixed_affine, moving, moving_affine, levels, bins, samples, 
                 done = min(metric.evaluations / MAX_EVALUATIONS, 1.0)
                 progress(
                     0.05 + 0.75 * (base + (built + (1 - built) * done) / levels),
-                    "Level %d of %d (%.1f mm): mutual information %.4f" % (level + 1, levels, target, -value),
+                    rp.tr(
+                        "Level {level} of {levels} ({mm} mm): mutual information {mi}",
+                        level=level + 1, levels=levels, mm="%.1f" % target, mi="%.4f" % -value,
+                    ),
                 )
             return value
 
@@ -592,25 +645,34 @@ def rigid_register(volume, ctx):
     other = ctx.other
     if other is None:
         raise ValueError("This tool needs a second series: pick one under Second series in Plugin tools")
-    levels = int(round(ctx.params["levels"]))
-    bins = int(round(ctx.params["bins"]))
-    samples = int(round(ctx.params["samples"] * 1000))
+    levels = ctx.params["levels"]
+    bins = ctx.params["bins"]
+    samples = ctx.params["samples"] * 1000
     if min(volume.dims) < 2 or min(other.dims) < 2:
         raise ValueError("Both series need at least 2 slices, rows and columns")
     fixed, moving = volume.numpy(), other.numpy()
     fa, ma = affine_of(volume), affine_of(other)
-    ctx.progress(0.01, "Starting position")
+    ctx.progress(0.01, rp.tr("Starting position"))
     shared = same_frame(volume, other) and volume.origin is not None and other.origin is not None
-    by_mass = not shared or ctx.params["start"] >= 0.5
+    by_mass = not shared or ctx.params["start"] == "centres of mass"
     if by_mass:
         # Different Frames of Reference: the stored positions say nothing about each other, so the centres of mass
         # (of coarse copies) are laid on each other.
         coarse = max(np.linalg.norm(fa[0], axis=0).max(), np.linalg.norm(ma[0], axis=0).max()) * 2
         start = centre_of_mass(*shrunk(moving, ma, coarse)) - centre_of_mass(*shrunk(fixed, fa, coarse))
-        how = "centres of mass" + ("" if shared else " (Frames of Reference %s)" % frames_text(volume, other))
+        if shared:
+            how = rp.tr("centres of mass")
+        else:
+            frames = str(frames_text(volume, other))
+            if frames == "unknown":
+                how = rp.tr("centres of mass (Frames of Reference unknown)")
+            elif frames == "same":
+                how = rp.tr("centres of mass (Frames of Reference same)")
+            else:
+                how = rp.tr("centres of mass (Frames of Reference different)")
     else:
         start = np.zeros(3)
-        how = "patient coordinates (same Frame of Reference)"
+        how = rp.tr("patient coordinates (same Frame of Reference)")
     found = register(fixed, fa, moving, ma, levels, bins, samples, start, ctx.progress)
     rotation = rotation_matrix(found["degrees"])
     j, b = voxel_map(fa, ma, rotation, found["translation"], found["centre"])
@@ -618,35 +680,51 @@ def rigid_register(volume, ctx):
     out = np.empty((nz, ny, nx), dtype=np.float32)
     for z0, z1, block in resampled_bands(moving, j, b, volume.dims):
         out[z0:z1] = block
-        ctx.progress(0.82 + 0.17 * z1 / nz, "Resampling the second series: slice %d of %d" % (z1, nz))
+        ctx.progress(0.82 + 0.17 * z1 / nz, rp.tr("Resampling the second series: slice {z} of {n}", z=z1, n=nz))
     covered = float(np.isfinite(out).mean())
     d, t = found["degrees"], found["translation"]
+    sx, sy, sz = other.spacing
     table = [
-        ["Quantity", "Value"],
-        ["Second series", "%d × %d × %d, %.3g × %.3g × %.3g mm" % (other.dims + other.spacing)],
-        ["Frames of Reference", frames_text(volume, other)],
-        ["Start", how],
-        ["Start offset x, y, z (mm)", "%.2f, %.2f, %.2f" % tuple(start)],
-        ["Rotation about x (deg)", round(float(d[0]), 3)],
-        ["Rotation about y (deg)", round(float(d[1]), 3)],
-        ["Rotation about z (deg)", round(float(d[2]), 3)],
-        ["Translation x (mm)", round(float(t[0]), 3)],
-        ["Translation y (mm)", round(float(t[1]), 3)],
-        ["Translation z (mm)", round(float(t[2]), 3)],
-        ["Rotation centre x, y, z (mm)", "%.2f, %.2f, %.2f" % tuple(found["centre"])],
-        ["Mutual information before", round(found["before"], 5)],
-        ["Mutual information after", round(found["after"], 5)],
-        ["Active series covered by the result (%)", round(100 * covered, 1)],
+        [rp.tr("Quantity"), rp.tr("Value")],
+        [
+            rp.tr("Second series"),
+            rp.tr(
+                "{x} × {y} × {z}, {sx} × {sy} × {sz} mm", x=other.dims[0], y=other.dims[1], z=other.dims[2],
+                sx="%.3g" % sx, sy="%.3g" % sy, sz="%.3g" % sz,
+            ),
+        ],
+        [rp.tr("Frames of Reference"), frames_text(volume, other)],
+        [rp.tr("Start"), how],
+        [rp.tr("Start offset x, y, z (mm)"), "%.2f, %.2f, %.2f" % tuple(start)],
+        [rp.tr("Rotation about x (deg)"), round(float(d[0]), 3)],
+        [rp.tr("Rotation about y (deg)"), round(float(d[1]), 3)],
+        [rp.tr("Rotation about z (deg)"), round(float(d[2]), 3)],
+        [rp.tr("Translation x (mm)"), round(float(t[0]), 3)],
+        [rp.tr("Translation y (mm)"), round(float(t[1]), 3)],
+        [rp.tr("Translation z (mm)"), round(float(t[2]), 3)],
+        [rp.tr("Rotation centre x, y, z (mm)"), "%.2f, %.2f, %.2f" % tuple(found["centre"])],
+        [rp.tr("Mutual information before"), round(found["before"], 5)],
+        [rp.tr("Mutual information after"), round(found["after"], 5)],
+        [rp.tr("Active series covered by the result (%)"), round(100 * covered, 1)],
     ]
     for level, target, shape, points, evaluations, before, after in found["log"]:
         table.append([
-            "Level %d (%.1f mm, %d × %d × %d)" % (level, target, shape[2], shape[1], shape[0]),
-            "%d samples, %d evaluations, MI %.4f → %.4f" % (points, evaluations, before, after),
+            rp.tr(
+                "Level {level} ({mm} mm, {x} × {y} × {z})", level=level, mm="%.1f" % target, x=shape[2], y=shape[1],
+                z=shape[0],
+            ),
+            rp.tr(
+                "{points} samples, {evaluations} evaluations, MI {before} → {after}", points=points,
+                evaluations=evaluations, before="%.4f" % before, after="%.4f" % after,
+            ),
         ])
     return rp.Result(
         volume=out,
-        volume_name="Registered (rigid)",
+        volume_name=rp.tr("Registered (rigid)"),
         table=table,
-        message="Rotation %.2f, %.2f, %.2f°; translation %.1f, %.1f, %.1f mm; mutual information %.3f → %.3f"
-        % (d[0], d[1], d[2], t[0], t[1], t[2], found["before"], found["after"]),
+        message=rp.tr(
+            "Rotation {rx}, {ry}, {rz}°; translation {tx}, {ty}, {tz} mm; mutual information {before} → {after}",
+            rx="%.2f" % d[0], ry="%.2f" % d[1], rz="%.2f" % d[2], tx="%.1f" % t[0], ty="%.1f" % t[1],
+            tz="%.1f" % t[2], before="%.3f" % found["before"], after="%.3f" % found["after"],
+        ),
     )
