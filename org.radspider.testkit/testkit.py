@@ -426,3 +426,50 @@ def windows_demo(volume, ctx):
     if ctx.event in (None, "apply"):
         volumes.append(rp.NewVolume(np.zeros(len(volume), np.float32), rp.tr("Fit {n}", n=1)))
     return rp.Result(windows=[main, residuals, log], volumes=volumes)
+
+
+# ------------------------------------------------------------------ API 6: image tools
+
+
+def _show(value):
+    """A value as a table cell: no value is "none", a list is comma separated, a float has no trailing zeros."""
+    if value is None:
+        return "none"
+    if isinstance(value, (list, tuple)):
+        return ", ".join(_show(v) for v in value) if value else "none"
+    if isinstance(value, float):
+        return "%g" % value
+    return str(value)
+
+
+@rp.tool("image_info")
+def image_info(volume, ctx):
+    """An image tool (`input = "image"`): the one image on screen comes as a volume of one slice. The table echoes
+    everything the SDK gives such a tool: the grid, `spacing_source`, `ctx.image`, the declared tags with
+    `tag_source`, every `ctx.series` field and whether `rgb()` holds a colour image."""
+    nx, ny, nz = volume.dims
+    image, series = ctx.image, ctx.series
+    rows = [
+        [rp.tr("Quantity"), rp.tr("Value")],
+        [rp.tr("Dimensions"), "%d × %d × %d" % (nx, ny, nz)],
+        [rp.tr("Pixel spacing source"), _show(volume.spacing_source)],
+        [rp.tr("Image frame"), _show(image.frame)],
+        [rp.tr("Frames in file"), _show(image.frames)],
+        [rp.tr("Image index"), _show(image.index)],
+        [rp.tr("Photometric"), _show(image.photometric)],
+        [rp.tr("Colour (rgb)"), str(volume.rgb() is not None)],
+    ]
+    for tag in ("0008,0060", "0018,0081", "0018,0080", "0028,0030"):
+        rows.append([tag, _show(volume.tags[tag])])
+        rows.append([tag + " source", _show(volume.tag_source(tag))])
+    rows += [
+        [rp.tr("Series modality"), _show(series.modality)],
+        [rp.tr("Series images"), _show(series.images)],
+        [rp.tr("Series frames"), _show(series.frames)],
+        [rp.tr("Series phases"), _show(series.phases)],
+        [rp.tr("Series phase axis"), _show(series.phase_axis)],
+        [rp.tr("Series b-values"), _show(series.b_values)],
+        [rp.tr("Series gradient directions"), _show(series.gradient_directions)],
+        [rp.tr("Series image types"), _show(series.image_types)],
+    ]
+    return rp.Result(windows=[rp.Window("main", rp.tr("Image info"), [rp.Table(rows)])])

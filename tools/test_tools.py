@@ -164,5 +164,53 @@ class IndexExtras(unittest.TestCase):
             self.assertEqual(p.get("first_run_download"), extra.get(p["id"]))
 
 
+class InputKey(unittest.TestCase):
+    """``input`` follows radspider's manifest rules: a tool only, ``"volume"`` or ``"image"``, api 6; ``"image"``
+    excludes ``second_volume``, ``inputs`` and ``stack``."""
+
+    def errors(self, entry: str, api: int = 6, kind: str = "tool") -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plugin = root / "org.radspider.t"
+            plugin.mkdir()
+            (plugin / "plugin.toml").write_text(
+                f'id = "org.radspider.t"\nname = "T"\nversion = "1.0.0"\napi = {api}\ndescription = "d"\n'
+                f'[[{kind}]]\nname = "e"\nlabel = "E"\n{entry}\n',
+                encoding="utf-8",
+            )
+            (plugin / "plugin.py").write_text(
+                f"import radspider_plugin as rp\n\n\n@rp.{kind}('e')\ndef e(v, c):\n    pass\n", encoding="utf-8"
+            )
+            (root / "docs" / "plugins").mkdir(parents=True)
+            (root / "docs" / "plugins" / "t.md").write_text("t\n", encoding="utf-8")
+            return validate_plugins.check_plugin(root, plugin, "`org.radspider.t`\n")
+
+    def test_volume_and_image_are_accepted_on_a_tool(self):
+        self.assertEqual(self.errors('input = "image"'), [])
+        self.assertEqual(self.errors('input = "volume"'), [])
+        self.assertEqual(self.errors(""), [])
+
+    def test_only_a_tool_takes_input(self):
+        for kind in ("segmentation", "synth_node"):
+            errors = self.errors('input = "image"', kind=kind)
+            self.assertTrue(any("input" in e and "tool" in e for e in errors), (kind, errors))
+
+    def test_value_must_be_volume_or_image(self):
+        for value in ('"movie"', "true", '""'):
+            errors = self.errors(f"input = {value}")
+            self.assertTrue(any("input" in e and "volume" in e for e in errors), (value, errors))
+
+    def test_image_excludes_second_volume_inputs_and_stack(self):
+        for extra in ("second_volume = true", 'inputs = [{ name = "mask" }]', "stack = true"):
+            errors = self.errors(f'input = "image"\n{extra}')
+            self.assertTrue(any("input" in e and extra.split()[0] in e for e in errors), (extra, errors))
+        self.assertEqual(self.errors('input = "volume"\nstack = true'), [])
+
+    def test_input_needs_api_6(self):
+        for value in ('"image"', '"volume"'):
+            errors = self.errors(f"input = {value}", api=5)
+            self.assertTrue(any("input needs api >= 6" in e for e in errors), (value, errors))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -16,7 +16,7 @@ Proprietary, all rights reserved (`LICENSE`).
 |---|---|---|---|---|
 | `org.radspider.examples` | 6 | stdlib | One entry of each kind (node, segmentation, tool). Start here | [DEVELOPING](docs/DEVELOPING.md) |
 | `org.radspider.numpy-demo` | 6 | numpy | The same three kinds, vectorised | [DEVELOPING](docs/DEVELOPING.md) |
-| `org.radspider.testkit` | 6 | numpy | Every feature: 4 nodes, 4 segmentations, 8 tools (params, units, progress, messages, empty result, error, cancel, charts, pictures, ROIs and segments in and out, an interactive window, icons, a Spanish catalog, several windows per run) | [testkit](docs/plugins/testkit.md) |
+| `org.radspider.testkit` | 6 | numpy | Every feature: 4 nodes, 4 segmentations, 9 tools (params, units, progress, messages, empty result, error, cancel, charts, pictures, ROIs and segments in and out, an interactive window, icons, a Spanish catalog, several windows per run, an image tool) | [testkit](docs/plugins/testkit.md) |
 | `org.radspider.sam-med3d` | 6 | torch, medim | Click-prompted 3D segmentation, SAM-Med3D turbo checkpoint | [sam-med3d](docs/plugins/sam-med3d.md) |
 | `org.radspider.monai-wholebody` | 6 | torch, monai | 104 CT structures, MONAI `wholeBody_ct_segmentation` bundle | [monai-wholebody](docs/plugins/monai-wholebody.md) |
 | `org.radspider.sam-slices` | 6 | onnxruntime | OHIF 3.10's AI on SAM ViT-B ONNX: click prompts, slice propagation, bidirectional measurement | [sam-slices](docs/plugins/sam-slices.md) |

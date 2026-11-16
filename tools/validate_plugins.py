@@ -12,6 +12,8 @@ Checks, per ``org.radspider.*`` folder:
   module registers exactly the same names with ``@rp.<kind>("name")``;
 * parameter ``name`` is unique per entry and ``min <= default <= max`` when bounds are given;
 * ``second_volume`` is only used with ``api >= 3``;
+* ``input`` (tools only) is ``"volume"`` or ``"image"`` and needs ``api >= 6``; ``"image"`` takes no
+  ``second_volume``, ``inputs`` or ``stack``;
 * ``icon`` (plugin and entries) and ``window`` (tools) only with ``api >= 6``; a PNG ``icon`` is a file inside the
   plugin folder;
 * the plugin has a page in ``docs/plugins/`` (or none required for ``examples`` / ``numpy-demo`` / ``testkit``,
@@ -165,6 +167,7 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
             check_icon(plugin, where, entry, api, errors)
             if "window" in entry and not (isinstance(api, int) and api >= 6):
                 errors.append(f"{where}: window needs api >= 6")
+            check_input(where, kind, entry, api, errors)
             check_params(where, entry, errors)
         for name in sorted(declared[kind] - registered[kind]):
             errors.append(f"{plugin.name}: {kind} {name!r} is in plugin.toml but not registered in the module")
@@ -178,6 +181,24 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     if short not in DOC_OPTIONAL and not (root / "docs" / "plugins" / f"{short}.md").is_file():
         errors.append(f"{plugin.name}: docs/plugins/{short}.md missing")
     return errors
+
+
+def check_input(where: str, kind: str, entry: dict, api: object, errors: list[str]) -> None:
+    """``input`` (radspider's manifest rules): a tool only, ``"volume"`` or ``"image"``, api 6; ``"image"`` runs on the
+    one image on screen, so it takes no ``second_volume``, ``inputs`` or ``stack``."""
+    if "input" not in entry:
+        return
+    if kind != "tool":
+        errors.append(f"{where}: input: only a tool takes an image")
+    if not (isinstance(api, int) and api >= 6):
+        errors.append(f"{where}: input needs api >= 6")
+    value = entry["input"]
+    if value not in ("volume", "image") or not isinstance(value, str):
+        errors.append(f'{where}: input must be "volume" or "image", got {value!r}')
+    elif value == "image":
+        for key in ("second_volume", "inputs", "stack"):
+            if entry.get(key):
+                errors.append(f'{where}: input = "image" takes no {key}')
 
 
 def check_icon(plugin: Path, where: str, table: dict, api: object, errors: list[str]) -> None:
