@@ -719,15 +719,18 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(len(tool["tags"]), 32)
         self.assertEqual(list(tool["tags"]), list(R.TAGS))
 
-    def test_spanish_catalog_is_complete(self):
-        """Every id the plugin can show has a Spanish text with the same placeholders. The template lists the literal
-        rp.tr ids and the manifest texts; the result and explanation ids come from the tables, which it cannot see."""
+    def test_template_and_spanish_catalog_are_complete(self):
+        """The template lists every id the plugin can show: the generator's literal ids plus the table ids that
+        tools/series_identifier_template.py appends. es.toml has exactly those keys, each with a Spanish text that
+        keeps the placeholders. (The ids actually shown at run time are checked by LayerTests.)"""
+        template = _toml(_LANG / "template.toml")["strings"]
+        needed = R.all_result_ids() | R.all_explain_ids() | set(R.EXPLAIN.values())
+        self.assertEqual(sorted(needed - set(template)), [])
+        self.assertEqual(set(template.values()), {""})
         es = _toml(_LANG / "es.toml")
         self.assertTrue(es["language"]["name"])
         strings = es["strings"]
-        needed = set(_toml(_LANG / "template.toml")["strings"])
-        needed |= R.all_result_ids() | R.all_explain_ids() | set(R.EXPLAIN.values())
-        self.assertEqual(sorted(needed - set(strings)), [])
+        self.assertEqual(list(strings), list(template))
         for key, value in strings.items():
             self.assertIsInstance(value, str, key)
             self.assertTrue(value.strip(), key)
@@ -759,7 +762,9 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(R.model_verdict(t1, None, "t1w", 0.9, low), "agrees")
         self.assertEqual(R.model_verdict(t1, None, "t2w", 0.9, low), "differs")
         self.assertEqual(R.model_verdict(t1, None, "t1w", 0.39, low), "low")
-        self.assertEqual(R.model_verdict(pd, None, "t2w", 0.9, low), "differs")  # no model class for PD
+        self.assertEqual(R.model_verdict(pd, None, "t2w", 0.9, low), "no_class")  # the model has no PD class
+        self.assertEqual(R.model_verdict(pd, None, "t2w", 0.1, low), "no_class")  # wins over a low probability
+        self.assertEqual(R.model_verdict("MR angiography", None, "t1w", 0.9, low), "no_class")
         self.assertEqual(R.model_verdict("", None, "t2w", 0.9, low), "")  # the rules could not tell
         self.assertEqual(R.model_verdict(dwi, None, "tracew", 0.9, low), "unreliable")
         self.assertEqual(R.model_verdict(dwi, None, "tracew", 0.1, low), "unreliable")
@@ -795,6 +800,9 @@ def _fake_rp():
     rp.ids, rp.tools = [], {}
 
     def tr(id, **args):
+        for k, v in args.items():  # the SDK refuses a text argument over 1000 characters
+            if isinstance(v, str) and len(v) > 1000:
+                raise ValueError("text %r: arg %s is longer than 1000 characters" % (id, k))
         rp.ids.append(id)
         return _Text(id, args)
 
@@ -867,6 +875,7 @@ class LayerTests(unittest.TestCase):
             cls.S = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(cls.S)
         cls.strings = _toml(_LANG / "es.toml")["strings"]
+        cls.template = _toml(_LANG / "template.toml")["strings"]
 
     def setUp(self):
         self.rp.ids.clear()
@@ -894,7 +903,7 @@ class LayerTests(unittest.TestCase):
                 self.assertEqual(kinds[:3], ["Row", "Table", "Section"])
                 self.assertEqual(kinds[-2:], ["Section", "Label"])
                 self.assertEqual(kinds.count("Section"), 3 if self.model_cell(blocks) is not None else 2)
-        self.assertEqual(sorted(set(self.rp.ids) - set(self.strings)), [])
+        self.assertEqual(sorted(set(self.rp.ids) - set(self.template)), [])
 
     def test_model_row(self):
         mr = {"modality": "MR"}
@@ -918,10 +927,24 @@ class LayerTests(unittest.TestCase):
         self.assertEqual(self.model_cell(blocks), "model not run: Image Orientation missing")
         blocks, _ = self.call(_MR_DWI, mr, *AXIAL, mock.Mock(return_value=[("tracew", 0.8)]))
         self.assertEqual(self.model_cell(blocks), "tracew · unreliable: no standard b-value")
+        detail = [b for b in blocks if b.kind == "Section" and b.args[0] == "Model detail"][0].args[1]
+        self.assertNotIn("Probability", [str(c) for b in detail if b.kind == "Table" for c in b.args[0][0]])
+        self.assertTrue(any(b.kind == "Label" and b.kwargs.get("weak") for b in detail))
         dwi_b = dict(_MR_DWI, **{"0018,9087": 1000.0})
         blocks, _ = self.call(dwi_b, dict(mr, b_values=[0.0, 1000.0]), *AXIAL,
                               mock.Mock(return_value=[("t2w", 0.7)]))
         self.assertEqual(self.model_cell(blocks), "tracew 0.70 · agrees")  # the series step rewrote t2w
+
+    def test_no_model_class(self):
+        pd = dict(_MR_T1, **{"0018,0080": 3000.0, "0018,0081": 15.0})
+        blocks, _ = self.call(pd, {"modality": "MR"}, *AXIAL, mock.Mock(return_value=[("t2w", 0.3)]))
+        self.assertEqual(self.model_cell(blocks), "t2w 0.30 · no model class for this series type")
+
+    def test_long_tag_text_is_cut(self):
+        agent = "A" * 1024  # a tag value may be 1024 characters; the SDK takes 1000
+        blocks, _ = self.call({"0018,0010": agent}, {"modality": "CT"}, *AXIAL)
+        cells = [r[1] for r in blocks[1].args[0] if r[0] == "Contrast"]
+        self.assertEqual(cells, ["Contrast agent recorded (%s)" % ("A" * 1000)])
 
     def test_progress_only_around_a_download(self):
         def predict(vector, progress):

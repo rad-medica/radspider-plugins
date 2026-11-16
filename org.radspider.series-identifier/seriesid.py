@@ -13,7 +13,8 @@ import seriesid_rules as R
 import seriesid_tables as T
 
 # Result and explanation ids come from the tables of seriesid_tables, not from literal calls, so the template
-# generator cannot list them; lang/es.toml carries them and tools/test_series_identifier.py checks that it does.
+# generator cannot list them (this alias keeps it from warning about them). `python tools/series_identifier_template.py`
+# runs the generator and appends them to lang/template.toml; tools/test_series_identifier.py checks that it did.
 _tr_id = rp.tr
 
 _NONE = "—"
@@ -57,7 +58,8 @@ def _item_label(item):
 
 
 def _result(f):
-    return _tr_id(f.result, **dict(f.args))
+    # Arguments are tag text (agent, kernel, units, code, body part): up to 1024 characters, more than the SDK takes.
+    return _tr_id(f.result, **{k: v[:_MAX_ARG] for k, v in f.args})
 
 
 def _will_download():
@@ -87,6 +89,8 @@ def _refused(reason):
 def _verdict_text(verdict, label, p):
     if verdict == "unreliable":
         return rp.tr("{label} · unreliable: no standard b-value", label=label)
+    if verdict == "no_class":
+        return rp.tr("{label} {p} · no model class for this series type", label=label, p=p)
     if verdict == "low":
         return rp.tr("{label} {p} · low probability", label=label, p=p)
     if verdict == "agrees":
@@ -126,8 +130,12 @@ def _model(volume, ctx, findings, series, has_geometry, b_value):
         label = R.series_class(raw, series)
         kind = R.mr_kind(findings)
         verdict = R.model_verdict(kind, b_value, label, p, M.LOW_PROBABILITY)
-        top = [[rp.tr("Class"), rp.tr("Probability")]] + [[c, "%.2f" % q] for c, q in pairs[:3]]
-        detail.append(rp.Table(top))
+        if verdict == "unreliable":  # spec call 5: no probability when four features are blind
+            detail.append(rp.Label(rp.tr("Probabilities not shown: without the standard b-value (0018,9087), four of "
+                                         "the 28 features are blind."), weak=True))
+        else:
+            top = [[rp.tr("Class"), rp.tr("Probability")]] + [[c, "%.2f" % q] for c, q in pairs[:3]]
+            detail.append(rp.Table(top))
         if label != raw:
             detail.append(rp.Label(rp.tr("The series has a b-value above 0, so {before} becomes {after}, as the "
                                          "reference does.", before=raw, after=label), weak=True))

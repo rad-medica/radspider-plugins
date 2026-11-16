@@ -1,6 +1,5 @@
-# Series identifier: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>), then
-# the result and explanation ids of seriesid_tables.py, which the template cannot list (they are not literal
-# rp.tr calls); tools/test_series_identifier.py checks that every one of them is here.
+# Series identifier: Español (es). Made from lang/template.toml (python tools/series_identifier_template.py),
+# same keys in the same order; tools/test_series_identifier.py checks that both list every text the plugin shows.
 
 [language]
 name = "Español"
@@ -25,6 +24,7 @@ name = "Español"
 "model not run: {field} missing" = "modelo no ejecutado: falta {field}"
 "model not run: {field} is not a number" = "modelo no ejecutado: {field} no es un número"
 "{label} · unreliable: no standard b-value" = "{label} · poco fiable: sin valor b estándar"
+"{label} {p} · no model class for this series type" = "{label} {p} · el modelo no tiene clase para este tipo de serie"
 "{label} {p} · low probability" = "{label} {p} · probabilidad baja"
 "{label} {p} · agrees" = "{label} {p} · coincide"
 "{label} {p} · differs from the rules" = "{label} {p} · difiere de las reglas"
@@ -34,6 +34,7 @@ name = "Español"
 "Tag" = "Etiqueta"
 "Source" = "Origen"
 "Downloading the MR model (305 KB)…" = "Descargando el modelo de RM (305 KB)…"
+"Probabilities not shown: without the standard b-value (0018,9087), four of the 28 features are blind." = "Probabilidades no mostradas: sin el valor b estándar (0018,9087), cuatro de las 28 variables quedan ciegas."
 "Class" = "Clase"
 "Probability" = "Probabilidad"
 "The series has a b-value above 0, so {before} becomes {after}, as the reference does." = "La serie tiene un valor b mayor que 0, así que {before} pasa a {after}, como hace la referencia."
@@ -48,7 +49,8 @@ name = "Español"
 "Tags read" = "Etiquetas leídas"
 "Educational aid; not for diagnosis." = "Ayuda didáctica; no apta para diagnóstico."
 
-# seriesid_tables.py: results (rows of the table)
+# seriesid_tables.py: results and explanations. Not literal rp.tr calls, so the generator cannot list them;
+# appended by tools/series_identifier_template.py, which also runs the generator.
 "Axial" = "Axial"
 "Coronal" = "Coronal"
 "Sagittal" = "Sagital"
@@ -257,8 +259,6 @@ name = "Español"
 "Thoracic spine" = "Columna dorsal"
 "Whole body" = "Cuerpo entero"
 "Wrist" = "Muñeca"
-
-# seriesid_tables.py: explanations (EXPLAIN, the paragraphs of What this means)
 "Axial slices are horizontal cuts through the body, viewed as if from the feet. Most CT and MR series are acquired or shown in this plane." = "Los cortes axiales son secciones horizontales del cuerpo, vistas como desde los pies. La mayoría de las series de TC y RM se adquieren o se muestran en este plano."
 "Coronal slices are vertical cuts from front to back, so the image faces you like a person standing in front of you." = "Los cortes coronales son secciones verticales que se suceden de delante atrás, de modo que la imagen le mira de frente como una persona de pie ante usted."
 "Sagittal slices are vertical cuts from left to right, showing the body in side view. They are often used for the spine and the midline of the brain." = "Los cortes sagitales son secciones verticales que se suceden de izquierda a derecha y muestran el cuerpo de perfil. Se usan a menudo para la columna y la línea media del encéfalo."

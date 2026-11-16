@@ -916,7 +916,7 @@ FEATURE_TAGS = {
 }
 
 # Rules' MR kind -> the model classes (seriesid_model.CLASSES) that agree with it. A kind absent here (proton
-# density, STIR, bSSFP, perfusion, the MR angiographies) has no model class: any model answer differs from it.
+# density, STIR, bSSFP, perfusion, the MR angiographies) has no model class: model_verdict says "no_class".
 MODEL_AGREES = {
     T.MR["t1"]: {"t1w"}, T.MR["t1_post"]: {"t1w"}, T.MR["t1_gre"]: {"t1w"}, T.MR["t1_gre_post"]: {"t1w"},
     T.MR["t1_ir"]: {"t1w"}, T.MR["t1_ir_post"]: {"t1w"},
@@ -954,14 +954,18 @@ def model_verdict(kind, b_value, label, probability, low_probability):
     """How the model's `label` (after series_class) and its top `probability` read against the rules' `kind`.
 
     "unreliable": the rules say acquired diffusion and the standard b-value (0018,9087) is absent, so four features
-    are blind (classic Siemens / GE / Philips keep it in private tags); "low": probability below `low_probability`
-    (seriesid_model.LOW_PROBABILITY); "agrees" / "differs": against MODEL_AGREES; "" when the rules have no kind to
-    compare with.
+    are blind (classic Siemens / GE / Philips keep it in private tags); "no_class": the rules name a kind the model
+    has no class for (proton density, STIR, bSSFP, perfusion, the MR angiographies), so the two cannot be compared;
+    "low": probability below `low_probability` (seriesid_model.LOW_PROBABILITY); "agrees" / "differs": against
+    MODEL_AGREES; "" when the rules have no kind to compare with.
     """
     if kind in DIFFUSION_ACQUIRED and number(b_value) is None:
         return "unreliable"
+    # no_class wins over a low probability: the comparison is meaningless whatever the probability.
+    if kind and kind not in MODEL_AGREES:
+        return "no_class"
     if probability < low_probability:
         return "low"
     if not kind:
         return ""
-    return "agrees" if label in MODEL_AGREES.get(kind, ()) else "differs"
+    return "agrees" if label in MODEL_AGREES[kind] else "differs"
