@@ -334,10 +334,12 @@ def spine(volume, ctx):
     view_choice = c.get("view", "auto")
     use_drawn = bool(c.get("use_drawn_lines", True))
 
+    ctx.progress(0.05, rp.tr("Bone mask"))
     mask, source = _spine_mask_from_context(volume, ctx, k, sl, sx, sy, pct)
     if not mask.any():
         raise ValueError("No spinal bone structure detected on slice %d: lower 'Bone intensity percentile'" % (k + 1))
 
+    ctx.progress(0.4, rp.tr("Measuring"))
     # Extract row-by-row vertebral column centroid and width, weighted by image intensity above the row minimum.
     rows_valid = np.nonzero(mask.any(axis=1))[0]
     if rows_valid.size < 6:
@@ -480,6 +482,7 @@ def spine(volume, ctx):
         ),
     ]
 
+    ctx.progress(0.85, rp.tr("Drawing the preview"))
     rgb = _canvas_rgb(sl, mask)
     for i in range(len(ys) - 1):
         _draw_line(rgb, (cx[i], ys[i]), (cx[i + 1], ys[i + 1]), [60, 230, 120], thickness=1)
@@ -777,6 +780,7 @@ def lower_limb(volume, ctx):
     knee_frac = float(np.clip(c.get("knee_y_frac", 0.52), 0.35, 0.70))
     ankle_frac = float(np.clip(c.get("ankle_y_frac", 0.93), 0.75, 0.98))
 
+    ctx.progress(0.05, rp.tr("Bone mask"))
     mask = _bone_mask_2d(sl, sx, sy, pct, closing_mm=closing_mm, min_area_mm2=40.0)
     if not mask.any():
         raise ValueError(
@@ -802,7 +806,8 @@ def lower_limb(volume, ctx):
     lines_here = [r for r in ctx.rois if r.kind == "line" and r.slice == k and len(r.points) >= 2]
 
     results = {}
-    for name, lmask, is_right in limbs:
+    for i, (name, lmask, is_right) in enumerate(limbs):
+        ctx.progress(0.35 + 0.45 * i / len(limbs), rp.tr("Measuring"))
         if len(limbs) == 2:
             l_probes = [r for r in probes_here if (r.points[0][0] < 0.5 * nx) == is_right]
             l_lines = [r for r in lines_here if (0.5 * (r.points[0][0] + r.points[1][0]) < 0.5 * nx) == is_right]
@@ -838,6 +843,7 @@ def lower_limb(volume, ctx):
         longer = rp.tr("Right longer") if lld > 0 else rp.tr("Left longer") if lld < 0 else rp.tr("Equal")
         table.append([rp.tr("Leg length discrepancy (LLD)"), _r(abs(lld), 1), longer, "mm"])
 
+    ctx.progress(0.85, rp.tr("Drawing the preview"))
     rgb = _canvas_rgb(sl, mask)
     rois = []
     for name in names:
@@ -1053,6 +1059,7 @@ def hip_pelvis(volume, ctx):
     shaft_frac = float(np.clip(c.get("shaft_level_frac", 0.55), 0.30, 0.85))
     side_choice = c.get("side", "both")
 
+    ctx.progress(0.05, rp.tr("Bone mask"))
     mask = _bone_mask_2d(sl, sx, sy, pct, closing_mm=3.5, min_area_mm2=40.0)
     if not mask.any():
         raise ValueError(
@@ -1071,7 +1078,8 @@ def hip_pelvis(volume, ctx):
         sides_to_run.append(("Right" if side_choice != "left" else "Left", side_choice != "left"))
 
     hips = {}
-    for name, is_right in sides_to_run:
+    for i, (name, is_right) in enumerate(sides_to_run):
+        ctx.progress(0.35 + 0.45 * i / len(sides_to_run), rp.tr("Measuring"))
         if len(sides_to_run) == 2:
             e_side = [r for r in ellipses_here if (0.5 * (r.points[0][0] + r.points[1][0]) < 0.5 * nx) == is_right]
             p_side = [r for r in probes_here if (r.points[0][0] < 0.5 * nx) == is_right]
@@ -1133,6 +1141,7 @@ def hip_pelvis(volume, ctx):
         [rp.tr("Pelvic obliquity step"), _r(pelvic_step_mm, 1), *([""] if len(names) == 2 else []), "mm"],
     ]
 
+    ctx.progress(0.85, rp.tr("Drawing the preview"))
     rgb = _canvas_rgb(sl, mask)
     _draw_line(rgb, p_left_pt, p_right_pt, [100, 200, 255], thickness=1)
     rois = [rp.Roi("line", k, [p_left_pt, p_right_pt])] if _should_stamp_rois(ctx) else []
@@ -1297,6 +1306,7 @@ def bone_morphometry(volume, ctx):
     level_frac = float(np.clip(c.get("level_frac", ctx.params["level_frac"]), 0.20, 0.80))
 
     # Hybrid region selection: closed ROI on slice k -> first segment -> largest bone island.
+    ctx.progress(0.05, rp.tr("Bone mask"))
     closed_here = [r for r in ctx.rois if r.kind in CLOSED and r.slice == k]
     if closed_here:
         roi_m = _roi_mask_2d(closed_here[-1], ny, nx)
@@ -1318,6 +1328,7 @@ def bone_morphometry(volume, ctx):
         mask = comps[0]
         source = rp.tr("largest bone silhouette (P{percentile})", percentile="%g" % round(pct, 1))
 
+    ctx.progress(0.4, rp.tr("Measuring"))
     ys, xs = np.nonzero(mask)
     if xs.size < 10:
         raise ValueError("Bone region has too few pixels (%d) for morphometry" % xs.size)
@@ -1376,6 +1387,7 @@ def bone_morphometry(volume, ctx):
     p_out_l, p_out_r = _trans_pt(out_l), _trans_pt(out_r)
     p_in_l, p_in_r = _trans_pt(in_l), _trans_pt(in_r)
 
+    ctx.progress(0.85, rp.tr("Drawing the preview"))
     rgb = _canvas_rgb(sl, mask)
     _draw_line(rgb, p_top, p_bot, [80, 190, 255], thickness=1)
     _draw_line(rgb, p_out_l, p_out_r, [255, 215, 40], thickness=2)
@@ -1501,12 +1513,15 @@ def foot_hand(volume, ctx):
     pct = float(c.get("bone_percentile", ctx.params["bone_percentile"]))
     view_choice = c.get("view", "auto")
 
+    ctx.progress(0.05, rp.tr("Bone mask"))
     mask = _bone_mask_2d(sl, sx, sy, pct, closing_mm=2.5, min_area_mm2=15.0)
     if not mask.any():
         raise ValueError(
             "No extremity bone structure detected on slice %d: lower 'Bone intensity percentile'" % (k + 1)
         )
 
+    # The preview is drawn while measuring (each view adds its own marks), so one step covers both.
+    ctx.progress(0.4, rp.tr("Measuring"))
     mode = _infer_extremity_view(mask, sx, sy, ctx.params["view_mode"], view_choice)
     drawn_lines = [r for r in ctx.rois if r.kind == "line" and r.slice == k and len(r.points) >= 2]
     rgb = _canvas_rgb(sl, mask)
