@@ -5,7 +5,7 @@
     {
       "id": "org.radspider.auto-segmentation",
       "name": "Automatic segmentation",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "api": 6,
       "description": "Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights.",
       "entries": {
@@ -23,12 +23,12 @@
         "dynamic-network-architectures>=0.4"
       ],
       "package": {
-        "file": "org.radspider.auto-segmentation-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.auto-segmentation-v1.0.0/org.radspider.auto-segmentation-1.0.0.zip",
-        "sha256": "bbc2925283096cf81b2bba5e6e192a91da9fa26a28836fddedd1790c89c18de6",
-        "size": 69178
+        "file": "org.radspider.auto-segmentation-1.1.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.auto-segmentation-v1.1.0/org.radspider.auto-segmentation-1.1.0.zip",
+        "sha256": "bd12f3bf61965901d02c1f3263fdca638578c4cfca01481405627ade47c54bb4",
+        "size": 88273
       },
-      "tag": "org.radspider.auto-segmentation-v1.0.0",
+      "tag": "org.radspider.auto-segmentation-v1.1.0",
       "second_volume": false,
       "icon": "magic-wand",
       "first_run_download": "Downloads the weights of a model the first time it runs, or from its Segmentation models window: TotalSegmentator 135 MB (converted to a 65 MB ONNX file), MONAI 71 MB per resolution, CADS about 762 MB per group and weight set."

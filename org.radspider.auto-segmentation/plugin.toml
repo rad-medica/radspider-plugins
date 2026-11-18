@@ -4,7 +4,7 @@
 # See docs/plugins/auto-segmentation.md.
 id = "org.radspider.auto-segmentation"
 name = "Automatic segmentation"
-version = "1.0.0"
+version = "1.1.0"
 api = 6
 description = "Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights."
 icon = "magic-wand"
@@ -16,7 +16,7 @@ label = "Automatic segmentation (CT)"
 description = """CT only. Pick the model: TotalSegmentator (117 structures, 3 mm, ONNX Runtime), MONAI whole body (104 structures, 3 or \
 1.5 mm) or one of the nine CADS groups (167 structures over the nine, 1.5 mm, a GPU-class model: about 20 s per window \
 and 9 GB of RAM on 4 CPU cores). The first run of a model downloads its weights (TotalSegmentator 135 MB, MONAI 71 MB, \
-CADS 760 MB per group and weight set); Segmentation models downloads or deletes them beforehand."""
+CADS 760 MB per group and weight set) in the background; Segmentation models downloads or deletes them beforehand."""
 icon = "magic-wand"
 params = [
   { name = "model", label = "Model", kind = "choice", default = "TotalSegmentator: 117 structures (3 mm)", options = [
@@ -42,7 +42,7 @@ params = [
 name = "models"
 label = "Segmentation models"
 icon = "database"
-description = """Lists the weights of every model with their licence, size on disk and state; downloads one ahead of its first run, \
-deletes one, or removes what interrupted downloads left behind. Opens on the active series because every plugin tool \
-does; the series is not read."""
+description = """One section per model with its description, licence and website; each set of weights downloads in the \
+background (several at once, the window may close), stops, or is deleted. Downloads stop when radspider closes. Opens on \
+the active series because every plugin tool does; the series is not read."""
 window = { title = "Segmentation models", width = 900, height = 620, reuse = true }
