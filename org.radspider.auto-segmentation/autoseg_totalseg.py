@@ -59,15 +59,19 @@ def cache_dir():
     return d
 
 
-def download_checked(dest):
+def download_checked(dest, progress=lambda f: None):
     h = hashlib.sha256()
     with urllib.request.urlopen(URL, timeout=60) as r, open(dest, "wb") as f:
+        total, done = int(r.headers.get("Content-Length") or 0), 0
         while True:
             chunk = r.read(1 << 20)
             if not chunk:
                 break
             h.update(chunk)
             f.write(chunk)
+            done += len(chunk)
+            if total:
+                progress(done / total)
     if h.hexdigest() != SHA256:
         os.remove(dest)
         raise ValueError("The downloaded weights do not match the pinned SHA-256 (got %s); nothing was loaded" % h.hexdigest())
@@ -108,10 +112,11 @@ def model_path(progress):
         return p
     onnx_path = onnx_file()
     if not os.path.exists(onnx_path):
-        progress(0.01, rp.tr("Downloading the TotalSegmentator weights (135 MB)"))
+        message = rp.tr("Downloading the TotalSegmentator weights (135 MB)")
+        progress(0.01, message)
         with tempfile.TemporaryDirectory(dir=cache_dir()) as tmp:
             z = os.path.join(tmp, "weights.zip")
-            download_checked(z)
+            download_checked(z, lambda f: progress(0.01 + 0.03 * f, message))
             progress(0.04, rp.tr("Converting to ONNX (once)"))
             convert(z, onnx_path)
     return onnx_path
