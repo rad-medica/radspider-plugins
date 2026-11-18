@@ -1,4 +1,4 @@
-"""MONAI model zoo bundle ``wholeBody_ct_segmentation`` (SegResNet, 104 structures) as a radspider segmentation.
+"""MONAI model zoo bundle ``wholeBody_ct_segmentation`` (SegResNet, 104 structures) as one of the models of ``plugin.py``.
 
 Follows the bundle's ``configs/inference.json``: RAS, resample to 1.5 / 3 mm, NormalizeIntensity(nonzero), ScaleIntensity
 [-1, 1], 96^3 Gaussian sliding window, softmax + argmax, nearest back to the volume grid. The sliding window keeps only
@@ -101,15 +101,35 @@ def sliding_window(net, x, overlap, device, progress):
     return out[:shape[0], :shape[1], :shape[2]]
 
 
-def load_net(device, highres):
-    import torch
-    from monai.networks.nets import SegResNet
+def cache_dir():
+    d = os.environ.get("RADSPIDER_MONAI_DIR") or os.path.join(os.path.expanduser("~"), ".cache", "radspider", "monai")
+    os.makedirs(d, exist_ok=True)
+    return d
 
+
+def weights_name(highres):
+    return "models/model.pt" if highres else "models/model_lowres.pt"
+
+
+def weights_file(highres):
+    """Where the weights of one resolution live in the cache (they may not be there yet)."""
+    return os.path.join(cache_dir(), *weights_name(highres).split("/"))
+
+
+def weights_path(highres):
     path = os.environ.get("RADSPIDER_MONAI_WHOLEBODY_WEIGHTS")
     if not path:
         from huggingface_hub import hf_hub_download
 
-        path = hf_hub_download(repo_id=REPO, filename="models/model.pt" if highres else "models/model_lowres.pt")
+        path = hf_hub_download(repo_id=REPO, filename=weights_name(highres), local_dir=cache_dir())
+    return path
+
+
+def load_net(device, highres):
+    import torch
+    from monai.networks.nets import SegResNet
+
+    path = weights_path(highres)
     net = SegResNet(spatial_dims=3, in_channels=1, out_channels=CLASSES, init_filters=32, blocks_down=[1, 2, 2, 4],
                     blocks_up=[1, 1, 1], dropout_prob=0.2)
     net.load_state_dict(torch.load(path, map_location="cpu", weights_only=True))  # a plain state dict, no pickled code
@@ -119,14 +139,13 @@ def load_net(device, highres):
 # ---- entry ------------------------------------------------------------------------------------------------------
 
 
-@rp.segmentation("wholebody")
-def wholebody(volume, ctx):
+def segment(volume, ctx, highres, overlap):
+    """``highres``: 1.5 mm instead of 3 mm. ``overlap``: window overlap, a fraction (bundle default 0.25)."""
     import torch
     import torch.nn.functional as F
 
     if volume.unit not in (None, "HU"):
         raise ValueError("This model needs a CT in Hounsfield units (the series is in %s)" % volume.unit)
-    highres = ctx.params["resolution"] == "1.5 mm"
     pix = 1.5 if highres else 3.0
     a = volume.numpy()
     if np.isnan(a).any():
@@ -145,7 +164,7 @@ def wholebody(volume, ctx):
     net = load_net(device, highres)
     segmenting = rp.tr("Segmenting on {device}", device=device.type)
     ctx.progress(0.08, segmenting)
-    lab = sliding_window(net, t, float(ctx.params["overlap"]), device, lambda f: ctx.progress(0.08 + 0.85 * f, segmenting))
+    lab = sliding_window(net, t, overlap, device, lambda f: ctx.progress(0.08 + 0.85 * f, segmenting))
 
     ctx.progress(0.95, rp.tr("Back to the series grid"))
     full = F.interpolate(torch.from_numpy(lab)[None, None].float(), size=dims, mode="nearest")[0, 0].to(torch.uint8).numpy()

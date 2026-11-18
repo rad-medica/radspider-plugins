@@ -1,4 +1,4 @@
-"""TotalSegmentator (v2, task 297 "total", 3 mm) as a radspider segmentation, run with ONNX Runtime.
+"""TotalSegmentator (v2, task 297 "total", 3 mm), run with ONNX Runtime. One of the models of ``plugin.py``.
 
 Weights: the official nnU-Net release zip, checked against a pinned SHA-256, converted once to ONNX (PyTorch is needed
 only for that). Inference follows nnU-Net v2 (``nnUNetPredictor``) for this trainer, which has no mirroring: CT
@@ -97,17 +97,22 @@ def convert(zip_path, onnx_path):
     os.replace(tmp, onnx_path)
 
 
-def model_path(ctx):
+def onnx_file():
+    """Where the converted model lives in the cache (it may not exist yet)."""
+    return os.path.join(cache_dir(), "total_3mm_v2.0.0.onnx")
+
+
+def model_path(progress):
     p = os.environ.get("RADSPIDER_TOTALSEG_ONNX")
     if p:
         return p
-    onnx_path = os.path.join(cache_dir(), "total_3mm_v2.0.0.onnx")
+    onnx_path = onnx_file()
     if not os.path.exists(onnx_path):
-        ctx.progress(0.01, rp.tr("Downloading the TotalSegmentator weights (135 MB)"))
+        progress(0.01, rp.tr("Downloading the TotalSegmentator weights (135 MB)"))
         with tempfile.TemporaryDirectory(dir=cache_dir()) as tmp:
             z = os.path.join(tmp, "weights.zip")
             download_checked(z)
-            ctx.progress(0.04, rp.tr("Converting to ONNX (once)"))
+            progress(0.04, rp.tr("Converting to ONNX (once)"))
             convert(z, onnx_path)
     return onnx_path
 
@@ -167,8 +172,8 @@ def segment_array(session, x, step, progress):
     return out[:shape[0], :shape[1], :shape[2]]
 
 
-@rp.segmentation("total_fast")
-def total_fast(volume, ctx):
+def segment(volume, ctx, step):
+    """``step``: window step as a fraction of the window (nnU-Net default 0.5)."""
     import onnxruntime as ort
     from scipy.ndimage import zoom
 
@@ -181,7 +186,7 @@ def total_fast(volume, ctx):
     sx, sy, sz = volume.spacing
     target = (max(1, round(nz * sz / SPACING)), max(1, round(ny * sy / SPACING)), max(1, round(nx * sx / SPACING)))
 
-    path = model_path(ctx)
+    path = model_path(ctx.progress)
     ctx.progress(0.06, rp.tr("Preparing the volume at 3 mm"))
     ras = np.ascontiguousarray(a[:, ::-1, ::-1])  # RAS file order: x and y run the other way
     r = zoom(ras, [t / s for t, s in zip(target, ras.shape)], order=1, mode="nearest", grid_mode=True).astype(np.float32)
@@ -194,7 +199,7 @@ def total_fast(volume, ctx):
     session = ort.InferenceSession(path, opts, providers=providers)
     segmenting = rp.tr("Segmenting")
     ctx.progress(0.08, segmenting)
-    lab = segment_array(session, r, float(ctx.params["overlap_step"]), lambda f: ctx.progress(0.08 + 0.87 * f, segmenting))
+    lab = segment_array(session, r, step, lambda f: ctx.progress(0.08 + 0.87 * f, segmenting))
 
     ctx.progress(0.96, rp.tr("Back to the series grid"))
     full = zoom(lab, [s / t for s, t in zip((nz, ny, nx), lab.shape)], order=0, mode="nearest", grid_mode=True)

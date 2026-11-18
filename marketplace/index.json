@@ -3,32 +3,35 @@
   "repository": "https://github.com/rad-medica/radspider-plugins",
   "plugins": [
     {
-      "id": "org.radspider.cads",
-      "name": "CADS whole body CT",
-      "version": "1.1.0",
+      "id": "org.radspider.auto-segmentation",
+      "name": "Automatic segmentation",
+      "version": "1.0.0",
       "api": 6,
-      "description": "167 anatomical structures on CT in nine groups (CADS-model, nnU-Net ResEnc L at 1.5 mm), run with PyTorch.",
+      "description": "Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights.",
       "entries": {
         "synth_node": 0,
-        "segmentation": 9,
-        "tool": 0
+        "segmentation": 1,
+        "tool": 1
       },
       "requirements": [
         "numpy>=1.26",
         "scipy>=1.11",
+        "onnxruntime>=1.18",
         "torch>=2.5",
+        "monai>=1.3",
+        "huggingface_hub",
         "dynamic-network-architectures>=0.4"
       ],
       "package": {
-        "file": "org.radspider.cads-1.1.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.cads-v1.1.0/org.radspider.cads-1.1.0.zip",
-        "sha256": "1f6bb880fe549e19ccc9555b16f78de1ab72cbf6836091ea25dad6db2e319832",
-        "size": 52044
+        "file": "org.radspider.auto-segmentation-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.auto-segmentation-v1.0.0/org.radspider.auto-segmentation-1.0.0.zip",
+        "sha256": "bbc2925283096cf81b2bba5e6e192a91da9fa26a28836fddedd1790c89c18de6",
+        "size": 69178
       },
-      "tag": "org.radspider.cads-v1.1.0",
+      "tag": "org.radspider.auto-segmentation-v1.0.0",
       "second_volume": false,
-      "icon": "person-arms-spread",
-      "first_run_download": "Downloads the model weights of a task group the first time that group runs: about 762 MB per group and weight set, from the CADS GitHub releases."
+      "icon": "magic-wand",
+      "first_run_download": "Downloads the weights of a model the first time it runs, or from its Segmentation models window: TotalSegmentator 135 MB (converted to a 65 MB ONNX file), MONAI 71 MB per resolution, CADS about 762 MB per group and weight set."
     },
     {
       "id": "org.radspider.density-lung-segmentation",
@@ -101,34 +104,6 @@
       "tag": "org.radspider.lung-ct-analyzer-v1.1.0",
       "second_volume": false,
       "icon": "wind"
-    },
-    {
-      "id": "org.radspider.monai-wholebody",
-      "name": "MONAI whole body CT",
-      "version": "1.1.0",
-      "api": 6,
-      "description": "104 anatomical structures on CT with the MONAI wholeBody_ct_segmentation bundle.",
-      "entries": {
-        "synth_node": 0,
-        "segmentation": 1,
-        "tool": 0
-      },
-      "requirements": [
-        "numpy>=1.26",
-        "torch>=2.4",
-        "monai>=1.3",
-        "huggingface_hub"
-      ],
-      "package": {
-        "file": "org.radspider.monai-wholebody-1.1.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.monai-wholebody-v1.1.0/org.radspider.monai-wholebody-1.1.0.zip",
-        "sha256": "ec653d12bf822484a631821e59a76f31a3a5a2dddd66c14c1fc9a131bb4c429e",
-        "size": 11504
-      },
-      "tag": "org.radspider.monai-wholebody-v1.1.0",
-      "second_volume": false,
-      "icon": "person-simple-walk",
-      "first_run_download": "Downloads the model weights on first run: 71 MB per resolution."
     },
     {
       "id": "org.radspider.numpy-demo",
@@ -360,35 +335,6 @@
       "tag": "org.radspider.testkit-v1.3.0",
       "second_volume": false,
       "icon": "flask"
-    },
-    {
-      "id": "org.radspider.totalsegmentator",
-      "name": "TotalSegmentator",
-      "version": "1.1.0",
-      "api": 6,
-      "description": "117 anatomical structures on CT (TotalSegmentator v2, 3 mm model), run with ONNX Runtime.",
-      "entries": {
-        "synth_node": 0,
-        "segmentation": 1,
-        "tool": 0
-      },
-      "requirements": [
-        "numpy>=1.26",
-        "scipy>=1.11",
-        "onnxruntime>=1.18",
-        "torch>=2.5",
-        "dynamic-network-architectures>=0.4"
-      ],
-      "package": {
-        "file": "org.radspider.totalsegmentator-1.1.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.totalsegmentator-v1.1.0/org.radspider.totalsegmentator-1.1.0.zip",
-        "sha256": "2c3f4cf5e84b6bbeeb3278c2a2ac806034e2124fb789cf5bda9956626ed894d4",
-        "size": 14597
-      },
-      "tag": "org.radspider.totalsegmentator-v1.1.0",
-      "second_volume": false,
-      "icon": "bone",
-      "first_run_download": "Downloads the 135 MB nnU-Net checkpoint on first run and converts it to a 65 MB ONNX file (needs PyTorch once)."
     },
     {
       "id": "org.radspider.volume-tools",

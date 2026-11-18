@@ -1,0 +1,82 @@
+# Automatic segmentation: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+
+[language]
+name = "Español"
+
+[strings]
+
+# plugin.toml
+"Automatic segmentation" = "Segmentación automática"
+"Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights." = "Segmentación anatómica automática de TC con elección de modelo (TotalSegmentator, MONAI de cuerpo entero, CADS) y una ventana que gestiona los pesos descargados."
+"Automatic segmentation (CT)" = "Segmentación automática (TC)"
+"CT only. Pick the model: TotalSegmentator (117 structures, 3 mm, ONNX Runtime), MONAI whole body (104 structures, 3 or 1.5 mm) or one of the nine CADS groups (167 structures over the nine, 1.5 mm, a GPU-class model: about 20 s per window and 9 GB of RAM on 4 CPU cores). The first run of a model downloads its weights (TotalSegmentator 135 MB, MONAI 71 MB, CADS 760 MB per group and weight set); Segmentation models downloads or deletes them beforehand." = "Solo TC. Elija el modelo: TotalSegmentator (117 estructuras, 3 mm, ONNX Runtime), MONAI de cuerpo entero (104 estructuras, 3 o 1,5 mm) o uno de los nueve grupos de CADS (167 estructuras entre los nueve, 1,5 mm, un modelo pensado para GPU: unos 20 s por ventana y 9 GB de RAM con 4 núcleos de CPU). La primera ejecución de un modelo descarga sus pesos (TotalSegmentator 135 MB, MONAI 71 MB, CADS 760 MB por grupo y juego de pesos); Modelos de segmentación los descarga o borra de antemano."
+"Model" = "Modelo"
+"TotalSegmentator: 117 structures (3 mm)" = "TotalSegmentator: 117 estructuras (3 mm)"
+"MONAI whole body: 104 structures (3 mm)" = "MONAI cuerpo entero: 104 estructuras (3 mm)"
+"MONAI whole body: 104 structures (1.5 mm)" = "MONAI cuerpo entero: 104 estructuras (1,5 mm)"
+"CADS 551: core organs (17 structures)" = "CADS 551: órganos principales (17 estructuras)"
+"CADS 552: spine (24 structures)" = "CADS 552: columna vertebral (24 estructuras)"
+"CADS 553: heart & vessels (18 structures)" = "CADS 553: corazón y vasos (18 estructuras)"
+"CADS 554: trunk muscles (21 structures)" = "CADS 554: músculos del tronco (21 estructuras)"
+"CADS 555: ribs (24 structures)" = "CADS 555: costillas (24 estructuras)"
+"CADS 556: RT risk organs (15 structures)" = "CADS 556: órganos de riesgo en RT (15 estructuras)"
+"CADS 557: brain tissues (9 structures)" = "CADS 557: tejidos cerebrales (9 estructuras)"
+"CADS 558: head-neck organs (29 structures)" = "CADS 558: órganos de cabeza y cuello (29 estructuras)"
+"CADS 559: body regions (10 structures)" = "CADS 559: regiones corporales (10 estructuras)"
+"Window step (fraction of the window; 0 = the model's default)" = "Paso de ventana (fracción de la ventana; 0 = el valor por defecto del modelo)"
+"CADS weights" = "Pesos de CADS"
+"open (CC BY-SA 4.0)" = "abiertos (CC BY-SA 4.0)"
+"research (CC BY-NC-SA 4.0, non-commercial)" = "de investigación (CC BY-NC-SA 4.0, no comercial)"
+"CADS post-processing" = "Posprocesamiento de CADS"
+"Segmentation models" = "Modelos de segmentación"
+"Lists the weights of every model with their licence, size on disk and state; downloads one ahead of its first run, deletes one, or removes what interrupted downloads left behind. Opens on the active series because every plugin tool does; the series is not read." = "Lista los pesos de cada modelo con su licencia, tamaño en disco y estado; descarga uno antes de su primera ejecución, borra uno o elimina lo que dejaron descargas interrumpidas. Se abre sobre la serie activa porque toda herramienta de plugin lo hace; la serie no se lee."
+
+# autoseg_cads.py
+"Downloading CADS task {task} weights ({release}, {licence}, 760 MB)" = "Descargando los pesos de la tarea {task} de CADS ({release}, {licence}, 760 MB)"
+"Converting the weights of task {task} (once)" = "Convirtiendo los pesos de la tarea {task} (una sola vez)"
+"Loading the model of task {task}" = "Cargando el modelo de la tarea {task}"
+"Segmenting (CADS task {task}, GPU)" = "Segmentando (tarea {task} de CADS, GPU)"
+"Segmenting (CADS task {task}, CPU, slow)" = "Segmentando (tarea {task} de CADS, CPU, lento)"
+"Preparing the volume at 1.5 mm" = "Preparando el volumen a 1,5 mm"
+"Post-processing" = "Posprocesamiento"
+"Back to the series grid" = "De vuelta a la malla de la serie"
+
+# autoseg_monai.py
+"Preparing the volume at {mm} mm" = "Preparando el volumen a {mm} mm"
+"Loading the model (first run downloads 71 MB)" = "Cargando el modelo (la primera ejecución descarga 71 MB)"
+"Segmenting on {device}" = "Segmentando en {device}"
+
+# autoseg_totalseg.py
+"Downloading the TotalSegmentator weights (135 MB)" = "Descargando los pesos de TotalSegmentator (135 MB)"
+"Converting to ONNX (once)" = "Convirtiendo a ONNX (una sola vez)"
+"Preparing the volume at 3 mm" = "Preparando el volumen a 3 mm"
+"Segmenting" = "Segmentando"
+
+# plugin.py
+"{item} comes from {var}: nothing to download" = "{item} viene de {var}: no hay nada que descargar"
+"{item} is already downloaded" = "{item} ya está descargado"
+"Downloading {item}" = "Descargando {item}"
+"{item} downloaded ({size})" = "{item} descargado ({size})"
+"{item} comes from {var}: it is not deleted" = "{item} viene de {var}: no se borra"
+"{item} is not downloaded" = "{item} no está descargado"
+"{item} deleted: {size} freed" = "{item} borrado: {size} liberados"
+"{n} leftover removed: {size} freed" = { one = "{n} resto eliminado: {size} liberados", other = "{n} restos eliminados: {size} liberados" }
+"Weights" = "Pesos"
+"Licence" = "Licencia"
+"Download" = "Descargar"
+"On disk" = "En disco"
+"Status" = "Estado"
+"Your file ({var})" = "Archivo propio ({var})"
+"Ready" = "Listo"
+"Not downloaded" = "No descargado"
+"Leftovers of interrupted downloads" = "Restos de descargas interrumpidas"
+"{n} item" = { one = "{n} elemento", other = "{n} elementos" }
+"Total" = "Total"
+"Downloads, checks and converts the weights now instead of on the first run" = "Descarga, verifica y convierte los pesos ahora en lugar de en la primera ejecución"
+"Delete" = "Borrar"
+"Removes the weights from the cache; the next run downloads them again" = "Quita los pesos de la caché; la siguiente ejecución los vuelve a descargar"
+"Clean up" = "Limpiar"
+"Removes what interrupted downloads left behind. Not while a segmentation is downloading" = "Elimina lo que dejaron las descargas interrumpidas. No mientras una segmentación esté descargando"
+"Refresh" = "Actualizar"
+"Cache: {dirs}" = "Caché: {dirs}"
+"CADS 557 and 558 with post-processing also need CADS 553 (and 558 sometimes 552) of the same weights." = "CADS 557 y 558 con posprocesamiento necesitan además CADS 553 (y 558 a veces 552) del mismo juego de pesos."
