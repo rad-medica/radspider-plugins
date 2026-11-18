@@ -1,4 +1,4 @@
-"""CADS whole-body CT segmentation (167 structures in nine task groups, 551-559) as radspider segmentations.
+"""CADS whole-body CT segmentation (167 structures in nine task groups, 551-559) as one of the models of ``plugin.py``.
 
 Equivalent of the 3D Slicer extension CADSWholeBodyCTSeg, which calls the ``cads`` package (murong-xu/CADS). That
 package drives ``nnunetv2``; here its pipeline is rebuilt on numpy, scipy and PyTorch:
@@ -230,15 +230,11 @@ def convert(zip_path, task, out_path, tmp):
     os.replace(part, out_path)
 
 
-def load_model(variant, task, progress):
-    """The network of one task, in eval mode, and its numbers. Downloads and converts on first use."""
-    import torch
-    import torch.nn as nn
-    from dynamic_network_architectures.architectures.unet import ResidualEncoderUNet
-
+def ensure_task(variant, task, progress):
+    """The converted weights of one task in the cache: downloaded, verified and converted on first use."""
     folder = os.path.join(cache_dir(), variant)
     os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, "task%d.pt" % task)
+    path = task_file(variant, task)
     if not os.path.exists(path):
         release, licence = VARIANTS[variant]
         with tempfile.TemporaryDirectory(dir=folder) as tmp:
@@ -247,6 +243,16 @@ def load_model(variant, task, progress):
             z = fetch_zip(variant, task, os.path.join(tmp, "weights.zip"), lambda f: progress(0.8 * f, message))
             progress(0.8, rp.tr("Converting the weights of task {task} (once)", task=task))
             convert(z, task, path, tmp)
+    return path
+
+
+def load_model(variant, task, progress):
+    """The network of one task, in eval mode, and its numbers. Downloads and converts on first use."""
+    import torch
+    import torch.nn as nn
+    from dynamic_network_architectures.architectures.unet import ResidualEncoderUNet
+
+    path = ensure_task(variant, task, progress)
     progress(0.9, rp.tr("Loading the model of task {task}", task=task))
     m = torch.load(path, map_location="cpu", weights_only=True)
     net = ResidualEncoderUNet(1, len(m["features"]), m["features"], nn.Conv3d, m["kernels"], m["strides"], m["blocks"],
@@ -471,12 +477,16 @@ def head_region(hu, variant, task, step, progress):
 # ---- entries ------------------------------------------------------------------------------------------------------
 
 
-def run(volume, ctx, task):
+def task_file(variant, task):
+    """Where the converted weights of one task live in the cache (they may not be there yet)."""
+    return os.path.join(cache_dir(), variant, "task%d.pt" % task)
+
+
+def segment(volume, ctx, task, variant, post, step):
+    """``task``: 551-559. ``variant``: "open" or "research". ``post``: CADS post-processing. ``step``: window step as
+    a fraction of the window (nnU-Net default 0.5)."""
     if volume.unit not in (None, "HU"):
         raise ValueError("This model needs a CT in Hounsfield units (the series is in %s)" % volume.unit)
-    variant = "research" if ctx.params["weights"].startswith("research") else "open"
-    post = ctx.params["postprocess"]
-    step = float(ctx.params["overlap_step"])
 
     a = volume.numpy()  # (z, y, x) of the series
     if np.isnan(a).any():
@@ -507,48 +517,3 @@ def run(volume, ctx, task):
     ctx.progress(0.98, rp.tr("Back to the series grid"))
     out = from_ras(resample_out(lab, grid), order, flip)
     return np.ascontiguousarray(out).astype(np.uint8), NAMES[task]
-
-
-@rp.segmentation("core_organs")
-def core_organs(volume, ctx):
-    return run(volume, ctx, 551)
-
-
-@rp.segmentation("spine")
-def spine(volume, ctx):
-    return run(volume, ctx, 552)
-
-
-@rp.segmentation("heart_vessels")
-def heart_vessels(volume, ctx):
-    return run(volume, ctx, 553)
-
-
-@rp.segmentation("trunk_muscles")
-def trunk_muscles(volume, ctx):
-    return run(volume, ctx, 554)
-
-
-@rp.segmentation("ribs")
-def ribs(volume, ctx):
-    return run(volume, ctx, 555)
-
-
-@rp.segmentation("rt_risk_organs")
-def rt_risk_organs(volume, ctx):
-    return run(volume, ctx, 556)
-
-
-@rp.segmentation("brain_tissues")
-def brain_tissues(volume, ctx):
-    return run(volume, ctx, 557)
-
-
-@rp.segmentation("head_neck_organs")
-def head_neck_organs(volume, ctx):
-    return run(volume, ctx, 558)
-
-
-@rp.segmentation("body_regions")
-def body_regions(volume, ctx):
-    return run(volume, ctx, 559)

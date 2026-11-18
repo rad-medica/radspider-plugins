@@ -1,0 +1,48 @@
+# Automatic CT segmentation with a choice of model: TotalSegmentator v2 (3 mm, Apache-2.0), MONAI wholeBody_ct_segmentation
+# (Apache-2.0) and CADS (nine task groups; weights "open" CC BY-SA 4.0, default, or "research" CC BY-NC-SA 4.0,
+# non-commercial). Replaces org.radspider.totalsegmentator, org.radspider.monai-wholebody and org.radspider.cads.
+# See docs/plugins/auto-segmentation.md.
+id = "org.radspider.auto-segmentation"
+name = "Automatic segmentation"
+version = "1.0.0"
+api = 6
+description = "Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights."
+icon = "magic-wand"
+requirements = "requirements.txt"
+
+[[segmentation]]
+name = "segment"
+label = "Automatic segmentation (CT)"
+description = """CT only. Pick the model: TotalSegmentator (117 structures, 3 mm, ONNX Runtime), MONAI whole body (104 structures, 3 or \
+1.5 mm) or one of the nine CADS groups (167 structures over the nine, 1.5 mm, a GPU-class model: about 20 s per window \
+and 9 GB of RAM on 4 CPU cores). The first run of a model downloads its weights (TotalSegmentator 135 MB, MONAI 71 MB, \
+CADS 760 MB per group and weight set); Segmentation models downloads or deletes them beforehand."""
+icon = "magic-wand"
+params = [
+  { name = "model", label = "Model", kind = "choice", default = "TotalSegmentator: 117 structures (3 mm)", options = [
+    "TotalSegmentator: 117 structures (3 mm)",
+    "MONAI whole body: 104 structures (3 mm)",
+    "MONAI whole body: 104 structures (1.5 mm)",
+    "CADS 551: core organs (17 structures)",
+    "CADS 552: spine (24 structures)",
+    "CADS 553: heart & vessels (18 structures)",
+    "CADS 554: trunk muscles (21 structures)",
+    "CADS 555: ribs (24 structures)",
+    "CADS 556: RT risk organs (15 structures)",
+    "CADS 557: brain tissues (9 structures)",
+    "CADS 558: head-neck organs (29 structures)",
+    "CADS 559: body regions (10 structures)",
+  ] },
+  { name = "window_step", label = "Window step (fraction of the window; 0 = the model's default)", default = 0.0, min = 0.0, max = 1.0 },
+  { name = "cads_weights", label = "CADS weights", kind = "choice", options = ["open (CC BY-SA 4.0)", "research (CC BY-NC-SA 4.0, non-commercial)"], default = "open (CC BY-SA 4.0)" },
+  { name = "cads_postprocess", label = "CADS post-processing", kind = "bool", default = true },
+]
+
+[[tool]]
+name = "models"
+label = "Segmentation models"
+icon = "database"
+description = """Lists the weights of every model with their licence, size on disk and state; downloads one ahead of its first run, \
+deletes one, or removes what interrupted downloads left behind. Opens on the active series because every plugin tool \
+does; the series is not read."""
+window = { title = "Segmentation models", width = 900, height = 620, reuse = true }

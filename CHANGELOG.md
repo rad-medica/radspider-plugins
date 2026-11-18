@@ -4,6 +4,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 
 ## [Unreleased]
 
+### Changed
+- New plugin `org.radspider.auto-segmentation` 1.0.0 replaces `org.radspider.totalsegmentator`, `org.radspider.monai-wholebody` and `org.radspider.cads` (removed; their modules moved unchanged into it): one segmentation entry whose *Model* picks TotalSegmentator 3 mm, MONAI 3 / 1.5 mm or one of the nine CADS groups, and a *Segmentation models* window that lists, downloads, deletes and cleans up the weights. MONAI weights move from the Hugging Face cache to `~/.cache/radspider/monai`. Saved parameters of the old plugins do not carry over. Run outside the viewer only; see `docs/plugins/auto-segmentation.md`.
+
 ### Added
 - Repository tooling: `tools/validate_plugins.py`, ruff config, GitHub Actions CI, editorconfig.
 - Docs: `docs/ARCHITECTURE.md`, `docs/DEVELOPING.md`, one page per model plugin under `docs/plugins/`.
