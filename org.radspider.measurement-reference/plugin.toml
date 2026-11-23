@@ -1,0 +1,17 @@
+id = "org.radspider.measurement-reference"
+name = "Measurement reference"
+version = "1.0.0"
+api = 6
+description = "A searchable guide of radiological measurements: how each is drawn, normal values, a reference picture. Entries are Markdown files you can edit or add."
+icon = "ruler"
+module = "reference.py"
+requirements = "requirements.txt"
+
+[[tool]]
+name = "guide"
+label = "Measurement reference"
+description = "Opens the guide: search by name, keyword or region, pick a measurement, read its description and see its picture. Reads no pixel data."
+icon = "ruler"
+# An image tool only because a tool must run on something: one image costs far less per search than a whole volume.
+input = "image"
+window = { title = "Measurement reference", width = 560, height = 760, reuse = true }

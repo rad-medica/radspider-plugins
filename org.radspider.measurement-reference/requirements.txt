@@ -1,0 +1,2 @@
+# Decodes the reference pictures (PNG, JPEG).
+Pillow>=10.0
