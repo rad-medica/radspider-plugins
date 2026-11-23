@@ -27,6 +27,7 @@ Proprietary, all rights reserved (`LICENSE`).
 | `org.radspider.roi-tools` | 6 | numpy, scipy | Ten measurement tools: Cobb angle, ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing, calcium score | [roi-tools](docs/plugins/roi-tools.md) |
 | `org.radspider.volume-tools` | 6 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
 | `org.radspider.skeletal-radiology` | 6 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [skeletal-radiology](docs/plugins/skeletal-radiology.md) |
+| `org.radspider.measurement-reference` | 6 | Pillow | Searchable guide of radiological measurements (71 entries: how to draw each, reference values, source, a picture). Entries are Markdown files; the user adds or replaces them in `~/radspider-references` | [measurement-reference](docs/plugins/measurement-reference.md) |
 
 Model weights are downloaded on first run (see each plugin's page); none are in this repository. Check each model's licence before shipping it inside a product.
 

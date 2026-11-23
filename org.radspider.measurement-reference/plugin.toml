@@ -4,7 +4,7 @@ version = "1.0.0"
 api = 6
 description = "A searchable guide of radiological measurements: how each is drawn, normal values, a reference picture. Entries are Markdown files you can edit or add."
 icon = "ruler"
-module = "reference.py"
+module = "reference"
 requirements = "requirements.txt"
 
 [[tool]]

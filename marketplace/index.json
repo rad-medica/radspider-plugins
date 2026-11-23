@@ -106,6 +106,30 @@
       "icon": "wind"
     },
     {
+      "id": "org.radspider.measurement-reference",
+      "name": "Measurement reference",
+      "version": "1.0.0",
+      "api": 6,
+      "description": "A searchable guide of radiological measurements: how each is drawn, normal values, a reference picture. Entries are Markdown files you can edit or add.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [
+        "Pillow>=10.0"
+      ],
+      "package": {
+        "file": "org.radspider.measurement-reference-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.measurement-reference-v1.0.0/org.radspider.measurement-reference-1.0.0.zip",
+        "sha256": "ac65e2667db9ec7b5a0e33266c41b73d6041d20ed15ae7c2da7c30a2c982b95b",
+        "size": 3599761
+      },
+      "tag": "org.radspider.measurement-reference-v1.0.0",
+      "second_volume": false,
+      "icon": "ruler"
+    },
+    {
       "id": "org.radspider.numpy-demo",
       "name": "NumPy demo",
       "version": "1.1.0",
