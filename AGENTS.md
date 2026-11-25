@@ -4,7 +4,7 @@ Humans: see `CONTRIBUTING.md`.
 
 ## TL;DR
 
-1. Python plugins for radspider, one folder per plugin id; the SDK exists only inside radspider.
+1. Python and native (Rust) plugins for radspider, one folder per plugin id; the SDK exists only inside radspider.
 2. Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. (`LICENSE`). Permissive deps only.
 3. Less is more: reuse what exists, smallest diff that fully works, fewest tokens.
 4. Test the minimum that proves the change. Never walk every translation through the GUI.
@@ -12,7 +12,7 @@ Humans: see `CONTRIBUTING.md`.
 
 ## What this is
 
-Plugins for [radspider](https://github.com/rad-medica/radspider), a medical image viewer. One folder per plugin at the repository root, named exactly as its id (`org.radspider.<name>`), each with `plugin.toml`, a Python module, `README.md` (its docs: entries, limits, licence, "Verified") and optionally `requirements.txt`. The `radspider_plugin` SDK (`import radspider_plugin as rp`) is provided by the host at runtime: it is not installable here, so a plugin cannot be run outside radspider.
+Plugins for [radspider](https://github.com/rad-medica/radspider), a medical image viewer. One folder per plugin at the repository root, named exactly as its id (`org.radspider.<name>`), each with `plugin.toml`, a Python module, `README.md` (its docs: entries, limits, licence, "Verified") and optionally `requirements.txt`; a native plugin has `command` instead of a module, Rust source (`Cargo.toml`, `src/`) and its executables in `bin/<os>-<arch>/`, built by `.github/workflows/native-plugins.yml`. The `radspider_plugin` SDK (`import radspider_plugin as rp`) is provided by the host at runtime: it is not installable here, so a plugin cannot be run outside radspider.
 
 ## Shared rules (all radspider repositories)
 
@@ -69,7 +69,7 @@ Run all of them before declaring anything done. `marketplace/extra.toml` (id →
 | One plugin's model, limits, licence, verification | `org.radspider.<name>/README.md` |
 | Versions, index, releases | `docs/MARKETPLACE.md` |
 | Every feature in one plugin | `org.radspider.testkit/testkit.py` |
-| Smallest plugin to copy | `org.radspider.examples/` |
+| Smallest plugin to copy | `org.radspider.examples/` (Python), `org.radspider.rust-example/` (native, Rust) |
 
 ## Procedures
 

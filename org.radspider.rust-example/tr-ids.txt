@@ -1,0 +1,9 @@
+# Run-time ids of src/main.rs (radspider-check reads them; it does not scan Rust).
+Statistic
+Value
+Voxels with data
+Mean {unit}
+Minimum {unit}
+Maximum {unit}
+Volume (ml)
+{n} voxel|{n} voxels

@@ -5,7 +5,7 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 
 ## TL;DR
 
-- One folder per plugin, named exactly as its id: `plugin.toml` + a Python module (+ `requirements.txt`).
+- One folder per plugin, named exactly as its id: `plugin.toml` + a Python module (+ `requirements.txt`), or, for a native plugin, Rust source and its executables in `bin/<os>-<arch>/`.
 - Install one: copy its folder into `<config>/plugins/` (beside `settings.toml`) or in radspider Settings → Modules → *Install folder…* (or *Install .zip…* of the folder). radspider makes the venv and pip-installs `requirements.txt`.
 - How plugins work (manifest, SDK, protocol, API 1-6): `docs/PLUGINS.md` in the radspider repository. Summary of what this repo relies on: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Plugin folders stay at the repository root on purpose: radspider's `tests/plugins.rs` resolves `../radspider-plugins/<id>`.
@@ -15,6 +15,7 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 | Folder | API | Needs | What | Docs |
 |---|---|---|---|---|
 | `org.radspider.examples` | 6 | stdlib | One entry of each kind (node, segmentation, tool). Start here | [README](org.radspider.examples/README.md) |
+| `org.radspider.rust-example` | 6 | none (native) | The same three kinds in Rust: a native plugin, executables for Windows, Linux and macOS in `bin/` | [README](org.radspider.rust-example/README.md) |
 | `org.radspider.numpy-demo` | 6 | numpy | The same three kinds, vectorised | [README](org.radspider.numpy-demo/README.md) |
 | `org.radspider.testkit` | 6 | numpy | Every feature: 4 nodes, 4 segmentations, 9 tools (params, units, progress, messages, empty result, error, cancel, charts, pictures, ROIs and segments in and out, an interactive window, icons, a Spanish catalog, several windows per run, an image tool) | [README](org.radspider.testkit/README.md) |
 | `org.radspider.sam` | 6 | onnxruntime, torch, medim | Click-prompted segmentation: SAM ViT-B ONNX on slices as OHIF 3.10 (click prompts, slice propagation, bidirectional measurement) and SAM-Med3D in 3D. Replaces `sam-slices` and `sam-med3d` | [README](org.radspider.sam/README.md) |
@@ -43,7 +44,7 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 | `tools/validate_plugins.py` | Static checks of every manifest against its module (stdlib only) |
 | `tools/marketplace.py`, `marketplace/index.json`, `marketplace/extra.toml` | Package builder, the version index, and the index facts `plugin.toml` cannot carry (`first_run_download`) |
 | `tools/semver_vectors.json`, `tools/test_tools.py` | Semver precedence cases shared with radspider, and the tests of the tools |
-| `.github/workflows/` | CI: lint + validation on every push; radspider integration tests when a token is configured |
+| `.github/workflows/` | CI: lint + validation on every push; radspider integration tests when a token is configured; `native-plugins.yml` builds and commits the native plugins' executables |
 | `AGENTS.md` | The only instructions for AI coding assistants |
 
 ## Checks (local)

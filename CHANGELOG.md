@@ -4,6 +4,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 
 ## [Unreleased]
 
+### Added
+- New plugin `org.radspider.rust-example` 1.0.0 (api 6, native): `org.radspider.examples` in Rust (`window_clip`, `threshold`, `stats`), Spanish catalog, Windows executable in `bin/windows-x86_64/`. Run through radspider's plugin host on Windows with the assertions of the Python example; see its README.
+- `.github/workflows/native-plugins.yml`: builds every native plugin (folder with `Cargo.toml`) for Windows x86_64, Linux x86_64 (musl) and macOS aarch64 and commits `bin/` and the index to the branch. Not run yet.
+- `tools/validate_plugins.py`: native plugins (`command`): api >= 4, valid command name, no `module` / `requirements`, an executable, entries matched against `.<kind>("name", …)` in `src/**/*.rs`. `tools/marketplace.py` leaves cargo's `target/` out of packages.
+
 ### Changed
 - `org.radspider.roi-tools` 3.0.0: `calcium_score` removed; radspider's own *Calcium score* (Analysis tab) does the same and adds vessels per segment and CAC-DRS. The other eight tools are unchanged, not rerun.
 - New plugin `org.radspider.sam` 1.0.0 replaces `org.radspider.sam-slices` and `org.radspider.sam-med3d` (removed; modules moved unchanged, SAM-Med3D's entry renamed `segment` → `segment_3d`). Requirements are both sets (onnxruntime and torch): the 2D entries now install torch too. Saved parameters of the old plugins do not carry over. Not rerun after the merge; radspider `tests/plugins.rs::sam_example_manifest_is_valid` checks the manifest.

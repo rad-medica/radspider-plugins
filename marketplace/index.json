@@ -181,6 +181,28 @@
       "icon": "ruler"
     },
     {
+      "id": "org.radspider.rust-example",
+      "name": "Rust example",
+      "version": "1.0.0",
+      "api": 6,
+      "description": "One entry of each kind written in Rust: a native plugin, no Python.",
+      "entries": {
+        "synth_node": 1,
+        "segmentation": 1,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.rust-example-1.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.rust-example-v1.0.0/org.radspider.rust-example-1.0.0.zip",
+        "sha256": "eb827e577edbbfddec0e49177f7b8c7f6ade5cc4d19a555f98e11b0d90c60036",
+        "size": 499886
+      },
+      "tag": "org.radspider.rust-example-v1.0.0",
+      "second_volume": false,
+      "icon": "gear"
+    },
+    {
       "id": "org.radspider.sam",
       "name": "SAM",
       "version": "1.0.0",

@@ -11,6 +11,7 @@
 
 - `org.radspider.examples`: stdlib only, one entry of each kind, 40 lines. Copy it.
 - `org.radspider.numpy-demo`: the same with numpy and a `requirements.txt`.
+- `org.radspider.rust-example`: the same in Rust, a native plugin (`command`, api ≥ 4); its README says how the executables are built and committed.
 - `org.radspider.volume-tools`: two-volume tools (`ctx.other`, api ≥ 3); `rigid_register` is the registration one.
 - `org.radspider.testkit`: every feature, as a reference for progress, cancel, charts, ROIs, windows.
 

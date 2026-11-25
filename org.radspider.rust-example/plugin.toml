@@ -1,0 +1,33 @@
+# Native example plugin: org.radspider.examples ported to Rust (radspider_plugin SDK). Build with `cargo build --release`
+# and copy target/release/rust-example[.exe] to bin/<os>-<arch>/ (see README.md). No Python, no requirements.
+id = "org.radspider.rust-example"
+name = "Rust example"
+version = "1.0.0"
+api = 6                        # 4: native command; 6: icons, translations (lang/)
+description = "One entry of each kind written in Rust: a native plugin, no Python."
+icon = "gear"
+command = "rust-example"
+
+[[synth_node]]
+name = "window_clip"
+label = "Window clip"
+description = "Values outside [lo, hi] become no data (NaN)."
+unit = "keep"
+icon = "scissors"
+params = [
+  { name = "lo", default = -100.0 },
+  { name = "hi", default = 300.0 },
+]
+
+[[segmentation]]
+name = "threshold"
+label = "Threshold"
+description = "Label 1: voxels at or above the threshold."
+icon = "sliders-horizontal"
+params = [{ name = "threshold", default = 200.0 }]
+
+[[tool]]
+name = "stats"
+label = "Volume statistics"
+description = "Count, mean, minimum, maximum and the volume of voxels with data."
+icon = "chart-bar"

@@ -1,0 +1,19 @@
+# The plugin's executable. The SDK is radspider's crate, from a radspider checkout beside this repository
+# (../radspider): CI checks it out there too. Not part of any workspace.
+[package]
+name = "rust-example"
+version = "1.0.0"
+edition = "2024"
+publish = false
+license-file = "../LICENSE"
+
+[dependencies]
+radspider-plugin = { path = "../../radspider/crates/radspider-plugin" }
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[workspace]

@@ -4,7 +4,10 @@
 Checks, per ``org.radspider.*`` folder:
 
 * ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-6;
-* the module (``module`` key, default ``plugin``) exists and compiles;
+* the module (``module`` key, default ``plugin``) exists and compiles; or, for a native plugin (``command`` key,
+  api >= 4), the command name is valid, there is no ``module`` or ``requirements``, an executable
+  ``[bin/<os>-<arch>/]<command>[.exe]`` exists, and ``src/**/*.rs`` registers the entries with
+  ``.<kind>("name", …)``;
 * ``requirements`` points at an existing file, and every line is a plain pip requirement (a name, extras, version
   specifiers, an environment marker): no options (``-r``, ``-e``, ``--index-url``, ``--extra-index-url``,
   ``--find-links``), no URLs or direct references, no local paths;
@@ -44,6 +47,8 @@ REQUIREMENT = re.compile(
 PINNED_GIT = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9._-]*\s*@\s*git\+https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+@[0-9a-f]{40}\Z"
 )
+COMMAND = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\Z")  # radspider's rule for `command`
+NATIVE_ENTRY = re.compile(r'\.(synth_node|segmentation|tool)\(\s*"([^"]+)"')
 LOCAL_PATH = re.compile(r"^(?:\.{1,2}[/\\]|[/\\~]|[A-Za-z]:[/\\])")
 
 
@@ -63,6 +68,32 @@ def registered_entries(module: Path, errors: list[str]) -> dict[str, set[str]]:
                 continue
             if dec.func.attr in KINDS and dec.args and isinstance(dec.args[0], ast.Constant):
                 found[dec.func.attr].add(str(dec.args[0].value))
+    return found
+
+
+def native_entries(plugin: Path, command: object, api: object, manifest: dict, errors: list[str]) -> dict[str, set[str]]:
+    """A native plugin (``command``): the executable and the entries its Rust source registers with
+    ``.<kind>("name", …)`` on ``rp::Plugin``."""
+    found: dict[str, set[str]] = {k: set() for k in KINDS}
+    if not (isinstance(api, int) and api >= 4):
+        errors.append(f"{plugin.name}: command needs api >= 4")
+    if not isinstance(command, str) or not COMMAND.match(command):
+        errors.append(f"{plugin.name}: command {command!r} must match [A-Za-z0-9][A-Za-z0-9._-]*, at most 64 characters")
+        return found
+    for key in ("module", "requirements"):
+        if key in manifest:
+            errors.append(f"{plugin.name}: a native plugin (command) takes no {key!r}")
+    names = (command, command + ".exe")
+    if not any((plugin / n).is_file() for n in names) and not any(
+        (d / n).is_file() for d in (plugin / "bin").glob("*") for n in names
+    ):
+        errors.append(f"{plugin.name}: no executable {command!r} in the folder or in bin/<os>-<arch>/")
+    sources = sorted((plugin / "src").rglob("*.rs"))
+    if not sources:
+        errors.append(f"{plugin.name}: native plugin without Rust sources in src/")
+    for path in sources:
+        for kind, name in NATIVE_ENTRY.findall(path.read_text(encoding="utf-8")):
+            found[kind].add(name)
     return found
 
 
@@ -138,7 +169,9 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     check_icon(plugin, plugin.name, manifest, api, errors)
 
     module = plugin / f"{manifest.get('module', 'plugin')}.py"
-    if not module.is_file():
+    if "command" in manifest:
+        registered = native_entries(plugin, manifest["command"], api, manifest, errors)
+    elif not module.is_file():
         errors.append(f"{plugin.name}: module {module.name} missing")
         registered = {k: set() for k in KINDS}
     else:

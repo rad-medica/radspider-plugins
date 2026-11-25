@@ -1,0 +1,125 @@
+name: native plugins
+
+# Builds every native (Rust) plugin — a folder with Cargo.toml — for Windows x86_64, Linux x86_64 (static, musl) and
+# macOS aarch64, commits the executables to <plugin>/bin/<os>-<arch>/ and regenerates marketplace/index.json on the
+# same branch. Run it after changing a native plugin's source and bumping its version; the commit it pushes is made
+# with GITHUB_TOKEN, so it starts no other workflow. Needs RADSPIDER_READ_TOKEN: the SDK crate is in the private
+# radspider repository, checked out beside this one as the plugins' Cargo.toml expect (../radspider).
+
+on:
+  workflow_dispatch:
+    inputs:
+      radspider_ref:
+        description: radspider branch, tag or commit whose SDK to build against
+        default: main
+  push:
+    paths:
+      - "org.radspider.*/src/**"
+      - "org.radspider.*/Cargo.toml"
+      - "org.radspider.*/Cargo.lock"
+
+concurrency:
+  group: native-plugins-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build (${{ matrix.dir }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: windows-latest, dir: windows-x86_64, target: x86_64-pc-windows-msvc, exe: ".exe" }
+          - { os: ubuntu-latest, dir: linux-x86_64, target: x86_64-unknown-linux-musl, exe: "" }
+          - { os: macos-latest, dir: macos-aarch64, target: aarch64-apple-darwin, exe: "" }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: radspider-plugins
+
+      - uses: actions/checkout@v7
+        with:
+          repository: rad-medica/radspider
+          ref: ${{ inputs.radspider_ref || 'main' }}
+          token: ${{ secrets.RADSPIDER_READ_TOKEN }}
+          path: radspider
+          sparse-checkout: |
+            crates/radspider-plugin
+            LICENSE
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: musl linker
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Build every native plugin
+        working-directory: radspider-plugins
+        run: |
+          set -euo pipefail
+          mkdir -p ../out
+          for manifest in org.radspider.*/Cargo.toml; do
+            plugin=$(dirname "$manifest")
+            command=$(python -c "import sys, tomllib; print(tomllib.load(open(sys.argv[1], 'rb'))['command'])" "$plugin/plugin.toml")
+            cargo build --release --locked --manifest-path "$manifest" --target ${{ matrix.target }}
+            mkdir -p "../out/$plugin/bin/${{ matrix.dir }}"
+            cp "$plugin/target/${{ matrix.target }}/release/$command${{ matrix.exe }}" "../out/$plugin/bin/${{ matrix.dir }}/"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.dir }}
+          path: out
+          if-no-files-found: error
+
+  commit:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bin-*
+          path: out
+
+      - name: Put the executables in place and regenerate the index
+        run: |
+          set -euo pipefail
+          for d in out/bin-*/; do cp -R "$d". .; done
+          python tools/marketplace.py update
+          python tools/validate_plugins.py
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git add org.radspider.*/bin marketplace/index.json
+          if git diff --cached --quiet; then
+            echo "executables already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Native plugins: executables for Windows, Linux and macOS"
+          git push

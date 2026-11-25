@@ -33,7 +33,7 @@ INDEX = ROOT / "marketplace" / "index.json"
 EXTRA = ROOT / "marketplace" / "extra.toml"
 REPO_URL = "https://github.com/rad-medica/radspider-plugins"
 SCHEMA = 1
-EXCLUDED_DIRS = {"__pycache__", ".venv", ".venvs", ".pytest_cache", ".ruff_cache"}
+EXCLUDED_DIRS = {"__pycache__", ".venv", ".venvs", ".pytest_cache", ".ruff_cache", "target"}  # target: cargo builds
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 # The official regular expression of semver.org (2.0.0), so that every identifier rule is enforced.
 SEMVER = re.compile(

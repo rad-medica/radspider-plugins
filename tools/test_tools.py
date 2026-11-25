@@ -211,5 +211,47 @@ class InputKey(unittest.TestCase):
             self.assertTrue(any("input needs api >= 6" in e for e in errors), (value, errors))
 
 
+class NativePlugin(unittest.TestCase):
+    """A plugin with ``command``: Rust registrations, an executable, no module or requirements."""
+
+    def errors(self, extra: str = "", api: int = 6, exe: str | None = "bin/windows-x86_64/demo.exe",
+               source: str = '.tool("e", e)') -> list[str]:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            plugin = root / "org.radspider.t"
+            (plugin / "src").mkdir(parents=True)
+            (plugin / "plugin.toml").write_text(
+                f'id = "org.radspider.t"\nname = "T"\nversion = "1.0.0"\napi = {api}\ndescription = "d"\n'
+                f'command = "demo"\n{extra}\n[[tool]]\nname = "e"\nlabel = "E"\n',
+                encoding="utf-8",
+            )
+            (plugin / "src" / "main.rs").write_text(f"fn main() {{ rp::Plugin::new(){source}.run(); }}\n", encoding="utf-8")
+            if exe:
+                (plugin / exe).parent.mkdir(parents=True, exist_ok=True)
+                (plugin / exe).write_bytes(b"MZ")
+            (plugin / "README.md").write_text("t\n", encoding="utf-8")
+            return validate_plugins.check_plugin(root, plugin, "`org.radspider.t`\n")
+
+    def test_complete_native_plugin_is_clean(self):
+        self.assertEqual(self.errors(), [])
+        self.assertEqual(self.errors(exe="demo"), [])
+
+    def test_needs_an_executable(self):
+        self.assertTrue(any("no executable" in e for e in self.errors(exe=None)))
+
+    def test_entries_must_match_the_rust_registrations(self):
+        errors = self.errors(source='.tool("other", e)')
+        self.assertTrue(any("'e' is in plugin.toml but not registered" in e for e in errors), errors)
+        self.assertTrue(any("'other' is registered in the module but not in plugin.toml" in e for e in errors), errors)
+
+    def test_needs_api_4_and_no_python_keys(self):
+        self.assertTrue(any("command needs api >= 4" in e for e in self.errors(api=3)))
+        self.assertTrue(any("takes no 'requirements'" in e for e in self.errors('requirements = "r.txt"')))
+
+    def test_command_name_rule(self):
+        self.assertTrue(validate_plugins.COMMAND.match("rust-example"))
+        self.assertFalse(validate_plugins.COMMAND.match("../evil"))
+        self.assertFalse(validate_plugins.COMMAND.match("a" * 65))
+
 if __name__ == "__main__":
     unittest.main()
