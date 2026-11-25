@@ -1,7 +1,7 @@
 # radspider-plugins
 
 Python plugins for [radspider](https://github.com/rad-medica/radspider): examples to start from, the test kit, AI segmentation and registration.
-Proprietary, all rights reserved (`LICENSE`).
+Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserved (`LICENSE`).
 
 ## TL;DR
 

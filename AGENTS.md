@@ -6,6 +6,12 @@ Instructions for AI coding assistants working in this repository. Humans: see `C
 
 Plugins for [radspider](https://github.com/rad-medica/radspider), a medical image viewer. One folder per plugin at the repository root, named exactly as its id (`org.radspider.<name>`), each with `plugin.toml`, a Python module and optionally `requirements.txt`. The `radspider_plugin` SDK (`import radspider_plugin as rp`) is provided by the host at runtime: it is not installable here, so a plugin cannot be run outside radspider.
 
+## License
+
+Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserved (`LICENSE`). Dependencies: permissive
+licences only (MIT / Apache-2.0 / BSD / Zlib / OFL); no GPL / AGPL / LGPL / MPL unless dual-licensed with a
+permissive option. Keep the notices of every third-party component that ships.
+
 ## Commands
 
 ```bash
