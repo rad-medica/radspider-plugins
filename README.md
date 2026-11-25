@@ -1,6 +1,6 @@
 # radspider-plugins
 
-Python plugins for [radspider](https://github.com/rad-medica/radspider): examples to start from, the test kit, AI segmentation and registration.
+Python plugins for [radspider](https://github.com/rad-medica/radspider): examples and the test kit, AI segmentation, lung and radiomics analysis, measurement tools, registration and a measurement reference.
 Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserved (`LICENSE`).
 
 ## TL;DR
@@ -28,6 +28,7 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 | `org.radspider.volume-tools` | 6 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [volume-tools](docs/plugins/volume-tools.md) |
 | `org.radspider.skeletal-radiology` | 6 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [skeletal-radiology](docs/plugins/skeletal-radiology.md) |
 | `org.radspider.measurement-reference` | 6 | Pillow | Searchable guide of radiological measurements (71 entries: how to draw each, reference values, source, a picture). Entries are Markdown files; the user adds or replaces them in `~/radspider-references` | [measurement-reference](docs/plugins/measurement-reference.md) |
+| `org.radspider.series-identifier` | 6 | numpy, onnxruntime | Says what the image on screen is: series kind, plane or projection, region, laterality, contrast, each with its evidence and a plain explanation (English, Spanish). Rules for every modality; on MR a second opinion from the dcm-classifier ONNX. Educational aid | [series-identifier](docs/plugins/series-identifier.md) |
 
 Model weights are downloaded on first run (see each plugin's page); none are in this repository. Check each model's licence before shipping it inside a product.
 
@@ -40,7 +41,6 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 | Path | What |
 |---|---|
 | `org.radspider.*/` | The plugins. Installable as-is |
-| `org.radspider.series-identifier` | 6 | numpy, onnxruntime | Says what the image on screen is: series kind, plane or projection, region, laterality, contrast, each with its evidence and a plain explanation (English, Spanish). Rules for every modality; on MR a second opinion from the dcm-classifier ONNX. Educational aid | [series-identifier](docs/plugins/series-identifier.md) |
 | `docs/` | Architecture, development guide, one page per model plugin (limits, licences, "Verified" rows) |
 | `tools/validate_plugins.py` | Static checks of every manifest against its module (stdlib only) |
 | `tools/marketplace.py`, `marketplace/index.json`, `marketplace/extra.toml` | Package builder, the version index, and the index facts `plugin.toml` cannot carry (`first_run_download`) |

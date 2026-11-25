@@ -4,7 +4,7 @@
 
 - `org.radspider.examples`: stdlib only, one entry of each kind, 40 lines. Copy it.
 - `org.radspider.numpy-demo`: the same with numpy and a `requirements.txt`.
-- `org.radspider.registration-demo`: two-volume tool (api 3).
+- `org.radspider.registration-demo`: two-volume tool (`ctx.other`, api ≥ 3).
 - `org.radspider.testkit`: every feature, as a reference for progress, cancel, charts, ROIs, windows.
 
 ## New plugin checklist
