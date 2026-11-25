@@ -1,10 +1,10 @@
 # Automatic CT segmentation with a choice of model: TotalSegmentator v2 (3 mm, Apache-2.0), MONAI wholeBody_ct_segmentation
 # (Apache-2.0) and CADS (nine task groups; weights "open" CC BY-SA 4.0, default, or "research" CC BY-NC-SA 4.0,
 # non-commercial). Replaces org.radspider.totalsegmentator, org.radspider.monai-wholebody and org.radspider.cads.
-# See docs/plugins/auto-segmentation.md.
+# See README.md.
 id = "org.radspider.auto-segmentation"
 name = "Automatic segmentation"
-version = "1.1.0"
+version = "1.1.1"
 api = 6
 description = "Automatic anatomical segmentation of CT with a choice of model (TotalSegmentator, MONAI whole body, CADS), and a window that manages the downloaded weights."
 icon = "magic-wand"

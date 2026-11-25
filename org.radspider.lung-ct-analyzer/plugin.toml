@@ -1,11 +1,12 @@
 # Lung CT analyzer: the analysis of the 3D Slicer extension LungCTAnalyzer (Apache-2.0), re-implemented with numpy
-# and scipy. CT in Hounsfield units only. Not clinically evaluated. See docs/plugins/lung-ct-analyzer.md.
+# and scipy, and the Lung CT GMM Segmentation of DensityLungSegmentation (Apache-2.0, lung_density.py; replaces
+# org.radspider.density-lung-segmentation). CT in Hounsfield units only. Not clinically evaluated. See README.md.
 id = "org.radspider.lung-ct-analyzer"
 name = "Lung CT analyzer"
-version = "1.1.0"
+version = "1.2.0"
 api = 6                        # 6: icons, translations (lang/); 2: reads the series' segments (lung masks), interactive window
 icon = "wind"
-description = "Lung volumes by density on CT: emphysema, inflated, infiltrated, collapsed, vessels per lung, functional and affected volume. Lung masks without AI."
+description = "Lung volumes by density on CT: emphysema, inflated, infiltrated, collapsed, vessels per lung, functional and affected volume; five Gaussian-mixture density classes (air, healthy, ground glass, consolidation, denser). Lung masks without AI."
 requirements = "requirements.txt"
 
 [[segmentation]]
@@ -33,4 +34,36 @@ params = [
   { name = "inflated_max", label = "Inflated below (HU)", default = -750.0, min = -1100.0, max = 3000.0 },
   { name = "infiltrated_max", label = "Infiltrated below (HU)", default = -400.0, min = -1100.0, max = 3000.0 },
   { name = "collapsed_max", label = "Collapsed below (HU), vessels from", default = 0.0, min = -1100.0, max = 3000.0 },
+]
+
+[[segmentation]]
+name = "gmm"
+icon = "wind"
+label = "Lung density classes (per voxel)"
+description = """CT in HU only. Lung mask by threshold, islands and closing; each voxel inside gets the most likely of five density \
+classes of a Gaussian mixture fitted on COVID-19 CTs."""
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", kind = "integer", default = 500000, min = 1, max = 100000000 },
+]
+
+[[segmentation]]
+name = "gmm_averaged"
+icon = "waves"
+label = "Lung density classes (averaged)"
+description = "The same, followed by a 4 x 4 x 4 voxel median filter of the labels: fewer isolated voxels."
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", kind = "integer", default = 500000, min = 1, max = 100000000 },
+]
+
+[[tool]]
+name = "volumes"
+icon = "chart-bar"
+label = "Lung density volumes"
+description = "CT in HU only. The same segmentation with a table of volume in ml, share and mean HU per class, a bar chart and the segments."
+params = [
+  { name = "lung_threshold", label = "Lung threshold (HU, below = air)", default = -155.0, min = -1000.0, max = 0.0 },
+  { name = "min_island_voxels", label = "Smallest lung island (voxels)", kind = "integer", default = 500000, min = 1, max = 100000000 },
+  { name = "averaged", label = "Averaged labels", kind = "bool", default = false },
 ]

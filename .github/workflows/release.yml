@@ -63,6 +63,6 @@ jobs:
               echo "$tag exists"
             else
               gh release create "$tag" "dist/$file" --target "$GITHUB_SHA" \
-                --title "$name $version" --notes "Plugin package. See CHANGELOG.md and docs/plugins/."
+                --title "$name $version" --notes "Plugin package. See CHANGELOG.md and the plugin's README.md."
             fi
           done < releases.tsv

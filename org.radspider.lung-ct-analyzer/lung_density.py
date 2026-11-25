@@ -5,6 +5,8 @@ Own implementation with numpy and scipy of what LungCTGMMSegmentation/LungCTGMMS
 it. The mixture's weights, means and variances below are the numbers stored in the extension's
 Resources/GMM_parameters_COVID-19.joblib; having them here as constants means no pickle is loaded and scikit-learn
 is not needed. Research use, not clinically evaluated.
+
+Was the plugin ``org.radspider.density-lung-segmentation``; ``plugin.py`` registers its three entries.
 """
 
 import numpy as np
@@ -140,17 +142,14 @@ def _segment(volume, ctx, averaged):
     return a, labels
 
 
-@rp.segmentation("gmm")
 def gmm(volume, ctx):
     return _segment(volume, ctx, False)[1], NAMES
 
 
-@rp.segmentation("gmm_averaged")
 def gmm_averaged(volume, ctx):
     return _segment(volume, ctx, True)[1], NAMES
 
 
-@rp.tool("volumes")
 def volumes(volume, ctx):
     averaged = ctx.params["averaged"]
     a, labels = _segment(volume, ctx, averaged)

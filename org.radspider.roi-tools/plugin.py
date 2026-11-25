@@ -1,7 +1,8 @@
 """ROI tools: measurements in, numbers, measurements and segments out. numpy + scipy.ndimage.
 
-Ten tools that work on what the user drew (lines, probes, notes, polygons, ellipses). All geometry is done in mm
+Nine tools that work on what the user drew (lines, probes, notes, polygons, ellipses). All geometry is done in mm
 with ``volume.spacing``: a point (x, y) of a slice is at (x * spacing[0], y * spacing[1]) mm in that slice.
+The Cobb angle is in ``org.radspider.skeletal-radiology`` (``spine``; two drawn lines override its endplates).
 
 Conventions shared by the tools:
 
@@ -156,38 +157,7 @@ def _length_is_zero(roi):
     return x0 == x1 and y0 == y1
 
 
-# ------------------------------------------------------------------ 1. Cobb angle
-
-
-@rp.tool("cobb_angle")
-def cobb_angle(volume, ctx):
-    k = _screen_slice(volume, ctx)
-    lines = [r for r in ctx.rois if r.kind == "line" and r.slice == k]
-    if len(lines) < 2:
-        raise ValueError(
-            "Cobb angle needs two lines on the slice on screen (found %d): draw one along each endplate first" % len(lines)
-        )
-    first, second = _two_lines(lines[-2:], "the Cobb angle")
-    a, b = _mm(first.points, volume), _mm(second.points, volume)
-    u, v = a[1] - a[0], b[1] - b[0]
-    cos = abs(float(u @ v)) / (float(np.hypot(*u)) * float(np.hypot(*v)))
-    angle = math.degrees(math.acos(min(cos, 1.0)))
-    table = [
-        _quantity_header(),
-        [rp.tr("Image"), k + 1, ""],
-        [rp.tr("Cobb angle"), round(angle, 1), "°"],
-        [rp.tr("Supplement"), round(180.0 - angle, 1), "°"],
-        [rp.tr("Line 1 length"), round(float(np.hypot(*u)), 2), "mm"],
-        [rp.tr("Line 2 length"), round(float(np.hypot(*v)), 2), "mm"],
-    ]
-    roi = rp.Roi("cobb", k, [tuple(first.points[0]), tuple(first.points[1]), tuple(second.points[0]), tuple(second.points[1])])
-    message = rp.tr(
-        "Cobb angle {angle}° (supplement {supplement}°)", angle="%.1f" % angle, supplement="%.1f" % (180.0 - angle)
-    )
-    return rp.Result(table=table, rois=[roi], message=message)
-
-
-# ------------------------------------------------------------------ 2. Export ROIs
+# ------------------------------------------------------------------ 1. Export ROIs
 
 
 @rp.tool("export_rois")
@@ -238,7 +208,7 @@ def export_rois(volume, ctx):
     return rp.Result(table=table, message=message)
 
 
-# ------------------------------------------------------------------ 3. Rotate ROI
+# ------------------------------------------------------------------ 2. Rotate ROI
 
 
 @rp.tool("rotate_roi")
@@ -267,7 +237,7 @@ def rotate_roi(volume, ctx):
     return rp.Result(table=table, replace_rois=replace, message=message)
 
 
-# ------------------------------------------------------------------ 4. Points to line
+# ------------------------------------------------------------------ 3. Points to line
 
 
 @rp.tool("points_to_line")
@@ -300,7 +270,7 @@ def points_to_line(volume, ctx):
     return rp.Result(table=table, rois=added, message=message)
 
 
-# ------------------------------------------------------------------ 5. Sphere volumes
+# ------------------------------------------------------------------ 4. Sphere volumes
 
 
 @rp.tool("sphere_volumes")
@@ -335,7 +305,7 @@ def sphere_volumes(volume, ctx):
     return rp.Result(table=table, message=message)
 
 
-# ------------------------------------------------------------------ 6. ROIs to labels
+# ------------------------------------------------------------------ 5. ROIs to labels
 
 
 def _shape_names(shapes, rois, volume):
@@ -403,7 +373,7 @@ def rois_to_labels(volume, ctx):
     return rp.Result(table=table, labels=(labels, [order[i - 1] for i in kept]), message=message)
 
 
-# ------------------------------------------------------------------ 7. Sector statistics
+# ------------------------------------------------------------------ 6. Sector statistics
 
 
 def _ray_radius(p, centre, angles):
@@ -551,7 +521,7 @@ def sector_statistics(volume, ctx):
     return rp.Result(table=table, plots=plots, rois=rois, message=message)
 
 
-# ------------------------------------------------------------------ 8. Count points
+# ------------------------------------------------------------------ 7. Count points
 
 
 @rp.tool("count_points")
@@ -618,7 +588,7 @@ def count_points(volume, ctx):
     return rp.Result(table=table, plots=plots, message=message)
 
 
-# ------------------------------------------------------------------ 9. Grow from seed
+# ------------------------------------------------------------------ 8. Grow from seed
 
 
 @rp.tool("grow_from_seed")
@@ -689,7 +659,7 @@ def grow_from_seed(volume, ctx):
     return rp.Result(table=table, labels=(region.astype(np.uint8), [name]), message=message)
 
 
-# ------------------------------------------------------------------ 10. Calcium score
+# ------------------------------------------------------------------ 9. Calcium score
 
 
 def _agatston(a, region, spacing, min_area_mm2, progress=None):

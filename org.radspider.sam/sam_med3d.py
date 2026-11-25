@@ -3,6 +3,8 @@
 Prompts are the series' measurements: a Probe is a positive click, a Text measurement reading "-" a negative one.
 The model sees a 128^3 window at 1.5 mm, RAS axes, z-normalised over voxels > 0 (the preprocessing of the upstream
 repository: utils/infer_utils.py). The mask is mapped back onto the volume's own grid.
+
+Was the plugin ``org.radspider.sam-med3d``; ``plugin.py`` registers its entry as ``segment_3d``.
 """
 
 import math
@@ -165,7 +167,6 @@ def restore(prob, win, thr, shape_zyx):
 # ---- entry ------------------------------------------------------------------------------------------------------
 
 
-@rp.segmentation("segment")
 def segment(volume, ctx):
     import torch
 

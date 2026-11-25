@@ -1,11 +1,13 @@
-# SAM ViT-B (Meta, Apache-2.0) as ONNX on a 2D slice, the way OHIF 3.10 uses it (Cornerstone3D packages/ai):
-# marker prompts, propagation between slices, and the bidirectional measurement of a segment.
-id = "org.radspider.sam-slices"
-name = "SAM slices"
-version = "1.1.0"
+# SAM in radspider: SAM ViT-B (Meta, Apache-2.0) as ONNX on a 2D slice, the way OHIF 3.10 uses it (Cornerstone3D
+# packages/ai): marker prompts, propagation between slices, the bidirectional measurement of a segment; and SAM-Med3D
+# (https://github.com/uni-medical/SAM-Med3D, Apache-2.0) on a 3D window. Replaces org.radspider.sam-slices and
+# org.radspider.sam-med3d. See README.md.
+id = "org.radspider.sam"
+name = "SAM"
+version = "1.0.0"
 api = 6
 icon = "magic-wand"
-description = "SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments."
+description = "Click-prompted segmentation: SAM ViT-B (ONNX) on single slices with slice propagation, SAM-Med3D on a 3D window, and the bidirectional measurement of segments."
 requirements = "requirements.txt"
 
 [[segmentation]]
@@ -39,3 +41,15 @@ icon = "ruler"
 label = "Bidirectional measurement of segments"
 description = """For every segment: the slice where it is largest, its longest diameter and the longest chord perpendicular to it, \
 drawn as a bidimensional measurement (OHIF 3.10 'bidirectional measurement for segments'). No model."""
+
+[[segmentation]]
+name = "segment_3d"
+icon = "crosshair"
+label = "SAM-Med3D: segment from clicks (3D)"
+description = """Each Probe measurement on the series is a positive click. A Text measurement reading '-' is a negative click. \
+Without Probes the run fails and says so. The first run downloads the checkpoint (~400 MB, Hugging Face)."""
+params = [
+  { name = "separate", label = "One segment per click", kind = "bool", default = false },
+  { name = "iterations", label = "Decoder passes (refinement)", kind = "integer", default = 1, min = 1, max = 5 },
+  { name = "threshold", label = "Probability threshold", default = 0.5, min = 0.05, max = 0.95 },
+]

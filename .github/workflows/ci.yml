@@ -78,11 +78,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Light plugins only: torch / onnxruntime plugins are checked by hand (see docs/plugins/).
+        # Light plugins only: torch / onnxruntime plugins are checked by hand (see each plugin's README.md).
         plugin:
           - org.radspider.numpy-demo
           - org.radspider.testkit
-          - org.radspider.registration-demo
     steps:
       - uses: actions/checkout@v7
 

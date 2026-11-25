@@ -111,7 +111,7 @@ class Weights:
 
 MB = 1 << 20
 
-# Window sections, in order: title, description, licence, web page. Descriptions from docs/plugins/auto-segmentation.md.
+# Window sections, in order: title, description, licence, web page. Descriptions from README.md.
 FAMILIES = {
     "totalseg": (rp.tr("TotalSegmentator v2"),
                  rp.tr("117 anatomical structures on CT at 3 mm (nnU-Net, task 297), run with ONNX Runtime on the CPU. "

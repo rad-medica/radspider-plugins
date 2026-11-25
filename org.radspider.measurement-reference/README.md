@@ -1,6 +1,6 @@
 # Measurement reference
 
-Plugin id: `org.radspider.measurement-reference` · folder: [`../../org.radspider.measurement-reference`](../../org.radspider.measurement-reference)
+Plugin id: `org.radspider.measurement-reference`
 
 TL;DR: a searchable guide of radiological measurements in a window of its own. Each entry says what is measured,
 how to draw it, the reference values, the source, and shows one picture. Entries are Markdown files: 71 are shipped,

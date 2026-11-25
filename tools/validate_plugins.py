@@ -16,8 +16,7 @@ Checks, per ``org.radspider.*`` folder:
   ``second_volume``, ``inputs`` or ``stack``;
 * ``icon`` (plugin and entries) and ``window`` (tools) only with ``api >= 6``; a PNG ``icon`` is a file inside the
   plugin folder;
-* the plugin has a page in ``docs/plugins/`` (or none required for ``examples`` / ``numpy-demo`` / ``testkit``,
-  which are documented in the README) and is listed in the README table.
+* the plugin has its own ``README.md`` in its folder and is listed in the README table.
 
 Exit status 0 when clean, 1 otherwise. Usage: ``python tools/validate_plugins.py [repo_root]``.
 """
@@ -46,7 +45,6 @@ PINNED_GIT = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9._-]*\s*@\s*git\+https://github\.com/[A-Za-z0-9._-]+/[A-Za-z0-9._-]+@[0-9a-f]{40}\Z"
 )
 LOCAL_PATH = re.compile(r"^(?:\.{1,2}[/\\]|[/\\~]|[A-Za-z]:[/\\])")
-DOC_OPTIONAL = {"examples", "numpy-demo", "testkit"}
 
 
 def registered_entries(module: Path, errors: list[str]) -> dict[str, set[str]]:
@@ -119,7 +117,6 @@ def check_requirements(plugin: Path, manifest: dict, errors: list[str]) -> None:
 
 def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     errors: list[str] = []
-    short = plugin.name.removeprefix("org.radspider.")
     manifest_path = plugin / "plugin.toml"
     if not manifest_path.is_file():
         return [f"{plugin.name}: plugin.toml missing"]
@@ -178,8 +175,8 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
 
     if f"`{plugin.name}`" not in readme:
         errors.append(f"{plugin.name}: not listed in README.md")
-    if short not in DOC_OPTIONAL and not (root / "docs" / "plugins" / f"{short}.md").is_file():
-        errors.append(f"{plugin.name}: docs/plugins/{short}.md missing")
+    if not (plugin / "README.md").is_file():
+        errors.append(f"{plugin.name}: README.md missing")
     return errors
 
 

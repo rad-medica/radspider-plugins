@@ -55,12 +55,12 @@ The plugin folders sit at the repository root because radspider's integration te
 | Integrity | A downloaded pickle/checkpoint is verified (pinned SHA-256) before it is loaded; `torch.load(weights_only=True)` whenever the file is a plain state dict |
 | Units | Plugins that need HU refuse other units instead of guessing |
 | Memory | Large volumes are processed in bands along z; document the RAM cost in the plugin's page |
-| Docs | Every model plugin has a page in `docs/plugins/` with Model, Pipeline, Limits, Speed, Licence and a **Verified** row that says what was and was not run |
+| Docs | Every plugin has a `README.md` in its folder (it ships in the package); model plugins give Model, Pipeline, Limits, Speed, Licence and a **Verified** row that says what was and was not run |
 
 ## Test layers
 
 | Layer | Where | Covers |
 |---|---|---|
 | Static | `tools/validate_plugins.py`, `ruff` (CI, every push) | Manifest ↔ module, requirements, docs, syntax, pyflakes |
-| Integration | radspider `tests/plugins.rs` (CI job, needs a token) | `examples`, `numpy-demo`, `testkit`, `registration-demo` end to end |
+| Integration | radspider `tests/plugins.rs` (CI job, needs a token) | `examples`, `numpy-demo`, `testkit` end to end; manifests of `sam` and `auto-segmentation` |
 | By hand | the plugin page's "Verified" row | Model plugins: weights and minutes of CPU make CI impractical |

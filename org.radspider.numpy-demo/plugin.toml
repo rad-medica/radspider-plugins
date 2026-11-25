@@ -1,7 +1,7 @@
 # Example plugin with a requirement: numpy is installed into the plugin's own venv on first use.
 id = "org.radspider.numpy-demo"
 name = "NumPy demo"
-version = "1.1.0"
+version = "1.1.1"
 api = 6
 description = "Vectorised entries with numpy."
 icon = "function"

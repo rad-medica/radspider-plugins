@@ -1,7 +1,7 @@
-# Volume tools: voxel arithmetic, two-series maps and a rigid registration (numpy + scipy). See docs/plugins/volume-tools.md.
+# Volume tools: voxel arithmetic, two-series maps and a rigid registration (numpy + scipy). See README.md.
 id = "org.radspider.volume-tools"
 name = "Volume tools"
-version = "1.1.0"
+version = "1.1.1"
 api = 6
 icon = "cube"
 description = "Invert, scale / normalize to a region, ΔR2 map of two series, tag grid from two tagged series, rigid mutual-information registration."

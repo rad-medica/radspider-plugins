@@ -5,13 +5,13 @@
 - How to write a plugin: copy `org.radspider.examples`, folder name = `id`.
 - Checks: `python tools/validate_plugins.py`, `ruff check .`, `python tools/marketplace.py update`.
 - Any change inside a plugin folder needs a higher `version`; CI enforces it.
-- Install it in radspider (Settings â†’ Modules â†’ *Install folderâ€¦*), run it once, document what you ran.
+- Install it in radspider (Settings → Modules → *Install folder…*), run it once, document what you ran.
 
 ## Start from the examples
 
 - `org.radspider.examples`: stdlib only, one entry of each kind, 40 lines. Copy it.
 - `org.radspider.numpy-demo`: the same with numpy and a `requirements.txt`.
-- `org.radspider.registration-demo`: two-volume tool (`ctx.other`, api ≥ 3).
+- `org.radspider.volume-tools`: two-volume tools (`ctx.other`, api ≥ 3); `rigid_register` is the registration one.
 - `org.radspider.testkit`: every feature, as a reference for progress, cancel, charts, ROIs, windows.
 
 ## New plugin checklist
@@ -21,7 +21,7 @@
 3. Declare every entry with `name`, `label`, `description` and `params` (each with a `default`; bounds when they mean something).
 4. Register the same names in the module with `@rp.<kind>("name")`.
 5. `requirements.txt`: lower-bound every package (`numpy>=1.26`). Heavy one-time dependencies get a comment saying so. No URLs, options or paths; the one exception is a package with no usable PyPI release, as `name @ git+https://github.com/<owner>/<repo>@<40-hex commit>` with a comment saying why (`SECURITY.md`).
-6. Model plugin: add `docs/plugins/<name>.md` (copy the structure of `sam-slices.md`). No weights in git; pin a SHA-256 for anything unpickled.
+6. Every plugin has `README.md` in its folder; a model plugin's copies the structure of `org.radspider.sam/README.md` (Model, Pipeline, Limits, Speed, Licence, Verified). No weights in git; pin a SHA-256 for anything unpickled.
 7. Add the row to the README table and a line to `CHANGELOG.md`.
 8. Run the checks and regenerate the index:
 

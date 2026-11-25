@@ -39,7 +39,7 @@ python tools/marketplace.py update   # when any file inside a plugin folder chan
 
 ## Commits
 
-Imperative, one line that says what changed and where: `sam-slices: clip propagated mask to the neighbour grown by 6 mm`. Body explains why when it is not obvious.
+Imperative, one line that says what changed and where: `sam: clip propagated mask to the neighbour grown by 6 mm`. Body explains why when it is not obvious.
 
 ## Reporting a problem
 

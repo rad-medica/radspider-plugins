@@ -9,7 +9,7 @@
 | ``merge_tag_grids`` | two-volume tool | product of two tagged series, slice maxima equalised |
 | ``rigid_register`` | two-volume tool | 6-parameter rigid registration by mutual information, multi-resolution |
 
-Conventions (those of ``org.radspider.registration-demo``): ``volume`` is the fixed image, ``ctx.other`` the moving
+Conventions of every two-volume tool: ``volume`` is the fixed image, ``ctx.other`` the moving
 one; arrays are (slices, rows, columns); a voxel (x, y, z) lies at ``origin + M · (x, y, z)`` with ``M`` the columns
 ``row``, ``col``, ``normal`` times the spacing; NaN is "no data". Everything a two-volume tool returns is on the grid
 of ``volume``.

@@ -6,7 +6,7 @@
 
 - [ ] `python tools/validate_plugins.py` and `ruff check .` pass
 - [ ] Plugin `version` bumped and `CHANGELOG.md` line added (behaviour change)
-- [ ] `docs/plugins/<name>.md` and README table updated (if the summary, params or limits changed)
+- [ ] Plugin `README.md` and root README table updated (if the summary, params or limits changed)
 - [ ] No weights, data, secrets or patient data added
 - [ ] Downloaded pickles are checked against a pinned SHA-256
 

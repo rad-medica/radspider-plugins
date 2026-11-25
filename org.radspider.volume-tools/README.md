@@ -1,6 +1,6 @@
 # Volume tools
 
-Plugin id: `org.radspider.volume-tools` · folder: [`../../org.radspider.volume-tools`](../../org.radspider.volume-tools)
+Plugin id: `org.radspider.volume-tools`
 
 TL;DR: six entries that reproduce the behaviour of five plugins of the Horos / OsiriX plugin collection (*Invert
 Data*, *Normalize*, *T2 Ratio Map*, *Cardiac Tagging MRI*, *PetSpectFusion*) with numpy and scipy. Two are series

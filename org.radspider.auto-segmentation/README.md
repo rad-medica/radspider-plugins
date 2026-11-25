@@ -1,6 +1,6 @@
 # Automatic segmentation
 
-Plugin id: `org.radspider.auto-segmentation` · folder: [`../../org.radspider.auto-segmentation`](../../org.radspider.auto-segmentation)
+Plugin id: `org.radspider.auto-segmentation`
 
 TL;DR: open MPR on a CT, *Segment → Plugins → Automatic segmentation*, pick the *Model*, get its segments. Three model
 families in one plugin: TotalSegmentator (117 structures, 3 mm, ONNX Runtime), MONAI whole body (104 structures, 3 or

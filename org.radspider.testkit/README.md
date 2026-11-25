@@ -1,6 +1,6 @@
 # Test kit
 
-Plugin id: `org.radspider.testkit` · folder: [`../../org.radspider.testkit`](../../org.radspider.testkit)
+Plugin id: `org.radspider.testkit`
 
 TL;DR: one plugin exercising every plugin feature, so a radspider change can be checked against all of them. Not a clinical tool.
 

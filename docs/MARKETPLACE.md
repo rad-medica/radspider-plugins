@@ -20,7 +20,7 @@ TL;DR: each plugin carries a semver `version`; `marketplace/index.json` is the c
 | `icon` | Optional: the plugin's `icon` from `plugin.toml` when it is a Phosphor name (radspider shows it on the marketplace row). A PNG icon is left out: nothing is downloaded before install |
 | `first_run_download` | Optional text: what the plugin downloads the first time it runs. Present only for plugins listed in `marketplace/extra.toml` |
 
-`second_volume`, `icon` and `first_run_download` are additive: the schema stays 1 and a client ignores keys it does not know. `first_run_download` cannot live in `plugin.toml` (radspider rejects unknown manifest keys), so it is read from `marketplace/extra.toml` (plugin id → text, only by `tools/marketplace.py`). Each text restates what the plugin's page in `docs/plugins/` already says; a plugin without such a statement has no entry.
+`second_volume`, `icon` and `first_run_download` are additive: the schema stays 1 and a client ignores keys it does not know. `first_run_download` cannot live in `plugin.toml` (radspider rejects unknown manifest keys), so it is read from `marketplace/extra.toml` (plugin id → text, only by `tools/marketplace.py`). Each text restates what the plugin's `README.md` already says; a plugin without such a statement has no entry.
 
 The index has no timestamp, so regenerating it on an unchanged tree changes nothing.
 

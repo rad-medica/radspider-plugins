@@ -1,6 +1,6 @@
 # Skeletal radiology
 
-Plugin id: `org.radspider.skeletal-radiology` · folder: [`../../org.radspider.skeletal-radiology`](../../org.radspider.skeletal-radiology)
+Plugin id: `org.radspider.skeletal-radiology`
 
 TL;DR: automatic and hybrid interactive measurements on 2D skeletal radiographs (or the active slice of a stack) with
 `numpy` and `scipy`: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), full-leg alignment (HKA, MAD,

@@ -11,6 +11,8 @@ from scipy import ndimage
 
 import radspider_plugin as rp
 
+import lung_density as density
+
 # Class names and limits of the extension: a voxel of class i has limits[i-1] <= HU < limits[i].
 CLASSES = ("Emphysema", "Inflated", "Infiltration", "Collapsed", "Vessels")
 LIMIT_PARAMS = ("emphysema_max", "inflated_max", "infiltrated_max", "collapsed_max")
@@ -477,3 +479,21 @@ def analyze(volume, ctx):
     if ctx.event in (None, "segments"):
         result.labels = (labels, ["%s %s" % (c, side) for side in ("right", "left") for c in CLASSES])
     return result
+
+
+# ---- density classes (Gaussian mixture), formerly org.radspider.density-lung-segmentation -------------------------
+
+
+@rp.segmentation("gmm")
+def gmm(volume, ctx):
+    return density.gmm(volume, ctx)
+
+
+@rp.segmentation("gmm_averaged")
+def gmm_averaged(volume, ctx):
+    return density.gmm_averaged(volume, ctx)
+
+
+@rp.tool("volumes")
+def volumes(volume, ctx):
+    return density.volumes(volume, ctx)

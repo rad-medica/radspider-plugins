@@ -12,7 +12,7 @@ Humans: see `CONTRIBUTING.md`.
 
 ## What this is
 
-Plugins for [radspider](https://github.com/rad-medica/radspider), a medical image viewer. One folder per plugin at the repository root, named exactly as its id (`org.radspider.<name>`), each with `plugin.toml`, a Python module and optionally `requirements.txt`. The `radspider_plugin` SDK (`import radspider_plugin as rp`) is provided by the host at runtime: it is not installable here, so a plugin cannot be run outside radspider.
+Plugins for [radspider](https://github.com/rad-medica/radspider), a medical image viewer. One folder per plugin at the repository root, named exactly as its id (`org.radspider.<name>`), each with `plugin.toml`, a Python module, `README.md` (its docs: entries, limits, licence, "Verified") and optionally `requirements.txt`. The `radspider_plugin` SDK (`import radspider_plugin as rp`) is provided by the host at runtime: it is not installable here, so a plugin cannot be run outside radspider.
 
 ## Shared rules (all radspider repositories)
 
@@ -56,8 +56,8 @@ Run all of them before declaring anything done. `marketplace/extra.toml` (id →
 2. Manifest entries and `@rp.<kind>("name")` registrations match one-to-one.
 3. Never commit weights, datasets, patient data, secrets.
 4. Downloaded pickles/checkpoints: verify a pinned SHA-256 first; plain state dicts load with `weights_only=True`.
-5. Do not invent verification. A "Verified" row in `docs/plugins/*.md` states what was actually run. If behaviour changed and was not rerun, say so in the row.
-6. Any change to a file inside a plugin folder: bump `version` in `plugin.toml` (semver), run `python tools/marketplace.py update` and commit `marketplace/index.json`. Behaviour changes also: add a line to `CHANGELOG.md`, update its `docs/plugins/` page and the README table if the summary changed.
+5. Do not invent verification. A "Verified" row in a plugin's `README.md` states what was actually run. If behaviour changed and was not rerun, say so in the row.
+6. Any change to a file inside a plugin folder: bump `version` in `plugin.toml` (semver), run `python tools/marketplace.py update` and commit `marketplace/index.json`. Behaviour changes also: add a line to `CHANGELOG.md`, update its `README.md` and the root README table if the summary changed.
 7. Keep existing plugin code style; do not mass-reformat plugin modules (they were copied byte-for-byte from radspider).
 
 ## Where things are
@@ -66,7 +66,7 @@ Run all of them before declaring anything done. `marketplace/extra.toml` (id →
 |---|---|
 | How the host runs plugins, entry kinds, API levels | `docs/ARCHITECTURE.md` |
 | New plugin checklist, style, versioning | `docs/DEVELOPING.md` |
-| One plugin's model, limits, licence, verification | `docs/plugins/<name>.md` |
+| One plugin's model, limits, licence, verification | `org.radspider.<name>/README.md` |
 | Versions, index, releases | `docs/MARKETPLACE.md` |
 | Every feature in one plugin | `org.radspider.testkit/testkit.py` |
 | Smallest plugin to copy | `org.radspider.examples/` |
@@ -75,8 +75,8 @@ Run all of them before declaring anything done. `marketplace/extra.toml` (id →
 
 | Task | Steps |
 |---|---|
-| Write or change a plugin | Read `docs/ARCHITECTURE.md`, `docs/DEVELOPING.md` and the closest plugin (`examples` stdlib, `numpy-demo` numpy, `registration-demo` two volumes, `testkit` host features). Lowest `api` that has what it uses. Manifest and module together, entries one-to-one; every param has a `default` (`min`/`max` when meaningful); requirements with lower bounds; user-fixable errors say how to fix them. Then hard rule 6 and the five commands. A plugin cannot run here: never write a "Verified" row for what you did not run |
-| New plugin | Copy `org.radspider.examples` to `org.radspider.<name>`; set `id`, `name`, `description`; `version = "1.0.0"`; README row and `CHANGELOG.md` line under Unreleased; run the commands; report what is left to fill in |
+| Write or change a plugin | Read `docs/ARCHITECTURE.md`, `docs/DEVELOPING.md` and the closest plugin (`examples` stdlib, `numpy-demo` numpy, `volume-tools` two volumes, `testkit` host features). Lowest `api` that has what it uses. Manifest and module together, entries one-to-one; every param has a `default` (`min`/`max` when meaningful); requirements with lower bounds; user-fixable errors say how to fix them. Then hard rule 6 and the five commands. A plugin cannot run here: never write a "Verified" row for what you did not run |
+| New plugin | Copy `org.radspider.examples` to `org.radspider.<name>`; set `id`, `name`, `description`; `version = "1.0.0"`; rewrite its `README.md`; README row and `CHANGELOG.md` line under Unreleased; run the commands; report what is left to fill in |
 | Review a plugin (read-only) | Files on disk. In order: manifest ↔ module (names, kinds, every `ctx.params["x"]` has a default, `api` high enough: ROIs / segments / windows → 2, `ctx.other` → 3); safety (unpinned downloads, `torch.load` without `weights_only=True` or a prior hash check, `eval` / `exec`, shell calls, writes outside the cache dir, patient data in logs); edges (NaN, empty volume, anisotropic spacing, non-HU units, slice order, memory on 512²×300, cancel, progress); docs honesty; housekeeping (bounded requirements, README row, CHANGELOG line, semver bump, `marketplace/index.json`). Include the validator and ruff results. Blocking issues first, one line each |
-| Sync docs with code | Code and `plugin.toml` are the truth. Compare `api`, `version`, entries, params, requirements with the README row and `docs/plugins/<name>.md`; fix the docs, report (don't change) code that looks wrong; never alter a "Verified" claim, append "Not rerun after <change>"; every version bump has an Unreleased CHANGELOG line; validator passes |
+| Sync docs with code | Code and `plugin.toml` are the truth. Compare `api`, `version`, entries, params, requirements with the root README row and the plugin's `README.md`; fix the docs, report (don't change) code that looks wrong; never alter a "Verified" claim, append "Not rerun after <change>"; every version bump has an Unreleased CHANGELOG line; validator passes |
 | Check | Run the five commands; one line each; on failure every error with file and fix. Fix nothing unless asked |

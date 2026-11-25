@@ -2,7 +2,7 @@
 # for every modality; on MR a second opinion from the dcm-classifier random forest (ONNX, downloaded on first use).
 id = "org.radspider.series-identifier"
 name = "Series identifier"
-version = "1.0.0"
+version = "1.0.1"
 api = 6                        # 6: input = "image", ctx.series, tag_source, windows, translations (lang/)
 icon = "identification-card"
 description = "Says what the series on screen is, its plane or projection, and explains both. Rules over DICOM tags for every modality; dcm-classifier (Apache-2.0) as a second opinion on MR."

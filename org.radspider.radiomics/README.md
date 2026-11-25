@@ -1,6 +1,6 @@
 # Radiomics (pyradiomics)
 
-Plugin id: `org.radspider.radiomics` · folder: [`../../org.radspider.radiomics`](../../org.radspider.radiomics)
+Plugin id: `org.radspider.radiomics`
 
 TL;DR: the 3D Slicer extension **SlicerRadiomics** is a front end to **pyradiomics**. This plugin is the same front
 end for radspider: pyradiomics features of each segment of the series, in one table (feature rows × segment columns)

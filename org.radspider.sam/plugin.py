@@ -4,6 +4,7 @@
 * ``propagate``: OHIF's Labelmap Assist: random points of the neighbouring slice's mask prompt the next slice.
 * ``bidirectional``: OHIF's "bidirectional measurement for segments": largest slice, longest diameter, longest
   perpendicular chord. No model.
+* ``segment_3d``: SAM-Med3D on a 128^3 window (``sam_med3d.py``, was ``org.radspider.sam-med3d``).
 
 Models: Meta SAM ViT-B (Apache-2.0) exported to ONNX, the same files OHIF loads from Hugging Face ``schmuell/sam-b-fp16``.
 Unlike OHIF (which squashes the slice to 1024 x 1024) the slice keeps its aspect ratio and is padded, as in Meta's own
@@ -17,6 +18,8 @@ import random
 import numpy as np
 
 import radspider_plugin as rp
+
+import sam_med3d
 
 REPO = "schmuell/sam-b-fp16"
 ENCODER, DECODER = "sam_vit_b_01ec64.encoder-fp16.onnx", "sam_vit_b_01ec64.decoder.onnx"
@@ -271,3 +274,8 @@ def bidirectional(volume, ctx):
         rois.append(rp.Roi("bidimensional", z, [(float(p[0]), float(p[1])) for p in (a, b, c, d)]))
         rows.append([s.name, z, round(float(lmm), 1), round(float(smm), 1)])
     return rp.Result(table=rows, rois=rois, message=rp.trn(len(rois), "{n} measurement added", "{n} measurements added"))
+
+
+@rp.segmentation("segment_3d")
+def segment_3d(volume, ctx):
+    return sam_med3d.segment(volume, ctx)

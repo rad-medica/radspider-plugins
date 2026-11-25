@@ -1,6 +1,6 @@
 # Series identifier
 
-Plugin id: `org.radspider.series-identifier` · folder: [`../../org.radspider.series-identifier`](../../org.radspider.series-identifier)
+Plugin id: `org.radspider.series-identifier`
 
 TL;DR: a tool that looks at the image on screen and says what the series is (CT phase and kernel, MR sequence, PET/NM type,
 radiograph, mammogram, ultrasound, angiography run), its plane or projection, region, laterality and contrast, with a short

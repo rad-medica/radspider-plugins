@@ -1,3 +1,0 @@
-numpy>=1.26
-onnxruntime>=1.18
-huggingface_hub

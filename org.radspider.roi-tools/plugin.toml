@@ -1,23 +1,17 @@
 # ROI tools: ten tools that work on the measurements the user drew (lines, probes, notes, polygons, ellipses).
-# Needs numpy and scipy (installed into the plugin's own environment). See docs/plugins/roi-tools.md.
+# Needs numpy and scipy (installed into the plugin's own environment). See README.md.
 # Install: Settings → Modules → Install folder… → this folder.
 id = "org.radspider.roi-tools"
 name = "ROI tools"
-version = "1.1.0"
+version = "2.0.0"
 api = 6                        # 6: icons, translations (lang/); reads and edits ROIs, reads segments; typed parameters
-description = "Ten measurement tools: Cobb angle, ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score."
+description = "Nine measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score."
 icon = "ruler"                 # a Phosphor icon: the entries without an icon of their own take it
 author = "radspider"
 requirements = "requirements.txt"
 
 # The five everyday tools get a ribbon button; the other five (button = false) are in the Plugin tools window,
 # where their parameters are set anyway.
-
-[[tool]]
-name = "cobb_angle"
-icon = "angle"
-label = "Cobb angle"
-description = "The angle between the two most recent lines on the slice on screen (0–90° and its supplement), added as a Cobb measurement."
 
 [[tool]]
 name = "export_rois"

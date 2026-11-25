@@ -1,9 +1,9 @@
 # Skeletal radiology: automatic and hybrid interactive measurements on skeletal radiographs (2D series or active slice).
 # Needs numpy and scipy (installed into the plugin's own environment). Not clinically evaluated.
-# See docs/plugins/skeletal-radiology.md.
+# See README.md.
 id = "org.radspider.skeletal-radiology"
 name = "Skeletal radiology"
-version = "1.2.0"
+version = "1.2.1"
 api = 6                        # 6: icons, translations (lang/), typed parameters; reads and writes ROIs, reads segments, interactive windows
 description = "Automatic skeletal radiography measurements with interactive refinement: spine (Cobb angle, coronal/sagittal balance, vertebral wedging), lower limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, limb lengths and discrepancy), hip and pelvis (Wiberg LCEA, Tönnis angle, neck-shaft CCD angle, pelvic obliquity), diaphyseal cortical morphometry (Barnett-Nordin index, corticomedullary ratio), and foot/hand goniometry (hallux valgus, intermetatarsal, Böhler, Gissane, metacarpal index)."
 icon = "bone"                  # a Phosphor icon: the entries without an icon of their own take it

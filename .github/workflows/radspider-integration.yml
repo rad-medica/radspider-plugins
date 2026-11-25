@@ -1,6 +1,6 @@
 name: radspider integration
 
-# Runs radspider's own tests/plugins.rs against this checkout (examples, numpy demo, test kit, registration demo),
+# Runs radspider's own tests/plugins.rs against this checkout (examples, numpy demo, test kit),
 # then tests/marketplace_index.rs: radspider's parser must read marketplace/index.json and agree with each plugin folder.
 # Needs a read-only token for the private radspider repository in the secret RADSPIDER_READ_TOKEN.
 # Without the secret the job is skipped, not failed.
@@ -69,7 +69,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends pkg-config libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libgl1-mesa-dev
 
-      - name: Plugin tests (numpy plugins, test kit and registration demo need pip)
+      - name: Plugin tests (numpy plugins and test kit need pip)
         if: steps.gate.outputs.run == 'true'
         working-directory: radspider
         env:

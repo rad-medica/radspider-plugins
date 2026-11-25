@@ -181,8 +181,7 @@ class InputKey(unittest.TestCase):
             (plugin / "plugin.py").write_text(
                 f"import radspider_plugin as rp\n\n\n@rp.{kind}('e')\ndef e(v, c):\n    pass\n", encoding="utf-8"
             )
-            (root / "docs" / "plugins").mkdir(parents=True)
-            (root / "docs" / "plugins" / "t.md").write_text("t\n", encoding="utf-8")
+            (plugin / "README.md").write_text("t\n", encoding="utf-8")
             return validate_plugins.check_plugin(root, plugin, "`org.radspider.t`\n")
 
     def test_volume_and_image_are_accepted_on_a_tool(self):

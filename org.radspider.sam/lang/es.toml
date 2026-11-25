@@ -1,13 +1,10 @@
-# SAM slices: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
+# SAM: Español (es). Made from template.toml (python -m radspider_plugin template <plugin dir>).
 
 [language]
 name = "Español"
 
 [strings]
 
-# plugin.toml
-"SAM slices" = "SAM por cortes"
-"SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments." = "SAM ViT-B (ONNX) sobre cortes individuales: clics como indicaciones, propagación entre cortes y medición bidireccional de segmentos."
 "SAM: segment from clicks (2D)" = "SAM: segmentar a partir de clics (2D)"
 "Probe measurements are include markers, Text measurements reading '-' exclude markers, as in OHIF's prompt tool. Each slice that holds a Probe is segmented on that slice only. First run downloads the models (~190 MB, Hugging Face)." = "Las mediciones de Sonda son marcadores de inclusión y las mediciones de Texto que contienen '-' son marcadores de exclusión, como en la herramienta de indicaciones de OHIF. Cada corte que contiene una Sonda se segmenta solo en ese corte. La primera ejecución descarga los modelos (~190 MB, Hugging Face)."
 "Window centre (HU / value)" = "Centro de ventana (HU / valor)"
@@ -20,8 +17,6 @@ name = "Español"
 "Window centre" = "Centro de ventana"
 "Bidirectional measurement of segments" = "Medición bidireccional de segmentos"
 "For every segment: the slice where it is largest, its longest diameter and the longest chord perpendicular to it, drawn as a bidimensional measurement (OHIF 3.10 'bidirectional measurement for segments'). No model." = "Para cada segmento: el corte donde es más grande, su diámetro mayor y la cuerda más larga perpendicular a él, dibujados como una medición bidimensional (la «medición bidireccional de segmentos» de OHIF 3.10). Sin modelo."
-
-# plugin.py
 "Loading SAM ViT-B (first run downloads ~190 MB)" = "Cargando SAM ViT-B (la primera ejecución descarga ~190 MB)"
 "Slice {slice}" = "Corte {slice}"
 "Segment" = "Segmento"
@@ -29,3 +24,12 @@ name = "Español"
 "Long axis (mm)" = "Eje mayor (mm)"
 "Short axis (mm)" = "Eje menor (mm)"
 "{n} measurement added" = { one = "{n} medición añadida", other = "{n} mediciones añadidas" }
+"Each Probe measurement on the series is a positive click. A Text measurement reading '-' is a negative click. Without Probes the run fails and says so. The first run downloads the checkpoint (~400 MB, Hugging Face)." = "Cada medición de Sonda de la serie es un clic positivo. Una medición de Texto que contenga '-' es un clic negativo. Sin Sondas la ejecución falla y lo indica. La primera ejecución descarga el punto de control del modelo (~400 MB, Hugging Face)."
+"One segment per click" = "Un segmento por clic"
+"Decoder passes (refinement)" = "Pasadas del decodificador (refinamiento)"
+"Probability threshold" = "Umbral de probabilidad"
+"Loading SAM-Med3D (first run downloads ~400 MB)" = "Cargando SAM-Med3D (la primera ejecución descarga ~400 MB)"
+"Object {index} of {total} on {device}" = "Objeto {index} de {total} en {device}"
+"SAM" = "SAM"
+"Click-prompted segmentation: SAM ViT-B (ONNX) on single slices with slice propagation, SAM-Med3D on a 3D window, and the bidirectional measurement of segments." = "Segmentación con clics: SAM ViT-B (ONNX) en cortes individuales con propagación entre cortes, SAM-Med3D en una ventana 3D y la medición bidireccional de segmentos."
+"SAM-Med3D: segment from clicks (3D)" = "SAM-Med3D: segmentar con clics (3D)"

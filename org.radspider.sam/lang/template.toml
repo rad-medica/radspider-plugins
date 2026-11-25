@@ -1,4 +1,4 @@
-# Translation template of the plugin org.radspider.sam-slices: its manifest texts and every literal text of rp.tr, rp.trc and rp.trn.
+# Translation template of the plugin org.radspider.sam: its manifest texts and every literal text of rp.tr, rp.trc and rp.trn.
 #
 # Make a language: copy this file to lang/<tag>.toml (for example es.toml), fill in [language] and the
 # translations. Empty value = the English text is shown. Keep every {placeholder}; their order may change.
@@ -13,8 +13,8 @@ name = ""
 [strings]
 
 # plugin.toml
-"SAM slices" = ""
-"SAM ViT-B (ONNX) on single slices: click prompts, slice propagation, bidirectional measurement of segments." = ""
+"SAM" = ""
+"Click-prompted segmentation: SAM ViT-B (ONNX) on single slices with slice propagation, SAM-Med3D on a 3D window, and the bidirectional measurement of segments." = ""
 "SAM: segment from clicks (2D)" = ""
 "Probe measurements are include markers, Text measurements reading '-' exclude markers, as in OHIF's prompt tool. Each slice that holds a Probe is segmented on that slice only. First run downloads the models (~190 MB, Hugging Face)." = ""
 "Window centre (HU / value)" = ""
@@ -25,6 +25,11 @@ name = ""
 "Segment (1 = top of the list)" = ""
 "Slices to add in each direction" = ""
 "Window centre" = ""
+"SAM-Med3D: segment from clicks (3D)" = ""
+"Each Probe measurement on the series is a positive click. A Text measurement reading '-' is a negative click. Without Probes the run fails and says so. The first run downloads the checkpoint (~400 MB, Hugging Face)." = ""
+"One segment per click" = ""
+"Decoder passes (refinement)" = ""
+"Probability threshold" = ""
 "Bidirectional measurement of segments" = ""
 "For every segment: the slice where it is largest, its longest diameter and the longest chord perpendicular to it, drawn as a bidimensional measurement (OHIF 3.10 'bidirectional measurement for segments'). No model." = ""
 
@@ -36,3 +41,7 @@ name = ""
 "Long axis (mm)" = ""
 "Short axis (mm)" = ""
 "{n} measurement added" = { one = "", other = "" }
+
+# sam_med3d.py
+"Loading SAM-Med3D (first run downloads ~400 MB)" = ""
+"Object {index} of {total} on {device}" = ""

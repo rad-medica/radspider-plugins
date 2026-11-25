@@ -3,7 +3,7 @@
 # (see requirements.txt): the machine needs git and a C compiler.
 id = "org.radspider.radiomics"
 name = "Radiomics (pyradiomics)"
-version = "1.1.0"
+version = "1.1.1"
 api = 6                        # 6: icons, Spanish catalog (lang/); reads the segments, interactive window
 icon = "chart-scatter"
 description = "pyradiomics features per segment (first order, shape, GLCM, GLRLM, GLSZM, GLDM, NGTDM; optional LoG and wavelet filters), as one table to save as CSV. The options of SlicerRadiomics."
