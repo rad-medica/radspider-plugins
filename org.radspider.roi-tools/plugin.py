@@ -1,8 +1,8 @@
 """ROI tools: measurements in, numbers, measurements and segments out. numpy + scipy.ndimage.
 
-Nine tools that work on what the user drew (lines, probes, notes, polygons, ellipses). All geometry is done in mm
+Eight tools that work on what the user drew (lines, probes, notes, polygons, ellipses). All geometry is done in mm
 with ``volume.spacing``: a point (x, y) of a slice is at (x * spacing[0], y * spacing[1]) mm in that slice.
-The Cobb angle is in ``org.radspider.skeletal-radiology`` (``spine``; two drawn lines override its endplates).
+Cobb angle and calcium score are radspider's own tools (measurement toolbar, Analysis tab).
 
 Conventions shared by the tools:
 
@@ -21,8 +21,6 @@ from scipy import ndimage
 import radspider_plugin as rp
 
 CLOSED = ("polygon", "ellipse")
-CALCIUM_HU = 130.0
-REFERENCE_THICKNESS_MM = 3.0  # Agatston 1990 scored 3 mm slices
 
 
 # ------------------------------------------------------------------ geometry helpers
@@ -657,95 +655,3 @@ def grow_from_seed(volume, ctx):
         ml="%.2f" % ml,
     )
     return rp.Result(table=table, labels=(region.astype(np.uint8), [name]), message=message)
-
-
-# ------------------------------------------------------------------ 9. Calcium score
-
-
-def _agatston(a, region, spacing, min_area_mm2, progress=None):
-    """Agatston score, volume (mm³), in-slice lesion count, peak HU and the scored voxels of `a` inside `region`
-    (None = everywhere). Slices are labelled in bands so the label array stays small."""
-    sx, sy, sz = spacing
-    nz = a.shape[0]
-    in_plane = np.zeros((3, 3, 3), int)
-    in_plane[1] = 1  # 8-connected within a slice, nothing across slices: lesions are per slice
-    scored = np.zeros(a.shape, bool)
-    score, lesions, peak = 0.0, 0, None
-    band = 32
-    for z0 in range(0, nz, band):
-        block = a[z0 : z0 + band]
-        with np.errstate(invalid="ignore"):
-            hot = block >= CALCIUM_HU
-        if region is not None:
-            hot &= region[z0 : z0 + band]
-        labels, n = ndimage.label(hot, structure=in_plane)
-        if n:
-            index = np.arange(1, n + 1)
-            pixels = np.bincount(labels.ravel(), minlength=n + 1)[1:]
-            peaks = np.asarray(ndimage.maximum(block, labels, index), dtype=np.float64)
-            area = pixels * sx * sy
-            keep = area >= min_area_mm2 - 1e-9
-            weight = np.select([peaks >= 400, peaks >= 300, peaks >= 200], [4, 3, 2], 1)
-            score += float((area * weight)[keep].sum()) * sz / REFERENCE_THICKNESS_MM
-            lesions += int(keep.sum())
-            if keep.any():
-                peak = max(peak or -math.inf, float(peaks[keep].max()))
-            scored[z0 : z0 + band] = np.concatenate([[False], keep])[labels]
-        if progress:
-            progress(min(z0 + band, nz) / nz)
-    volume_mm3 = float(scored.sum()) * sx * sy * sz
-    return score, volume_mm3, lesions, peak, scored
-
-
-@rp.tool("calcium_score")
-def calcium_score(volume, ctx):
-    if volume.unit != "HU":
-        raise ValueError(
-            "Calcium scoring needs a CT in Hounsfield units; this series is in %s: run it on the non-contrast cardiac CT"
-            % (volume.unit or "no unit")
-        )
-    a = volume.numpy()
-    min_area = float(ctx.params["min_area_mm2"])
-    segments = list(ctx.segments or [])
-    table = [
-        [
-            rp.tr("Region"), rp.tr("Agatston score"), rp.tr("Volume mm3"),
-            rp.tr("Lesions (per slice)"), rp.tr("Lesions (3D)"), rp.tr("Peak HU"),
-        ]
-    ]  # fmt: skip
-
-    def row(name, region, lo, hi):
-        score, mm3, lesions, peak, scored = _agatston(
-            a, region, volume.spacing, min_area, lambda f: ctx.progress(lo + (hi - lo) * f, name)
-        )
-        solid = ndimage.label(scored, structure=np.ones((3, 3, 3), int))[1]
-        table.append([name, round(score, 1), round(mm3, 1), lesions, solid, _r(peak, 0)])
-        return score, mm3
-
-    if segments:
-        union = np.zeros(a.shape, bool)
-        for i, s in enumerate(segments):
-            mask = s.mask()
-            union |= mask
-            row(s.name, mask, i / (len(segments) + 1), (i + 1) / (len(segments) + 1))
-        # The union, not the sum of the rows: a voxel in two overlapping segments is scored once.
-        score, mm3 = row(rp.tr("Total (all segments)"), union, len(segments) / (len(segments) + 1), 1.0)
-        message = rp.trn(
-            len(segments),
-            "Agatston {score}, volume {mm3} mm³, inside {n} segment; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
-            "Agatston {score}, volume {mm3} mm³, inside {n} segments; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
-            score="%.1f" % score,
-            mm3="%.1f" % mm3,
-            area="%g" % min_area,
-            spacing="%.2f" % volume.spacing[2],
-        )
-    else:
-        score, mm3 = row(rp.tr("Whole volume"), None, 0.0, 1.0)
-        message = rp.tr(
-            "Agatston {score}, volume {mm3} mm³, WHOLE VOLUME: bone and everything else ≥ 130 HU is counted. Segment the coronaries (or the heart) first; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm",
-            score="%.1f" % score,
-            mm3="%.1f" % mm3,
-            area="%g" % min_area,
-            spacing="%.2f" % volume.spacing[2],
-        )
-    return rp.Result(table=table, message=message)

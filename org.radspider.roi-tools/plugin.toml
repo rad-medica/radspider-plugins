@@ -3,14 +3,14 @@
 # Install: Settings → Modules → Install folder… → this folder.
 id = "org.radspider.roi-tools"
 name = "ROI tools"
-version = "2.0.0"
+version = "3.0.0"
 api = 6                        # 6: icons, translations (lang/); reads and edits ROIs, reads segments; typed parameters
-description = "Nine measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score."
+description = "Eight measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe."
 icon = "ruler"                 # a Phosphor icon: the entries without an icon of their own take it
 author = "radspider"
 requirements = "requirements.txt"
 
-# The five everyday tools get a ribbon button; the other five (button = false) are in the Plugin tools window,
+# The four everyday tools get a ribbon button; the other four (button = false) are in the Plugin tools window,
 # where their parameters are set anyway.
 
 [[tool]]
@@ -80,11 +80,3 @@ params = [
   { name = "upper", label = "Upper", default = 50.0 },
   { name = "search_mm", label = "Search box (mm, for % of local maximum)", default = 70.0, min = 1.0, max = 500.0 },
 ]
-
-[[tool]]
-name = "calcium_score"
-icon = "heartbeat"
-button = false                # radspider has a native calcium tool; this is the plugin equivalent
-label = "Calcium score"
-description = "Agatston score of a non-contrast cardiac CT (HU only): lesions ≥ 130 HU per slice, weighted by peak HU, scaled by slice spacing / 3 mm; volume score and lesion count. Inside the existing segments when there are any, else the whole volume (bone is counted)."
-params = [{ name = "min_area_mm2", label = "Smallest lesion (mm²)", default = 1.0, min = 0.0, max = 10.0 }]

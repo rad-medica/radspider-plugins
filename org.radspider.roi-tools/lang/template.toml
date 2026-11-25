@@ -14,7 +14,7 @@ name = ""
 
 # plugin.toml
 "ROI tools" = ""
-"Nine measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score." = ""
+"Eight measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe." = ""
 "Export ROIs" = ""
 "Every measurement of the series as one table: kind, image, points in voxels and patient mm, length, area, perimeter and, for polygons and ellipses, mean, SD, min, max of the pixels inside. Save as CSV… writes it." = ""
 "Rotate ROI" = ""
@@ -44,9 +44,6 @@ name = ""
 "Lower" = ""
 "Upper" = ""
 "Search box (mm, for % of local maximum)" = ""
-"Calcium score" = ""
-"Agatston score of a non-contrast cardiac CT (HU only): lesions ≥ 130 HU per slice, weighted by peak HU, scaled by slice spacing / 3 mm; volume score and lesion count. Inside the existing segments when there are any, else the whole volume (bone is counted)." = ""
-"Smallest lesion (mm²)" = ""
 
 # plugin.py
 "Quantity" = ""
@@ -138,13 +135,3 @@ name = ""
 "Minimum" = ""
 "Maximum" = ""
 "{n} voxel, {ml} ml (segment needs MPR open on the series)" = { one = "", other = "" }
-"Region" = ""
-"Agatston score" = ""
-"Volume mm3" = ""
-"Lesions (per slice)" = ""
-"Lesions (3D)" = ""
-"Peak HU" = ""
-"Total (all segments)" = ""
-"Agatston {score}, volume {mm3} mm³, inside {n} segment; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm" = { one = "", other = "" }
-"Whole volume" = ""
-"Agatston {score}, volume {mm3} mm³, WHOLE VOLUME: bone and everything else ≥ 130 HU is counted. Segment the coronaries (or the heart) first; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm" = ""

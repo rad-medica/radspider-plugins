@@ -158,25 +158,25 @@
     {
       "id": "org.radspider.roi-tools",
       "name": "ROI tools",
-      "version": "2.0.0",
+      "version": "3.0.0",
       "api": 6,
-      "description": "Nine measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score.",
+      "description": "Eight measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe.",
       "entries": {
         "synth_node": 0,
         "segmentation": 0,
-        "tool": 9
+        "tool": 8
       },
       "requirements": [
         "numpy>=1.26",
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.roi-tools-2.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.roi-tools-v2.0.0/org.radspider.roi-tools-2.0.0.zip",
-        "sha256": "dab08be5478cb7e85c89f880beebe511bc1813295e48b11bcdba32aab61595de",
-        "size": 75320
+        "file": "org.radspider.roi-tools-3.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.roi-tools-v3.0.0/org.radspider.roi-tools-3.0.0.zip",
+        "sha256": "51632c119244ed092bd9c56e018c536e34bb540d6efa706dd765f1885f7408e1",
+        "size": 65944
       },
-      "tag": "org.radspider.roi-tools-v2.0.0",
+      "tag": "org.radspider.roi-tools-v3.0.0",
       "second_volume": false,
       "icon": "ruler"
     },

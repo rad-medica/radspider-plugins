@@ -5,6 +5,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 ## [Unreleased]
 
 ### Changed
+- `org.radspider.roi-tools` 3.0.0: `calcium_score` removed; radspider's own *Calcium score* (Analysis tab) does the same and adds vessels per segment and CAC-DRS. The other eight tools are unchanged, not rerun.
 - New plugin `org.radspider.sam` 1.0.0 replaces `org.radspider.sam-slices` and `org.radspider.sam-med3d` (removed; modules moved unchanged, SAM-Med3D's entry renamed `segment` → `segment_3d`). Requirements are both sets (onnxruntime and torch): the 2D entries now install torch too. Saved parameters of the old plugins do not carry over. Not rerun after the merge; radspider `tests/plugins.rs::sam_example_manifest_is_valid` checks the manifest.
 - `org.radspider.lung-ct-analyzer` 1.2.0: the entries of `org.radspider.density-lung-segmentation` (removed) move in unchanged (`gmm`, `gmm_averaged`, `volumes`, module `lung_density.py`, same parameters and their own lung mask). Not rerun after the merge.
 - `org.radspider.roi-tools` 2.0.0: `cobb_angle` removed; the Cobb angle is `spine` of `org.radspider.skeletal-radiology` (two drawn lines override its endplates once it detects bone).

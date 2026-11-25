@@ -6,7 +6,7 @@ name = "Español"
 [strings]
 
 # plugin.toml
-"Nine measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe, calcium score." = "Nueve herramientas de medición: exportar ROI, rotar ROI, puntos a línea, volúmenes esféricos, ROI a segmentos, estadísticas por sectores, conteo de puntos, crecimiento de región desde una sonda y puntuación de calcio."
+"Eight measurement tools: ROI export, ROI rotation, points to line, sphere volumes, ROIs to segments, sector statistics, point counting, region growing from a probe." = "Ocho herramientas de medición: exportar ROI, rotar ROI, puntos a línea, volúmenes esféricos, ROI a segmentos, estadísticas por sectores, conteo de puntos y crecimiento de región desde una sonda."
 "ROI tools" = "Herramientas ROI"
 "Export ROIs" = "Exportar ROI"
 "Every measurement of the series as one table: kind, image, points in voxels and patient mm, length, area, perimeter and, for polygons and ellipses, mean, SD, min, max of the pixels inside. Save as CSV… writes it." = "Todas las medidas de la serie en una tabla: tipo, imagen, puntos en vóxeles y en mm del paciente, longitud, área, perímetro y, en polígonos y elipses, media, DE, mínimo y máximo de los píxeles del interior. Guardar como CSV… la escribe."
@@ -37,9 +37,6 @@ name = "Español"
 "Lower" = "Inferior"
 "Upper" = "Superior"
 "Search box (mm, for % of local maximum)" = "Cuadro de búsqueda (mm, para % del máximo local)"
-"Calcium score" = "Puntuación de calcio"
-"Agatston score of a non-contrast cardiac CT (HU only): lesions ≥ 130 HU per slice, weighted by peak HU, scaled by slice spacing / 3 mm; volume score and lesion count. Inside the existing segments when there are any, else the whole volume (bone is counted)." = "Puntuación de Agatston de una TC cardíaca sin contraste (solo HU): lesiones ≥ 130 HU por corte, ponderadas por el pico de HU y escaladas por el espesor de corte / 3 mm; puntuación de volumen y número de lesiones. Dentro de los segmentos existentes si los hay; si no, en todo el volumen (se cuenta el hueso)."
-"Smallest lesion (mm²)" = "Lesión más pequeña (mm²)"
 
 # plugin.py
 "Quantity" = "Magnitud"
@@ -131,13 +128,3 @@ name = "Español"
 "Minimum" = "Mínimo"
 "Maximum" = "Máximo"
 "{n} voxel, {ml} ml (segment needs MPR open on the series)" = { one = "{n} vóxel, {ml} ml (el segmento necesita MPR abierto en la serie)", other = "{n} vóxeles, {ml} ml (el segmento necesita MPR abierto en la serie)" }
-"Region" = "Región"
-"Agatston score" = "Puntuación de Agatston"
-"Volume mm3" = "Volumen mm3"
-"Lesions (per slice)" = "Lesiones (por corte)"
-"Lesions (3D)" = "Lesiones (3D)"
-"Peak HU" = "HU máx."
-"Total (all segments)" = "Total (todos los segmentos)"
-"Agatston {score}, volume {mm3} mm³, inside {n} segment; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm" = { one = "Agatston {score}, volumen {mm3} mm³, dentro de {n} segmento; lesiones ≥ {area} mm², escaladas por el espesor de corte {spacing} mm / 3 mm", other = "Agatston {score}, volumen {mm3} mm³, dentro de {n} segmentos; lesiones ≥ {area} mm², escaladas por el espesor de corte {spacing} mm / 3 mm" }
-"Whole volume" = "Volumen completo"
-"Agatston {score}, volume {mm3} mm³, WHOLE VOLUME: bone and everything else ≥ 130 HU is counted. Segment the coronaries (or the heart) first; lesions ≥ {area} mm², scaled by slice spacing {spacing} mm / 3 mm" = "Agatston {score}, volumen {mm3} mm³, VOLUMEN COMPLETO: se cuenta el hueso y todo lo que sea ≥ 130 HU. Segmente antes las coronarias (o el corazón); lesiones ≥ {area} mm², escaladas por el espesor de corte {spacing} mm / 3 mm"

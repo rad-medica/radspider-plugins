@@ -2,9 +2,9 @@
 
 Plugin id: `org.radspider.roi-tools`
 
-TL;DR: nine tools that work on what the user drew (lines, probes, text notes, polygons, ellipses): they measure,
+TL;DR: eight tools that work on what the user drew (lines, probes, text notes, polygons, ellipses): they measure,
 export, edit the measurements, or turn them into segments. Each reproduces the behaviour of one plugin of the
-Horos / OsiriX plugin collection; the Python is written from that behaviour, not from its code. `api = 6` (2.0.0), numpy + scipy. 2.0.0 removed `cobb_angle`: the Cobb angle is `spine` of `org.radspider.skeletal-radiology` (two drawn lines override its endplates, but it needs to detect bone first). Plugin icon `ruler`, one Phosphor icon per tool, Spanish catalog `lang/es.toml`.
+Horos / OsiriX plugin collection; the Python is written from that behaviour, not from its code. `api = 6` (3.0.0), numpy + scipy. Removed because radspider has them built in: `cobb_angle` (2.0.0; Cobb in the measurement toolbar, automatic Cobb in `spine` of `org.radspider.skeletal-radiology`) and `calcium_score` (3.0.0; *Calcium score* of the Analysis tab, which adds vessels per segment and CAC-DRS). Plugin icon `ruler`, one Phosphor icon per tool, Spanish catalog `lang/es.toml`.
 
 | Tool (`name`) | Ribbon | Needs | Gives | After |
 |---|---|---|---|---|
@@ -16,10 +16,9 @@ Horos / OsiriX plugin collection; the Python is written from that behaviour, not
 | Sector statistics (`sector_statistics`) | no | 2 polygons on the slice on screen | table, chart, sector outlines | CardiacStatistics |
 | Count points (`count_points`) | no | probes / text notes | table, chart | SpineCounter |
 | Grow from probe (`grow_from_seed`) | yes | a probe | one segment, table | NMSegmentation |
-| Calcium score (`calcium_score`) | no | CT in HU, ideally segments | table | CalciumScore |
 
-Nine ribbon buttons is too many: the five without one (`button = false`) need parameters or are rare, and run from
-*Plugin tools…*. `calcium_score` has none because radspider has a native calcium tool; this is the plugin equivalent.
+Eight ribbon buttons is too many: the four without one (`button = false`) need parameters or are rare, and run from
+*Plugin tools…*.
 
 ## Shared rules
 
@@ -115,19 +114,6 @@ Nine ribbon buttons is too many: the five without one (`button = false`) need pa
 | Original | Four ITK algorithms. Reproduced: *Connected Threshold* with manual bounds (mode 1) and with the cut-off (mode 2). Mode 0 is an addition. Not reproduced: *Neighborhood Connected*, *Confidence Connected*, *Gradient Thresholding*, growing on a second registered series, the seed by mouse click (a probe instead), the ROI colour |
 | RAM | The label array is 4 bytes per voxel: about 300 MB on 512 × 512 × 300, on top of the volume |
 
-### Calcium score
-
-| | |
-|---|---|
-| Input | A non-contrast cardiac CT in HU; any other unit is refused. Existing segments restrict the score to their voxels |
-| Param | `min_area_mm2` (default 1) |
-| Formula | Agatston AS, Janowitz WR, Hildner FJ, et al. *Quantification of coronary artery calcium using ultrafast computed tomography.* J Am Coll Cardiol 1990;15:827–32. Per slice, a lesion is a connected group (8 neighbours) of pixels ≥ 130 HU with area ≥ `min_area_mm2`. Its weight comes from its peak HU: 130–199 → 1, 200–299 → 2, 300–399 → 3, ≥ 400 → 4. **Score = Σ area (mm²) · weight · slice step / 3 mm** (the paper scored 3 mm slices; the factor is the conventional scaling to other spacings). Volume score = scored voxels · voxel volume (mm³) |
-| Table | Per segment and *Total*: Agatston score, volume mm³, lesions per slice (what the score sums), lesions in 3D (26-connected groups of the scored voxels), peak HU. *Total* is computed on the union of the segments, so overlapping segments are not counted twice |
-| No segments | The whole volume is scored and the message says so: bone, contrast and metal ≥ 130 HU are counted and the number is not a coronary score. Segment the coronaries first |
-| Thickness | The API gives the slice step, not the slice thickness: the step is used. For overlapping reconstructions that is the right factor; for gapped ones it overestimates |
-| Original | A one-line launcher: the scoring is in the viewer's own source, which was not available, so nothing was compared. There the user outlines each lesion per vessel; here segments play that part |
-| RAM | Slices are labelled in bands of 32; the scored-voxel mask is 1 byte per voxel and the 3D count 4 bytes per voxel |
-
 ## Limits
 
 | | |
@@ -141,7 +127,7 @@ Nine ribbon buttons is too many: the five without one (`button = false`) need pa
 
 | | |
 |---|---|
-| Origin | Behaviour of nine (ten up to 1.1.0, with Cobb Angle) plugins of the Horos / OsiriX plugin collection (`horosplugins`): Cobb Angle, ExportROIs, ROIRotation, PointsToLine, Volume Calculator, VoxelVolume, CardiacStatistics, SpineCounter, NMSegmentation, CalciumScore |
+| Origin | Behaviour of eight (ten up to 1.1.0, with Cobb Angle and CalciumScore) plugins of the Horos / OsiriX plugin collection (`horosplugins`): Cobb Angle, ExportROIs, ROIRotation, PointsToLine, Volume Calculator, VoxelVolume, CardiacStatistics, SpineCounter, NMSegmentation, CalciumScore |
 | Their licences | GPL or "all rights reserved", per plugin |
 | This plugin | Written from the behaviour (what each computes and shows), in Python, without translating or copying their code; formulas are the public ones stated above. Licence: this repository's `LICENSE` |
 | Dependencies | numpy (BSD-3-Clause), scipy (BSD-3-Clause) |
@@ -153,13 +139,14 @@ Nine ribbon buttons is too many: the five without one (`button = false`) need pa
 | Verified | **Not run in radspider.** Run outside the viewer on synthetic volumes through the SDK's own request handler (`radspider_plugin._handle`: files on disk, one JSON request per call, the reply checked as JSON), numpy 2.5.4, scipy 1.18.1, Python 3.13: 73 assertions, all passed. *Cobb*: lines at 30° in mm on 0.5 × 1.0 mm pixels → 30.0° / 150.0°; perpendicular → 90°. *Export*: 10 × 10 px square on 0.5 × 2 mm pixels of an x-ramp → 100 mm², 50 mm, 100 px, mean 14.5, SD 2.872, min 10, max 19, patient coordinates with a rotated orientation; ellipse 157.08 mm², 48.442 mm. *Rotate*: 90° and 45° on 0.5 × 1.0 mm pixels keep edge lengths, diagonal and centroid; 360° is the identity. *Points*: probes on slices 2, 6, 8 → 4 interpolated probes, path 56.0 mm, a second run adds nothing. *Sphere*: 10 and 20 mm → 0.5236 and 4.1888 ml, +700 %, ×8. *Segments*: two squares and an ellipse → 3 named segments, 100 voxels = 0.3 ml each square. *Sectors*: ring of radii 10 and 20 mm on 0.5 × 1.0 mm pixels painted 100·sector + 10·layer → means within 1.5 (boundary pixels), areas within 5 % of the analytic ones, wall area within 1 %, numbering direction, outline area = table area within 3 %, same table with earlier outlines present. *Count*: counts and densities over a 10 mm line. *Grow*: a radius-5 ball (515 voxels, 1.030 ml on 1 × 1 × 2 mm) recovered exactly in the three modes; a second ball and an edge-touching voxel left out. *Calcium*: phantom of three lesions → 15.0 at 3 mm, 7.5 at 1.5 mm, 16.0 with the 0.25 mm² pixel allowed, per-slice scoring of a two-slice lesion, per-segment rows and the union total. Every tool's "nothing to work on" error was raised. Timing on 512 × 512 × 120 noise: calcium 4.8 s, grow 0.6 s. **Not checked:** the viewer drawing the `cobb` measurement, `replace_rois` and `labels` being applied, whether probes and polygons keep a `text`, real patient data, RAM on a full CT, and the originals' numbers (they need macOS; CalciumScore's and ROIRotation's maths are not in the plugin sources) |
 | Verified (1.1.0) | **1.1.0 (API 6), not run on real data and not run in the viewer.** Python 3.13 with numpy and scipy from another plugin's venv, the SDK from radspider `assets/python`: every entry ran on synthetic images or volumes and its reply was built with the SDK's own reply code (marked texts, controls, charts, pictures, ROIs, edits) without an exception; `lang/template.toml` regenerates byte-identical; `lang/es.toml` has exactly the template's keys; `python -I tools/validate_plugins.py`; `ruff check`; radspider `radspider-check --plugin-template` parsed the manifest. Measured numbers were not compared with 1.0.0 on real data; `tests/plugins.rs` does not load this plugin. |
 | Verified (2.0.0) | `cobb_angle` removed (code, manifest, catalog). The other nine tools are unchanged and were not rerun |
+| Verified (3.0.0) | `calcium_score` removed (code, its two constants, manifest, catalog). The other eight tools are unchanged and were not rerun |
 
 ## API 6 (1.1.0)
 
 | | |
 |---|---|
 | `api` | 6 (was 2): icons, translations, typed parameters |
-| Icons | Plugin `ruler`; `export_rois` `file-csv`, `rotate_roi` `arrow-clockwise`, `points_to_line` `line-segments`, `sphere_volumes` `sphere`, `rois_to_labels` `polygon`, `sector_statistics` `chart-pie-slice`, `count_points` `hash`, `grow_from_seed` `plant`, `calcium_score` `heartbeat` |
+| Icons | Plugin `ruler`; `export_rois` `file-csv`, `rotate_roi` `arrow-clockwise`, `points_to_line` `line-segments`, `sphere_volumes` `sphere`, `rois_to_labels` `polygon`, `sector_statistics` `chart-pie-slice`, `count_points` `hash`, `grow_from_seed` `plant` |
 | Spanish | `lang/es.toml`: every manifest text and every marked text (table headers and label cells, messages, progress, chart titles, axis labels, series names). `lang/template.toml`: `python -m radspider_plugin template org.radspider.roi-tools` (SDK on `PYTHONPATH`) |
 | Retyped parameters | `all_on_slice` and `outlines`: `bool` (were 0 / 1 numbers); `sectors`, `layers`: `integer`; `mode`: `choice` (was 0 / 1 / 2) |
 | Not translated | ROI text, segment names (study data) and the text of a raised error (an exception carries a plain string) |
