@@ -1,5 +1,12 @@
 # Developing a plugin
 
+## TL;DR
+
+- How to write a plugin: copy `org.radspider.examples`, folder name = `id`.
+- Checks: `python tools/validate_plugins.py`, `ruff check .`, `python tools/marketplace.py update`.
+- Any change inside a plugin folder needs a higher `version`; CI enforces it.
+- Install it in radspider (Settings â†’ Modules â†’ *Install folderâ€¦*), run it once, document what you ran.
+
 ## Start from the examples
 
 - `org.radspider.examples`: stdlib only, one entry of each kind, 40 lines. Copy it.

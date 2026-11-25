@@ -71,12 +71,12 @@ Run all of them before declaring anything done. `marketplace/extra.toml` (id →
 | Every feature in one plugin | `org.radspider.testkit/testkit.py` |
 | Smallest plugin to copy | `org.radspider.examples/` |
 
-## Agents and commands (`.claude/`)
+## Procedures
 
-| Name | Use for |
+| Task | Steps |
 |---|---|
-| agent `plugin-author` | Writing or modifying a plugin end to end |
-| agent `plugin-reviewer` | Read-only review of a plugin against the rules above |
-| agent `docs-sync` | Bringing README, docs pages and CHANGELOG in line with the code |
-| command `/new-plugin <name>` | Scaffold from `examples` |
-| command `/check` | Run validator and linter and report |
+| Write or change a plugin | Read `docs/ARCHITECTURE.md`, `docs/DEVELOPING.md` and the closest plugin (`examples` stdlib, `numpy-demo` numpy, `registration-demo` two volumes, `testkit` host features). Lowest `api` that has what it uses. Manifest and module together, entries one-to-one; every param has a `default` (`min`/`max` when meaningful); requirements with lower bounds; user-fixable errors say how to fix them. Then hard rule 6 and the five commands. A plugin cannot run here: never write a "Verified" row for what you did not run |
+| New plugin | Copy `org.radspider.examples` to `org.radspider.<name>`; set `id`, `name`, `description`; `version = "1.0.0"`; README row and `CHANGELOG.md` line under Unreleased; run the commands; report what is left to fill in |
+| Review a plugin (read-only) | Files on disk. In order: manifest ↔ module (names, kinds, every `ctx.params["x"]` has a default, `api` high enough: ROIs / segments / windows → 2, `ctx.other` → 3); safety (unpinned downloads, `torch.load` without `weights_only=True` or a prior hash check, `eval` / `exec`, shell calls, writes outside the cache dir, patient data in logs); edges (NaN, empty volume, anisotropic spacing, non-HU units, slice order, memory on 512²×300, cancel, progress); docs honesty; housekeeping (bounded requirements, README row, CHANGELOG line, semver bump, `marketplace/index.json`). Include the validator and ruff results. Blocking issues first, one line each |
+| Sync docs with code | Code and `plugin.toml` are the truth. Compare `api`, `version`, entries, params, requirements with the README row and `docs/plugins/<name>.md`; fix the docs, report (don't change) code that looks wrong; never alter a "Verified" claim, append "Not rerun after <change>"; every version bump has an Unreleased CHANGELOG line; validator passes |
+| Check | Run the five commands; one line each; on failure every error with file and fix. Fix nothing unless asked |

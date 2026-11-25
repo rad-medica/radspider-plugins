@@ -46,7 +46,7 @@ Each plugin has its own semver `version` in `plugin.toml`. `marketplace/index.js
 | `tools/marketplace.py`, `marketplace/index.json`, `marketplace/extra.toml` | Package builder, the version index, and the index facts `plugin.toml` cannot carry (`first_run_download`) |
 | `tools/semver_vectors.json`, `tools/test_tools.py` | Semver precedence cases shared with radspider, and the tests of the tools |
 | `.github/workflows/` | CI: lint + validation on every push; radspider integration tests when a token is configured |
-| `.claude/`, `AGENTS.md` | Instructions and agents for AI coding assistants |
+| `AGENTS.md` | The only instructions for AI coding assistants |
 
 ## Checks (local)
 

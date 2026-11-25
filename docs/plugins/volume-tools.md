@@ -88,7 +88,7 @@ the active series is the first / fixed one, the result is a new series on its gr
 
 A node and a two-volume tool return exactly one value per voxel of the input grid; a one-series tool returns no
 series. All three need requirement **R12** (*volumes out, on any grid, from any tool*) of radspider
-`docs/superpowers/specs/2026-11-13-plugin-api-requirements.md`. They are not faked here.
+`docs/specs/2026-11-13-plugin-api-requirements.md`. They are not faked here.
 
 ## Facts
 

@@ -1,5 +1,12 @@
 # Security
 
+## TL;DR
+
+- Plugins run arbitrary Python on a workstation that may hold patient data.
+- Report vulnerabilities privately to the owner, not in a public issue.
+- Pickled checkpoints verified against a pinned SHA-256; requirements reject URLs, indexes and paths.
+- Marketplace token: fine-grained, `rad-medica/radspider-plugins` only, Contents: Read-only.
+
 Plugins run arbitrary Python on a workstation that may hold patient data. Treat them accordingly.
 
 - Report a vulnerability privately to the repository owner; do not open a public issue.

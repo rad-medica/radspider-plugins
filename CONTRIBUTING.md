@@ -1,5 +1,12 @@
 # Contributing
 
+## TL;DR
+
+- Proprietary: contributions only with a written agreement with the owner.
+- One plugin per PR; before pushing: `python tools/validate_plugins.py`, `ruff check .`, `marketplace.py update`.
+- Any change inside a plugin folder bumps its `version`; CI fails otherwise.
+- No weights, data or secrets in git; docs claim only what you ran.
+
 Proprietary repository (see `LICENSE`): contributions come from people with a written agreement with the owner.
 
 ## Workflow

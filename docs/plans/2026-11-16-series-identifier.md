@@ -1,14 +1,12 @@
 # org.radspider.series-identifier 1.0.0 — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** A tool that names the series, the plane or projection, region, laterality and contrast of the image on screen in every modality, explains each in plain words (English + Spanish), and adds dcm-classifier's opinion on MR.
 
 **Architecture:** Three modules in the plugin folder. `seriesid_rules.py` (pure Python, no `radspider_plugin`, no numpy): rules, plane, explanations, dcm-classifier feature vector. `seriesid_model.py` (numpy + onnxruntime, no `radspider_plugin`): download, SHA-256, ONNX session, prediction. `seriesid.py`: the `rp` layer that reads `volume` / `ctx`, calls both, builds the window. Unit tests in `tools/` load the first two by path.
 
 **Tech Stack:** Python ≥ 3.10 syntax (runtime 3.13), `numpy>=1.26`, `onnxruntime>=1.20`, radspider plugin API 6 with `input = "image"`.
 
-**Spec:** `docs/superpowers/specs/2026-11-16-series-identifier.md`. **Depends on** radspider plan `docs/superpowers/plans/2026-11-16-plugin-image-input.md` (Tasks 1–6 at least) being in the radspider checkout used for verification.
+**Spec:** `docs/specs/2026-11-16-series-identifier.md`. **Depends on** radspider plan `docs/plans/2026-11-16-plugin-image-input.md` (Tasks 1–6 at least) being in the radspider checkout used for verification.
 
 ## Global Constraints
 

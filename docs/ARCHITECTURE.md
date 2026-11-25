@@ -1,5 +1,12 @@
 # Architecture
 
+## TL;DR
+
+- What this repository relies on from radspider; radspider's `docs/PLUGINS.md` wins on disagreement.
+- One folder per plugin at the repository root; the folder name is the plugin id.
+- Each plugin gets its own venv and runs in a separate process through the host-provided `rp` SDK.
+- Entry kinds: `synth_node`, `segmentation`, `tool`; manifest and module must declare the same names.
+
 What this repository relies on from radspider. The authority is `docs/PLUGINS.md` in the radspider repository; if the two disagree, radspider wins and this file is the bug.
 
 ## Layout

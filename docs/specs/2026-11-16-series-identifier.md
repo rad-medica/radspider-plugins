@@ -10,7 +10,7 @@
   **dcm-classifier** (BRAINSia, Apache-2.0), a 305 KB random-forest ONNX model over 28 header features, run with
   `onnxruntime`. No pixels are classified: no free model with a usable licence exists for that (research below).
 - **Needs:** radspider with plugin API 6 **including** `input = "image"` and `ctx.series`
-  (radspider `docs/superpowers/specs/2026-11-16-plugin-image-input.md`). That lands first.
+  (radspider `docs/specs/2026-11-16-plugin-image-input.md`). That lands first.
 - **Not:** a diagnostic device. It labels acquisitions; it never reads findings. Unknown stays "not determined" with
   the missing tag named; it never guesses silently.
 
@@ -18,7 +18,7 @@
 
 | | |
 |---|---|
-| State | Implemented 2026-11-16 on branch `series-identifier` (plan `docs/superpowers/plans/2026-11-16-series-identifier.md`), plugin 1.0.0. Where the build differs from this design, the sections below say so. Parity with the reference and the radspider GUI pass were not run at the time of writing; see the Verified row of `docs/plugins/series-identifier.md` |
+| State | Implemented 2026-11-16 on branch `series-identifier` (plan `docs/plans/2026-11-16-series-identifier.md`), plugin 1.0.0. Where the build differs from this design, the sections below say so. Parity with the reference and the radspider GUI pass were not run at the time of writing; see the Verified row of `docs/plugins/series-identifier.md` |
 | Owner's input | "Identify the series and projection in every modality, with a brief explanation; use the new API being merged"; host change over accepting the radiography gap; "Rules + dcm-classifier" over rules only |
 | Research (2026-11-16) | dcm-classifier: Apache-2.0, ONNX shipped, header-only, MR only — **used**. TotalSegmentator `totalseg_get_phase`: CT phase, but needs a full segmentation (minutes, torch) — not used, belongs in the TotalSegmentator plugin. `ianpan/chest-x-ray-basic` (AP/PA/lateral): **no licence** — not usable. DICOM-Imaging-Router: weights not published. CardiSort, HD-SEQ-ID, Helm et al.: no weights found. Nothing for MG, US, NM, PET, XA |
 | ONNX checked | Downloaded at commit `5dcb37384572416da806db69c90bbabcec9819c9`, 312 427 bytes, SHA-256 `808fcd58e237ecc3fa657942d325c12ddbbaaf496cc1f849913e99248cba13e0`. skl2onnx 1.16.0, opsets ai.onnx 19 + ai.onnx.ml 1, no metadata. Input `float_input` float `[N, 28]`; outputs `output_label` int64 `[N]`, `output_probability` seq(map(int64 → float)), classes 0–9. Ran on onnxruntime 1.32.0, Python 3.13.17 |
