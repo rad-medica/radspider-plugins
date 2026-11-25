@@ -1,0 +1,17 @@
+# BI-RADS structured breast report: lexicon descriptors per finding, the reader's categories, the overall assessment.
+id = "org.radspider.birads"
+name = "BI-RADS report"
+version = "1.0.0"
+api = 6                        # 6: input = "image", windows, translations (lang/)
+icon = "clipboard-text"
+description = "Structured breast imaging report with the BI-RADS lexicon (mammography, ultrasound, MRI): breast composition, up to four findings, the reader's assessment categories, the overall assessment with its management. Not a medical device."
+module = "birads"
+
+[[tool]]
+name = "report"
+label = "BI-RADS report"
+description = "Opens a form: exam, breast composition, findings with their descriptors and categories. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
+icon = "clipboard-text"
+# An image tool only because a tool must run on something: one image costs far less per change than a whole volume.
+input = "image"
+window = { title = "BI-RADS report", width = 560, height = 720, reuse = true }

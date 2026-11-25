@@ -2,7 +2,7 @@
 # and copy target/release/rust-example[.exe] to bin/<os>-<arch>/ (see README.md). No Python, no requirements.
 id = "org.radspider.rust-example"
 name = "Rust example"
-version = "1.0.0"
+version = "1.0.1"
 api = 6                        # 4: native command; 6: icons, translations (lang/)
 description = "One entry of each kind written in Rust: a native plugin, no Python."
 icon = "gear"

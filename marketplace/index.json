@@ -183,7 +183,7 @@
     {
       "id": "org.radspider.rust-example",
       "name": "Rust example",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "api": 6,
       "description": "One entry of each kind written in Rust: a native plugin, no Python.",
       "entries": {
@@ -193,12 +193,12 @@
       },
       "requirements": [],
       "package": {
-        "file": "org.radspider.rust-example-1.0.0.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.rust-example-v1.0.0/org.radspider.rust-example-1.0.0.zip",
-        "sha256": "eb827e577edbbfddec0e49177f7b8c7f6ade5cc4d19a555f98e11b0d90c60036",
-        "size": 499886
+        "file": "org.radspider.rust-example-1.0.1.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.rust-example-v1.0.1/org.radspider.rust-example-1.0.1.zip",
+        "sha256": "703beceb573701c70c3fe8f9775808ce7aea701fc490a79aa3ca8f6c849d1c5d",
+        "size": 499990
       },
-      "tag": "org.radspider.rust-example-v1.0.0",
+      "tag": "org.radspider.rust-example-v1.0.1",
       "second_volume": false,
       "icon": "gear"
     },

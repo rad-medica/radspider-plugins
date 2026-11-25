@@ -1,0 +1,17 @@
+# PI-RADS structured prostate MRI report: lesion scores to the PI-RADS v2.1 category, volume and PSA density.
+id = "org.radspider.pirads"
+name = "PI-RADS report"
+version = "1.0.0"
+api = 6                        # 6: input = "image", windows, translations (lang/)
+icon = "clipboard-text"
+description = "Structured prostate MRI report: prostate volume and PSA density, up to four lesions with sector, size and T2W, DWI and DCE scores, the PI-RADS v2.1 category of each (computed), local staging and the overall category. Not a medical device."
+module = "pirads"
+
+[[tool]]
+name = "report"
+label = "PI-RADS report"
+description = "Opens a form: prostate size and PSA, lesions with their sequence scores, extraprostatic extension, nodes and bone. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
+icon = "clipboard-text"
+# An image tool only because a tool must run on something: one image costs far less per change than a whole volume.
+input = "image"
+window = { title = "PI-RADS report", width = 560, height = 700, reuse = true }

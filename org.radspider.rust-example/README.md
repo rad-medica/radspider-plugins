@@ -28,8 +28,9 @@ cargo build --release --locked
 Copy `target/release/rust-example[.exe]` to `bin/<os>-<arch>/` (`std::env::consts::OS`-`ARCH`). The workflow
 `.github/workflows/native-plugins.yml` does this for the three systems: it runs on a push that changes `src/`,
 `Cargo.toml` or `Cargo.lock` (or by hand), builds Windows x86_64, Linux x86_64 (static, musl) and macOS aarch64,
-commits `bin/` and the regenerated `marketplace/index.json` to the same branch. Bump `version` with the source change:
-new executables are a file change. `target/` is ignored by git and left out of the package.
+commits `bin/` with a patch bump of the plugin and the regenerated `marketplace/index.json` to the same branch, and on
+`main` dispatches Release for that version. It needs the repository secret `RADSPIDER_READ_TOKEN` (read access to
+radspider, for the SDK). `target/` is ignored by git and left out of the package.
 
 | Item | |
 |---|---|

@@ -6,7 +6,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Plugin version
 
 ### Added
 - New plugin `org.radspider.rust-example` 1.0.0 (api 6, native): `org.radspider.examples` in Rust (`window_clip`, `threshold`, `stats`), Spanish catalog, Windows executable in `bin/windows-x86_64/`. Run through radspider's plugin host on Windows with the assertions of the Python example; see its README.
-- `.github/workflows/native-plugins.yml`: builds every native plugin (folder with `Cargo.toml`) for Windows x86_64, Linux x86_64 (musl) and macOS aarch64 and commits `bin/` and the index to the branch. Not run yet.
+- `.github/workflows/native-plugins.yml`: builds every native plugin (folder with `Cargo.toml`) for Windows x86_64, Linux x86_64 (musl) and macOS aarch64 and commits `bin/`, a patch bump of each plugin whose executables changed and the index to the branch, then dispatches Release on `main`. First run (on the 1.0.0 push) stopped at the radspider checkout: the secret `RADSPIDER_READ_TOKEN` is not set. Released 1.0.0 holds the Windows executable only. `org.radspider.rust-example` 1.0.1: its README describes the bump and the token (no code change).
 - `tools/validate_plugins.py`: native plugins (`command`): api >= 4, valid command name, no `module` / `requirements`, an executable, entries matched against `.<kind>("name", …)` in `src/**/*.rs`. `tools/marketplace.py` leaves cargo's `target/` out of packages.
 
 ### Changed

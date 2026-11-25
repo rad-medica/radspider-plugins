@@ -1,0 +1,17 @@
+# TI-RADS structured thyroid report: ACR TI-RADS points per nodule, cervical lymph node map, optional clinical TNM.
+id = "org.radspider.tirads"
+name = "TI-RADS report"
+version = "1.0.0"
+api = 6                        # 6: input = "image", windows, translations (lang/)
+icon = "clipboard-text"
+description = "Structured thyroid ultrasound report: up to four nodules scored with ACR TI-RADS (points, level, FNA or follow-up by size), cervical lymph nodes by level and side, optional clinical TNM stage of differentiated carcinoma (AJCC 8th edition). Not a medical device."
+module = "tirads"
+
+[[tool]]
+name = "report"
+label = "TI-RADS report"
+description = "Opens a form: nodules with their ACR TI-RADS features, the lymph node map of the neck and the staging. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
+icon = "clipboard-text"
+# An image tool only because a tool must run on something: one image costs far less per change than a whole volume.
+input = "image"
+window = { title = "TI-RADS report", width = 560, height = 760, reuse = true }
