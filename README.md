@@ -1,6 +1,6 @@
 # radspider-plugins
 
-Python plugins for [radspider](https://github.com/rad-medica/radspider): examples and the test kit, AI segmentation, lung and radiomics analysis, measurement tools, volume tools with registration and a measurement reference.
+Python plugins for [radspider](https://github.com/rad-medica/radspider): examples and the test kit, AI segmentation, lung and radiomics analysis, measurement tools, volume tools with registration, a measurement reference and structured reports (BI-RADS, PI-RADS, LI-RADS, Lung-RADS, TI-RADS).
 Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserved (`LICENSE`).
 
 ## TL;DR
@@ -27,6 +27,11 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 | `org.radspider.skeletal-radiology` | 6 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [README](org.radspider.skeletal-radiology/README.md) |
 | `org.radspider.measurement-reference` | 6 | Pillow | Searchable guide of radiological measurements (71 entries: how to draw each, reference values, source, a picture). Entries are Markdown files; the user adds or replaces them in `~/radspider-references` | [README](org.radspider.measurement-reference/README.md) |
 | `org.radspider.series-identifier` | 6 | numpy, onnxruntime | Says what the image on screen is: series kind, plane or projection, region, laterality, contrast, each with its evidence and a plain explanation (English, Spanish). Rules for every modality; on MR a second opinion from the dcm-classifier ONNX. Educational aid | [README](org.radspider.series-identifier/README.md) |
+| `org.radspider.birads` | 8 | stdlib | Structured breast report on a drawable schematic of both breasts: BI-RADS lexicon per finding (mammography, ultrasound, MRI), breast and clock position from the drawing, the reader's categories, ACR hierarchy for the overall assessment (English, Spanish) | [README](org.radspider.birads/README.md) |
+| `org.radspider.pirads` | 8 | stdlib | Structured prostate MRI report on a drawable sector map: volume and PSA density, lesions with T2W / DWI / DCE scores, PI-RADS v2.1 category computed per lesion, local staging (English, Spanish) | [README](org.radspider.pirads/README.md) |
+| `org.radspider.lirads` | 8 | stdlib | Structured liver CT/MRI report on a drawable Couinaud schematic: observations through the LI-RADS v2018 diagnostic table and ancillary features, or the reader's LR-NC / TIV / 1 / 2 / M, management (English, Spanish) | [README](org.radspider.lirads/README.md) |
+| `org.radspider.lungrads` | 8 | stdlib | Structured lung cancer screening CT report on a drawable lung schematic: Lung-RADS v2022 category per nodule or atypical cyst (computed, or assigned where the rules give none), 4X / S / 0, exam management (English, Spanish) | [README](org.radspider.lungrads/README.md) |
+| `org.radspider.tirads` | 8 | stdlib | Structured thyroid ultrasound report on a drawable neck schematic: ACR TI-RADS points, level and FNA / follow-up per nodule, lymph nodes per level with ETA 2013 features, optional AJCC 8 clinical TNM of differentiated carcinoma (English, Spanish) | [README](org.radspider.tirads/README.md) |
 
 Model weights are downloaded on first run (see each plugin's `README.md`); none are in this repository. Check each model's licence before shipping it inside a product.
 

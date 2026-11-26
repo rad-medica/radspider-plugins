@@ -1,13 +1,17 @@
-"""Lung-RADS structured lung cancer screening CT report: up to six nodules or atypical cysts, each with its lobe, type,
-behaviour since the prior exam and mean diameters, the Lung-RADS v2022 category computed from them (or assigned by
-the reader where the rules give none), the 4X and S modifiers, category 0, and the management of the exam.
+"""Lung-RADS structured lung cancer screening CT report: the user draws nodules or atypical cysts on a frontal lung
+schematic (api 8 sketch); each takes its lobe from where it sits and has its type, behaviour since the prior exam and
+mean diameters, the Lung-RADS v2022 category computed from them (or assigned by the reader where the rules give none),
+the 4X and S modifiers, category 0, and the management of the exam.
 
-Each nodule has a window of its own: a window holds at most 32 controls, and controls left out of an answer lose
-their values. The report is a two-column table; *Copy table* puts it on the clipboard as tab-separated lines."""
+The viewer holds the marks; each mark's descriptors live in its ``data``. The editor below the schematic shows the
+selected mark through controls named <key>_<mark id>; every run writes the controls present back into their mark.
+The report is a two-column table; *Copy table* puts it on the clipboard as tab-separated lines."""
 
 import radspider_plugin as rp
 
-MAX_NODULES = 6  # 5 exam controls + 6 x 7 nodule controls stay under the host's 64 controls per instance
+W, H = 460, 270  # schematic units: frontal view, patient's right on the left
+RIGHT = [[40, 60], [90, 25], [150, 30], [185, 80], [195, 230], [40, 240], [25, 150]]
+LEFT = [[420, 60], [370, 25], [310, 30], [275, 80], [265, 230], [420, 240], [435, 150]]
 
 LOBES = [
     rp.tr("Right upper lobe"),
@@ -122,7 +126,9 @@ def category(kind, status, d, solid):
         return solid_category(status, d)
     if kind == "solid":
         return solid_category(status, d)
-    # part-solid
+    # part-solid: without its solid component there is no row to read
+    if solid <= 0:
+        return None
     if status == "baseline":
         return "2" if d < 6 else "3" if solid < 6 else "4A" if solid < 8 else "4B"
     if solid >= 4:
@@ -130,42 +136,93 @@ def category(kind, status, d, solid):
     return "3" if status == "new" and d < 6 else "4A"
 
 
+def inside(x, y, poly):
+    """Even-odd point-in-polygon test."""
+    hit = False
+    for (xi, yi), (xj, yj) in zip(poly, poly[-1:] + poly[:-1]):
+        if (yi > y) != (yj > y) and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            hit = not hit
+    return hit
+
+
+def locate(x, y):
+    """Index into LOBES of a point on the schematic, or None outside both lungs. Fissures are approximate: right
+    horizontal y = 115, right oblique (30, 115)-(170, 240), left oblique (430, 110)-(290, 240), lingula below y = 150."""
+    if inside(x, y, RIGHT):
+        if y < 115:
+            return 0
+        return 2 if y > 115 + (x - 30) * 125 / 140 else 1
+    if inside(x, y, LEFT):
+        if y > 110 + (430 - x) * 130 / 140:
+            return 5
+        return 4 if y > 150 else 3
+    return None
+
+
 def pick(c, name, options):
-    """The option whose English id ctx.controls holds for `name`, else the first."""
+    """The option whose English id `c` holds for `name`, else the first."""
     return next((o for o in options if str(o) == c.get(name)), options[0])
 
 
-def nodule(c, rows, i):
-    """The controls of nodule `i` (they fill `rows`) and its category code (None: not assigned)."""
-    rows.append([rp.tr("Nodule {n}", n=i), ""])
-    lobe = pick(c, "lobe_%d" % i, LOBES)
-    types = [o for o, _ in TYPES]
-    statuses = [o for o, _ in STATUSES]
-    kind_opt, status_opt = pick(c, "type_%d" % i, types), pick(c, "status_%d" % i, statuses)
+def number(data, key, hi):
+    """A diameter in mm from mark data (strings), clamped to 0..hi and rounded to 0.1 (v2022); unreadable is 0."""
+    try:
+        return round(min(max(float(data.get(key, 0)), 0.0), hi), 1)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def encode(value):
+    """A control value as mark data: one-line strings, booleans as "1" / "0"."""
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    return "%g" % value if isinstance(value, (int, float)) else str(value)
+
+
+KEYS = ["type", "status", "d", "solid", "x", "manual"]
+TONES = {"1": "ok", "2": "ok", "3": "accent", "4A": "warn", "4B": "error", "4X": "error", None: "warn"}
+
+
+def nodule(data, rows):
+    """Report rows of one finding appended to `rows`; returns its category code (None: not assigned)."""
+    kind_opt = pick(data, "type", [o for o, _ in TYPES])
+    status_opt = pick(data, "status", [o for o, _ in STATUSES])
     kind, status = dict(TYPES)[kind_opt], dict(STATUSES)[status_opt]
-    d = round(min(max(float(c.get("d_%d" % i, 0.0)), 0.0), 300.0), 1)  # v2022: mean diameter to one decimal
-    solid = round(min(max(float(c.get("solid_%d" % i, 0.0)), 0.0), d), 1)
-    rows += [[rp.tr("Lobe"), lobe], [rp.tr("Type"), kind_opt], [rp.tr("Since the prior exam"), status_opt]]
-    blocks = [
-        rp.Choice("lobe_%d" % i, rp.tr("Lobe"), LOBES, str(lobe)),
-        rp.Choice("type_%d" % i, rp.tr("Type"), types, str(kind_opt)),
-        rp.Choice("status_%d" % i, rp.tr("Since the prior exam"), statuses, str(status_opt)),
-        rp.Row(
-            [rp.Number("d_%d" % i, rp.tr("Mean diameter (mm)"), d, min=0, max=300, step=0.1)]
-            + (
-                [rp.Number("solid_%d" % i, rp.tr("Solid component (mm)"), solid, min=0, max=300, step=0.1)]
-                if kind == "part"
-                else []
-            )
-        ),
-    ]
+    d = number(data, "d", 300.0)
+    solid = min(number(data, "solid", 300.0), d)
+    rows += [[rp.tr("Type"), kind_opt], [rp.tr("Since the prior exam"), status_opt]]
     if d > 0:
         rows.append([rp.tr("Mean diameter"), "%.1f mm" % d])
     if kind == "part" and solid > 0:
         rows.append([rp.tr("Solid component"), "%.1f mm" % solid])
     sized = kind in ("solid", "part", "gg", "juxta")
     code = category(kind, status, d, solid) if d > 0 or not sized else None
-    manual = pick(c, "manual_%d" % i, MANUAL)
+    manual = pick(data, "manual", MANUAL)
+    if str(manual) != "Computed":
+        code = str(manual).split()[-1]
+    if data.get("x") == "1" and code in ("3", "4A", "4B"):
+        code = "4X"
+    rows.append([rp.tr("Lung-RADS"), CATEGORIES[code][0] if code else rp.tr("Not assigned")])
+    return code
+
+
+def editor(data, mid, code):
+    """Controls describing finding `mid`, filled from its data; each is named <data key>_<mark id>."""
+    def n(k):
+        return "%s_%d" % (k, mid)
+
+    types, statuses = [o for o, _ in TYPES], [o for o, _ in STATUSES]
+    kind_opt = pick(data, "type", types)
+    d = number(data, "d", 300.0)
+    solid = [rp.Number(n("solid"), rp.tr("Solid component (mm)"), min(number(data, "solid", 300.0), d), min=0,
+                       max=300, step=0.1)]
+    blocks = [
+        rp.Choice(n("type"), rp.tr("Type"), types, str(kind_opt)),
+        rp.Choice(n("status"), rp.tr("Since the prior exam"), statuses, str(pick(data, "status", statuses))),
+        rp.Row([rp.Number(n("d"), rp.tr("Mean diameter (mm)"), d, min=0, max=300, step=0.1)]
+               + (solid if dict(TYPES)[kind_opt] == "part" else [])),
+    ]
+    manual = pick(data, "manual", MANUAL)
     if code is None and str(manual) == "Computed":
         blocks.append(
             rp.Label(
@@ -175,45 +232,79 @@ def nodule(c, rows, i):
                 weak=True,
             )
         )
-    if str(manual) != "Computed":
-        code = str(manual).split()[-1]
-    x = bool(c.get("x_%d" % i, False))
-    if x and code in ("3", "4A", "4B"):
-        code = "4X"
-    blocks += [
-        rp.Checkbox("x_%d" % i, rp.tr("Additional features that increase the suspicion of cancer (4X)"), x),
-        rp.Choice("manual_%d" % i, rp.tr("Category"), MANUAL, str(manual)),
+    return blocks + [
+        rp.Checkbox(n("x"), rp.tr("Additional features that increase the suspicion of cancer (4X)"),
+                    data.get("x") == "1"),
+        rp.Choice(n("manual"), rp.tr("Category"), MANUAL, str(manual)),
         rp.Label(CATEGORIES[code][0] if code else rp.tr("Not assigned")),
     ]
-    rows.append([rp.tr("Lung-RADS"), CATEGORIES[code][0] if code else rp.tr("Not assigned")])
-    return blocks, code
+
+
+def schematic():
+    """Both lungs, the approximate fissures and the lobe names."""
+    def text(x, y, t, style="muted", size=12):
+        return {"kind": "text", "x": x, "y": y, "text": t, "style": style, "size": size}
+
+    return [
+        {"kind": "polygon", "points": RIGHT, "style": "area"},
+        {"kind": "polygon", "points": LEFT, "style": "area"},
+        {"kind": "line", "points": [[28, 115], [188, 115]], "style": "guide"},
+        {"kind": "line", "points": [[30, 115], [170, 240]], "style": "guide"},
+        {"kind": "line", "points": [[430, 110], [290, 240]], "style": "guide"},
+        {"kind": "line", "points": [[300, 150], [405, 150]], "style": "guide"},
+        text(110, 76, rp.tr("RUL")),
+        text(150, 156, rp.tr("ML")),
+        text(70, 201, rp.tr("RLL")),
+        text(345, 86, rp.tr("LUL")),
+        text(320, 181, rp.tr("Lingula")),
+        text(395, 211, rp.tr("LLL")),
+        text(110, 12, rp.tr("Right lung"), "label"),
+        text(350, 12, rp.tr("Left lung"), "label"),
+        text(230, 258, rp.tr("Fissures are approximate: confirm the lobe on the CT"), size=10),
+    ]
 
 
 @rp.tool("report")
 def report(volume, ctx):
     c = ctx.controls
-    rows = []
-    count = int(min(max(c.get("count", 1), 0), MAX_NODULES))
-    windows, found = [], []
-    for i in range(1, count + 1):
-        blocks, code = nodule(c, rows, i)
-        if code:
-            found.append(code)
-        windows.append(
-            rp.Window("nodule_%d" % i, rp.tr("Nodule {n}", n=i), blocks, size=(480, 400), reopen=ctx.event == "count")
-        )
-    if not count:
+    sketch = c.get("lungs") or {"marks": [], "selected": None}
+    marks = sorted(sketch.get("marks", []), key=lambda m: m["id"])
+    if ctx.event == "delete":
+        marks = [m for m in marks if m["id"] != sketch.get("selected")]
+        sketch["selected"] = None
+    selected = next((m for m in marks if m["id"] == sketch.get("selected")), None)
+    for m in marks:  # editor controls are named by mark id, so an edit survives a selection change in flight
+        edits = {k: encode(c["%s_%d" % (k, m["id"])]) for k in KEYS if "%s_%d" % (k, m["id"]) in c}
+        m["data"] = {**m.get("data", {}), **edits}
+
+    rows, found, outside, seen = [], [], False, {}
+    for m in marks:
+        lobe = locate(m["x"], m["y"])
+        if lobe is None:
+            outside = True
+            m["label"], m["tone"], m["form"] = "?", "muted", "circle"
+            continue
+        n = len(found) + 1
+        rows += [[rp.tr("Nodule {n}", n=n), ""], [rp.tr("Lobe"), LOBES[lobe]]]
+        code = nodule(m["data"], rows)
+        found.append(code)
+        seen[m["id"]] = (n, lobe, code)
+        m["label"], m["tone"], m["form"] = "N%d %s" % (n, code or "?"), TONES[code], "circle"
+    if not found:
         rows.append([rp.tr("Lung nodules"), rp.tr("None")])
     incomplete = pick(c, "incomplete", INCOMPLETE)
     if str(incomplete) != "No":
         code = "0"
         rows.append([rp.tr("Incomplete"), incomplete])
     else:
-        code = max(found, key=CODES.index, default="1")
+        # One finding without a category leaves the exam without one: never a category the findings do not support.
+        code = None if None in found else max(found, key=CODES.index, default="1")
     s = bool(c.get("s", False))
     s_text = str(c.get("s_text", "")).strip()
-    name, management = CATEGORIES[code]
-    rows += [[rp.tr("Lung-RADS category"), name], [rp.tr("Management"), management]]
+    if code:
+        rows += [[rp.tr("Lung-RADS category"), CATEGORIES[code][0]], [rp.tr("Management"), CATEGORIES[code][1]]]
+    else:
+        rows.append([rp.tr("Lung-RADS category"), rp.tr("Not assigned: a finding has no category yet")])
     if s:
         rows.append(
             [rp.tr("S modifier: clinically significant or potentially significant finding"), s_text or rp.tr("Present")]
@@ -221,8 +312,24 @@ def report(volume, ctx):
     comment = str(c.get("comment", "")).strip()
     if comment:
         rows.append([rp.tr("Comment"), comment])
+
+    value = {"marks": [{k: m[k] for k in ("id", "x", "y", "r", "label", "tone", "form", "data")} for m in marks],
+             "selected": selected["id"] if selected is not None else None}
     blocks = [
-        rp.Number("count", rp.tr("Nodules"), count, min=0, max=MAX_NODULES, step=1),
+        rp.Sketch("lungs", rp.tr("Lung lobes (frontal view)"), W, H, schematic(), value=value, max_marks=16),
+        rp.Label(rp.tr("Drag on a lobe to draw a nodule or cyst; click a mark to describe it."), weak=True),
+    ]
+    if outside:
+        blocks.append(rp.Label(rp.tr("A mark outside the lungs is not reported: move it or delete it."), weak=True))
+    if selected is not None:
+        delete = rp.Button("delete", rp.tr("Delete"), icon="trash")
+        if selected["id"] in seen:
+            n, lobe, sel_code = seen[selected["id"]]
+            head = [rp.Label(rp.tr("Nodule {n}", n=n)), rp.Label(LOBES[lobe], weak=True), delete]
+            blocks += [rp.Separator(), rp.Row(head)] + editor(selected["data"], selected["id"], sel_code)
+        else:
+            blocks += [rp.Separator(), rp.Row([rp.Label(rp.tr("Outside the schematic")), delete])]
+    blocks += [
         rp.Choice("incomplete", rp.tr("Incomplete exam (category 0)"), INCOMPLETE, str(incomplete)),
         rp.Row(
             [
@@ -242,4 +349,4 @@ def report(volume, ctx):
             weak=True,
         ),
     ]
-    return rp.Result(windows=[rp.Window("main", rp.tr("Lung-RADS report"), blocks, size=(560, 640))] + windows)
+    return rp.Result(windows=[rp.Window("main", rp.tr("Lung-RADS report"), blocks, size=(560, 900))])

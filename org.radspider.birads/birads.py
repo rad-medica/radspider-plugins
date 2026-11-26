@@ -3,12 +3,18 @@ lexicon (mammography, ultrasound, MRI), the reader's assessment category per fin
 management and likelihood of malignancy. BI-RADS has no scoring algorithm: every category is the reader's choice; the
 plugin only applies the ACR hierarchy for the overall assessment and the standard wording.
 
-Each finding has a window of its own: a window holds at most 32 controls, and controls left out of an answer lose
-their values. The report is a two-column table; *Copy table* puts it on the clipboard as tab-separated lines."""
+Findings are drawn on a schematic of both breasts (api 8 sketch); the breast, clock position and retroareolar site come
+from where the mark sits. The viewer holds the marks; each mark's descriptors live in its ``data``, edited through
+controls named <key>_<mark id> that every run writes back into their mark. The report is a two-column table; *Copy
+table* puts it on the clipboard as tab-separated lines."""
+
+import math
 
 import radspider_plugin as rp
 
-MAX_FINDINGS = 4  # 7 exam controls + 4 x 14 finding controls stay under the host's 64 controls per instance
+W, H = 460, 270  # schematic units: both breasts facing the reader, the right one on the left
+BREASTS = (120, 340)  # centre x of the right and left breast (y 140, radius 100)
+CY, RADIUS, NIPPLE = 140, 100, 10  # a mark within NIPPLE units of the centre is retroareolar
 
 MAMMO, US, BOTH, MRI = rp.tr("Mammography"), rp.tr("Ultrasound"), rp.tr("Mammography and ultrasound"), rp.tr("MRI")
 MODALITIES = [MAMMO, US, BOTH, MRI]
@@ -53,8 +59,7 @@ FINDING_TYPES = [
     rp.tr("Solitary dilated duct"),
 ]
 FINDING_SIDES = [rp.tr("Right"), rp.tr("Left")]
-# Clock positions stay plain text: options are told apart by their English id, and "{h} o'clock" would be one id.
-LOCATIONS = ["%d:00" % h for h in range(1, 13)] + [rp.tr("Retroareolar"), rp.tr("Central"), rp.tr("Axillary tail")]
+RETROAREOLAR = rp.tr("Retroareolar")  # clock positions stay plain "h:00" text
 DEPTHS = [rp.tr("Not stated"), rp.tr("Anterior third"), rp.tr("Middle third"), rp.tr("Posterior third")]
 
 SHAPE = [rp.tr("Oval"), rp.tr("Round"), rp.tr("Irregular")]
@@ -163,6 +168,7 @@ CATEGORIES = {
 # The ACR order for the overall assessment, least to most worrying: 1, 2, 3, 6, 0, 4, 5 (4A < 4B < 4C).
 HIERARCHY = ["1", "2", "3", "6", "0", "4A", "4", "4B", "4C", "5"]
 HIGHEST = rp.tr("Highest of the findings")
+NOT_ASSIGNED = rp.tr("Not assigned")
 
 
 def codes(modality):
@@ -171,12 +177,15 @@ def codes(modality):
 
 
 def overall(categories):
-    """The overall assessment of the findings' categories (ACR hierarchy); "1" without findings."""
+    """The overall assessment of the findings' categories (ACR hierarchy); "1" without findings, None while a finding
+    has no category (None)."""
+    if None in categories:
+        return None
     return max(categories, key=HIERARCHY.index, default="1")
 
 
 def pick(c, name, options):
-    """The option whose English id ctx.controls holds for `name`, else the first."""
+    """The option whose English id `c` holds for `name`, else the first."""
     return next((o for o in options if str(o) == c.get(name)), options[0])
 
 
@@ -184,50 +193,69 @@ def kind(modality):
     return {str(MAMMO): "mammo", str(US): "us", str(BOTH): "both", str(MRI): "mri"}[str(modality)]
 
 
-class Form:
-    """Controls built from ctx.controls and the report rows they produce, in the same order."""
+def locate(x, y):
+    """(breast index 0 right / 1 left, clock position "h:00" or RETROAREOLAR) of a schematic point, else None. Clock
+    as the reader faces the patient: 12 up, 3 to the reader's right on both breasts."""
+    for side, cx in enumerate(BREASTS):
+        dx, dy = x - cx, y - CY
+        d = math.hypot(dx, dy)
+        if d <= RADIUS:
+            if d < NIPPLE:
+                return side, RETROAREOLAR
+            return side, "%d:00" % (round(math.degrees(math.atan2(dx, -dy)) % 360 / 30) % 12 or 12)
+    return None
 
-    def __init__(self, c):
-        self.c, self.rows = c, []
+
+def encode(value):
+    """A control value as mark data: one-line strings."""
+    return "%g" % value if isinstance(value, (int, float)) and not isinstance(value, bool) else str(value)
+
+
+DATA_KEYS = ["type", "depth", "nipple", "size", "shape", "margin", "density", "orient", "echo", "post", "inner", "morph",
+             "dist", "nmedist", "nmeinner", "initial", "delayed", "notes", "cat"]
+
+
+class Form:
+    """Controls built from `c` (ctx.controls, or a mark's data with controls named <key><suffix>) and the report rows
+    they produce, in the same order, appended to `rows`."""
+
+    def __init__(self, c, rows, suffix=""):
+        self.c, self.rows, self.suffix = c, rows, suffix
 
     def choice(self, name, label, options, report=None):
         value = pick(self.c, name, options)
         if report is not False:
             self.rows.append([report or label, value])
-        return rp.Choice(name, label, options, str(value)), value
+        return rp.Choice(name + self.suffix, label, options, str(value)), value
 
     def number(self, name, label, unit, lo, hi, step):
-        value = min(max(float(self.c.get(name, 0.0)), lo), hi)
+        try:
+            value = min(max(float(self.c.get(name, 0.0)), lo), hi)
+        except (TypeError, ValueError):
+            value = 0.0
         if value > 0:
             self.rows.append([label, "%g %s" % (round(value, 1), unit)])
-        return rp.Number(name, label, value, min=lo, max=hi, step=step), value
+        return rp.Number(name + self.suffix, label, value, min=lo, max=hi, step=step), value
 
-    def text(self, name, label):
+    def text(self, name, label, max_length=500):
         value = str(self.c.get(name, "")).strip()
         if value:
             self.rows.append([label, value])
-        return rp.TextField(name, label, value, max_length=500)
+        return rp.TextField(name + self.suffix, label, value, max_length=max_length)
 
 
-def finding(f, i, mod):
-    """The controls of finding `i` (they fill `f.rows`) and its category code."""
+def finding(f, n, where, mod):
+    """The editor controls of one finding (they fill `f.rows`) and its category code; `where` from locate()."""
     blocks = []
-    ctl, ftype = f.choice("type_%d" % i, rp.tr("Finding"), FINDING_TYPES, rp.tr("Finding {n}", n=i))
+    ctl, ftype = f.choice("type", rp.tr("Finding"), FINDING_TYPES, rp.tr("Finding {n}", n=n))
     blocks.append(ctl)
+    f.rows += [[rp.tr("Breast"), FINDING_SIDES[where[0]]], [rp.tr("Location"), where[1]]]
     blocks.append(
         rp.Row(
             [
-                f.choice("side_%d" % i, rp.tr("Breast"), FINDING_SIDES)[0],
-                f.choice("where_%d" % i, rp.tr("Location"), LOCATIONS)[0],
-            ]
-        )
-    )
-    blocks.append(
-        rp.Row(
-            [
-                f.choice("depth_%d" % i, rp.tr("Depth"), DEPTHS)[0],
-                f.number("nipple_%d" % i, rp.tr("Distance from the nipple"), "cm", 0, 30, 0.5)[0],
-                f.number("size_%d" % i, rp.tr("Largest diameter"), "mm", 0, 300, 1)[0],
+                f.choice("depth", rp.tr("Depth"), DEPTHS)[0],
+                f.number("nipple", rp.tr("Distance from the nipple"), "cm", 0, 30, 0.5)[0],
+                f.number("size", rp.tr("Largest diameter"), "mm", 0, 300, 1)[0],
             ]
         )
     )
@@ -235,48 +263,70 @@ def finding(f, i, mod):
     described = []
     if str(ftype) == str(MASS):
         described += [
-            f.choice("shape_%d" % i, rp.tr("Shape"), SHAPE)[0],
-            f.choice("margin_%d" % i, rp.tr("Margin"), MARGIN[mod])[0],
+            f.choice("shape", rp.tr("Shape"), SHAPE)[0],
+            f.choice("margin", rp.tr("Margin"), MARGIN[mod])[0],
         ]
         if mammo:
-            described.append(f.choice("density_%d" % i, rp.tr("Density"), DENSITY)[0])
+            described.append(f.choice("density", rp.tr("Density"), DENSITY)[0])
         if us:
             described += [
-                f.choice("orient_%d" % i, rp.tr("Orientation"), ORIENTATION)[0],
-                f.choice("echo_%d" % i, rp.tr("Echo pattern"), ECHO)[0],
-                f.choice("post_%d" % i, rp.tr("Posterior features"), POSTERIOR)[0],
+                f.choice("orient", rp.tr("Orientation"), ORIENTATION)[0],
+                f.choice("echo", rp.tr("Echo pattern"), ECHO)[0],
+                f.choice("post", rp.tr("Posterior features"), POSTERIOR)[0],
             ]
         if mri:
-            described.append(f.choice("inner_%d" % i, rp.tr("Internal enhancement"), MASS_ENHANCEMENT)[0])
+            described.append(f.choice("inner", rp.tr("Internal enhancement"), MASS_ENHANCEMENT)[0])
     elif str(ftype) == str(CALC):
         described += [
-            f.choice("morph_%d" % i, rp.tr("Morphology"), MORPHOLOGY)[0],
-            f.choice("dist_%d" % i, rp.tr("Distribution"), DISTRIBUTION)[0],
+            f.choice("morph", rp.tr("Morphology"), MORPHOLOGY)[0],
+            f.choice("dist", rp.tr("Distribution"), DISTRIBUTION)[0],
         ]
     elif str(ftype) == str(NME):
         described += [
-            f.choice("nmedist_%d" % i, rp.tr("Distribution"), NME_DISTRIBUTION)[0],
-            f.choice("nmeinner_%d" % i, rp.tr("Internal enhancement"), NME_ENHANCEMENT)[0],
+            f.choice("nmedist", rp.tr("Distribution"), NME_DISTRIBUTION)[0],
+            f.choice("nmeinner", rp.tr("Internal enhancement"), NME_ENHANCEMENT)[0],
         ]
     if mri and str(ftype) in (str(MASS), str(NME), "Focus"):
         described += [
-            f.choice("initial_%d" % i, rp.tr("Kinetics: initial phase"), INITIAL)[0],
-            f.choice("delayed_%d" % i, rp.tr("Kinetics: delayed phase"), DELAYED)[0],
+            f.choice("initial", rp.tr("Kinetics: initial phase"), INITIAL)[0],
+            f.choice("delayed", rp.tr("Kinetics: delayed phase"), DELAYED)[0],
         ]
     if described:
         blocks.append(
             rp.Section(rp.tr("Descriptors"), [rp.Row(described[k : k + 3]) for k in range(0, len(described), 3)])
         )
-    blocks.append(f.text("notes_%d" % i, rp.tr("Associated features and notes")))
-    options = [CATEGORIES[k][0] for k in codes(mod)]
-    ctl, cat = f.choice("cat_%d" % i, rp.tr("Assessment"), options, rp.tr("BI-RADS"))
+    blocks.append(f.text("notes", rp.tr("Associated features and notes"), 200))  # mark data values hold 200
+    options = [NOT_ASSIGNED] + [CATEGORIES[k][0] for k in codes(mod)]
+    ctl, cat = f.choice("cat", rp.tr("Assessment"), options, rp.tr("BI-RADS"))
     blocks.append(ctl)
-    return blocks, next(k for k in CATEGORIES if CATEGORIES[k][0] is cat)
+    return blocks, next((k for k in CATEGORIES if CATEGORIES[k][0] is cat), None)
+
+
+def schematic():
+    """Both breasts with their clock axes, the inner ring and the nipple; clock numbers and breast names."""
+    shapes = []
+    for cx, name in zip(BREASTS, (rp.tr("Right breast"), rp.tr("Left breast"))):
+        shapes += [
+            {"kind": "ellipse", "x": cx, "y": CY, "rx": RADIUS, "ry": RADIUS, "style": "area"},
+            {"kind": "line", "points": [[cx, CY - RADIUS], [cx, CY + RADIUS]], "style": "guide"},
+            {"kind": "line", "points": [[cx - RADIUS, CY], [cx + RADIUS, CY]], "style": "guide"},
+            {"kind": "ellipse", "x": cx, "y": CY, "rx": 50, "ry": 50, "style": "guide"},
+            {"kind": "ellipse", "x": cx, "y": CY, "rx": 7, "ry": 7, "style": "line"},
+            {"kind": "text", "x": cx, "y": 20, "text": name, "style": "label", "size": 12},
+        ]
+        shapes += [{"kind": "text", "x": x, "y": y, "text": t, "style": "muted", "size": 10}
+                   for x, y, t in ((cx, 32, "12"), (cx + 108, CY, "3"), (cx, 252, "6"), (cx - 108, CY, "9"))]
+    return shapes
+
+
+TONES = {"0": "warn", "1": "ok", "2": "ok", "3": "warn", "6": "error"}  # 4, 4A-4C, 5: error
 
 
 @rp.tool("report")
 def report(volume, ctx):
-    f = Form(ctx.controls)
+    c = ctx.controls
+    rows = []
+    f = Form(c, rows)
     ctl_mod, modality = f.choice("modality", rp.tr("Exam"), MODALITIES)
     mod = kind(modality)
     head = [
@@ -301,36 +351,68 @@ def report(volume, ctx):
                 ]
             )
         )
-    count = int(min(max(ctx.controls.get("count", 0), 0), MAX_FINDINGS))
-    head.append(rp.Number("count", rp.tr("Findings"), count, min=0, max=MAX_FINDINGS, step=1))
 
-    windows, found = [], []
-    for i in range(1, count + 1):
-        blocks, code = finding(f, i, mod)
+    sketch = c.get("breasts") or {"marks": [], "selected": None}
+    marks = sorted(sketch.get("marks", []), key=lambda m: m["id"])
+    if ctx.event == "delete":
+        marks = [m for m in marks if m["id"] != sketch.get("selected")]
+    selected = next((m for m in marks if m["id"] == sketch.get("selected")), None)
+    found, editor, outside, n = [], [], False, 0
+    for m in marks:
+        named = {k: c["%s_%d" % (k, m["id"])] for k in DATA_KEYS if "%s_%d" % (k, m["id"]) in c}
+        if named:  # editor controls of this mark were on screen: they hold its descriptors
+            m["data"] = {k: encode(v) for k, v in named.items()}
+        where = locate(m["x"], m["y"])
+        if where is None:
+            outside = True
+            m["label"], m["tone"], m["title"] = "?", "muted", None
+            continue
+        n += 1
+        blocks, code = finding(Form(m.setdefault("data", {}), rows, "_%d" % m["id"]), n, where, mod)
         found.append(code)
-        windows.append(
-            rp.Window("finding_%d" % i, rp.tr("Finding {n}", n=i), blocks, size=(460, 420), reopen=ctx.event == "count")
-        )
+        m["label"] = ("F%d %s" % (n, code or "")).strip()
+        m["tone"] = "accent" if code is None else TONES.get(code, "error")
+        m["title"] = rp.tr("Finding {n}", n=n)
+        if m is selected:
+            editor = blocks
+    if not n:
+        rows.append([rp.tr("Findings"), rp.tr("None")])
 
     auto = overall(found)
     options = [HIGHEST] + [CATEGORIES[k][0] for k in codes(mod)]
-    final = pick(ctx.controls, "overall", options)
+    final = pick(c, "overall", options)
     code = auto if final is HIGHEST else next(k for k in CATEGORIES if CATEGORIES[k][0] is final)
     if code not in codes(mod):  # a category of another modality left from before the exam changed
         code = auto
-    name, management, likelihood = CATEGORIES[code]
-    head.append(rp.Choice("overall", rp.tr("Overall assessment"), options, str(final)))
-    f.rows += [
-        [rp.tr("Overall assessment"), name],
-        [rp.tr("Management"), management],
-        [rp.tr("Likelihood of malignancy"), likelihood],
-    ]
-    head.append(f.text("comment", rp.tr("Comment")))
+    if code is None:
+        rows.append([rp.tr("Overall assessment"), rp.tr("Not assigned: a finding has no category yet")])
+    else:
+        name, management, likelihood = CATEGORIES[code]
+        rows += [
+            [rp.tr("Overall assessment"), name],
+            [rp.tr("Management"), management],
+            [rp.tr("Likelihood of malignancy"), likelihood],
+        ]
 
+    value = {"marks": [{k: m[k] for k in ("id", "x", "y", "r", "label", "tone", "form", "data") if k in m}
+                       for m in marks],
+             "selected": selected["id"] if selected is not None else None}
     blocks = head + [
+        rp.Sketch("breasts", rp.tr("Findings"), W, H, schematic(), value=value, max_marks=16),
+        rp.Label(rp.tr("Drag on a breast to draw a finding; click a mark to describe it."), weak=True),
+    ]
+    if outside:
+        blocks.append(rp.Label(rp.tr("A mark outside the breasts is not reported: move it or delete it."), weak=True))
+    if selected is not None:
+        title = selected["title"] or rp.tr("Outside the schematic")
+        blocks += [rp.Separator(), rp.Row([rp.Label(title), rp.Button("delete", rp.tr("Delete"), icon="trash")])]
+        blocks += editor
+    blocks += [
         rp.Separator(),
+        rp.Choice("overall", rp.tr("Overall assessment"), options, str(final)),
+        f.text("comment", rp.tr("Comment")),
         rp.Label(rp.tr("Report")),
-        rp.Table(f.rows),
+        rp.Table(rows),
         rp.Label(
             rp.tr(
                 "Categories are the reader's choice; the overall assessment follows the ACR hierarchy "
@@ -340,4 +422,4 @@ def report(volume, ctx):
             weak=True,
         ),
     ]
-    return rp.Result(windows=[rp.Window("main", rp.tr("BI-RADS report"), blocks, size=(560, 720))] + windows)
+    return rp.Result(windows=[rp.Window("main", rp.tr("BI-RADS report"), blocks, size=(560, 900))])

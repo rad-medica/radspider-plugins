@@ -3,7 +3,7 @@
 
 Checks, per ``org.radspider.*`` folder:
 
-* ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-6;
+* ``plugin.toml`` parses, folder name equals ``id``, ``version`` is semver, ``api`` is 1-6 or 8 (7 is reserved by the host);
 * the module (``module`` key, default ``plugin``) exists and compiles; or, for a native plugin (``command`` key,
   api >= 4), the command name is valid, there is no ``module`` or ``requirements``, an executable
   ``[bin/<os>-<arch>/]<command>[.exe]`` exists, and ``src/**/*.rs`` registers the entries with
@@ -164,8 +164,8 @@ def check_plugin(root: Path, plugin: Path, readme: str) -> list[str]:
     if "version" in manifest and not SEMVER.match(str(manifest["version"])):
         errors.append(f"{plugin.name}: version {manifest['version']!r} is not semver")
     api = manifest.get("api")
-    if api not in (1, 2, 3, 4, 5, 6):
-        errors.append(f"{plugin.name}: api must be 1 to 6, got {api!r}")
+    if api not in (1, 2, 3, 4, 5, 6, 8):
+        errors.append(f"{plugin.name}: api must be 1 to 6 or 8 (7 is reserved), got {api!r}")
     check_icon(plugin, plugin.name, manifest, api, errors)
 
     module = plugin / f"{manifest.get('module', 'plugin')}.py"

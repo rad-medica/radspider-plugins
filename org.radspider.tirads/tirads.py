@@ -1,13 +1,17 @@
-"""TI-RADS structured thyroid report: up to four nodules scored with ACR TI-RADS (Tessler et al., JACR 2017), the
-cervical lymph node map by level and side (ETA 2013 ultrasound classification), and an optional clinical TNM stage of
-differentiated thyroid carcinoma (AJCC 8th edition).
+"""TI-RADS structured thyroid report: the user draws nodules on the thyroid and lymph nodes in the neck levels of a
+schematic (api 8 sketch). Nodules are scored with ACR TI-RADS (Tessler et al., JACR 2017), lymph nodes classed with
+ETA 2013, and an optional clinical TNM stage of differentiated thyroid carcinoma follows (AJCC 8th edition).
 
-Each nodule has a window of its own: a window holds at most 32 controls, and controls left out of an answer lose
-their values. The report is a two-column table; *Copy table* puts it on the clipboard as tab-separated lines."""
+The viewer holds the marks; each mark's descriptors live in its ``data``. The editor below the schematic shows the
+selected mark through controls named <key>_<mark id>; every run writes the controls present back into their mark. The report is a
+two-column table; *Copy table* puts it on the clipboard as tab-separated lines."""
 
 import radspider_plugin as rp
 
-MAX_NODULES = 4  # 19 main controls + 4 x 11 nodule controls stay under the host's 64 controls per instance
+W, H = 460, 304  # schematic units: anterior view, patient's right on the left
+LOBES = (195, 265)  # centre x of the right and left lobe ellipses (y 140, rx 26, ry 62)
+THIRDS = (119, 161)  # y of the upper/middle and middle/lower third boundaries
+ISTHMUS = (208, 160, 44, 22)  # x, y, w, h
 
 LOCATIONS = [
     rp.tr("Right lobe, upper third"),
@@ -41,7 +45,10 @@ MARGIN = [
     (rp.tr("Extra-thyroidal extension"), 3),
     (rp.tr("Margin cannot be determined"), 0),
 ]
-FOCI = [  # (control name, label, points): echogenic foci add up; none or large comet-tail artifacts score 0
+FEATURES = [("comp", rp.tr("Composition"), COMPOSITION), ("echo", rp.tr("Echogenicity"), ECHOGENICITY),
+            ("shape", rp.tr("Shape"), SHAPE), ("margin", rp.tr("Margin"), MARGIN)]
+DIAMETERS = [("ap", rp.tr("Anteroposterior (mm)")), ("tv", rp.tr("Transverse (mm)")), ("cc", rp.tr("Longitudinal (mm)"))]
+FOCI = [  # (data key, label, points): echogenic foci add up; none or large comet-tail artifacts score 0
     ("macro", rp.tr("Macrocalcifications"), 1),
     ("rim", rp.tr("Peripheral (rim) calcifications"), 2),
     ("punctate", rp.tr("Punctate echogenic foci"), 3),
@@ -60,20 +67,31 @@ LEVELS = {
 }
 
 NODE_STATES = [rp.tr("Normal"), rp.tr("Indeterminate"), rp.tr("Suspicious")]
-NODE_LEVELS = [  # (control name, label, central: VI and VII give N1a, the lateral levels N1b)
-    ("ln_r1", rp.tr("Right level I"), False),
-    ("ln_l1", rp.tr("Left level I"), False),
-    ("ln_r2", rp.tr("Right level II"), False),
-    ("ln_l2", rp.tr("Left level II"), False),
-    ("ln_r3", rp.tr("Right level III"), False),
-    ("ln_l3", rp.tr("Left level III"), False),
-    ("ln_r4", rp.tr("Right level IV"), False),
-    ("ln_l4", rp.tr("Left level IV"), False),
-    ("ln_r5", rp.tr("Right level V"), False),
-    ("ln_l5", rp.tr("Left level V"), False),
-    ("ln_6", rp.tr("Level VI (central)"), True),
-    ("ln_7", rp.tr("Level VII (upper mediastinum)"), True),
+NODE_LEVELS = [  # (key, label, short text, central: VI and VII give N1a, the lateral levels N1b, rect x y w h)
+    ("r1", rp.tr("Right level I"), "I", False, (120, 14, 90, 40)),
+    ("l1", rp.tr("Left level I"), "I", False, (250, 14, 90, 40)),
+    ("r2", rp.tr("Right level II"), "II", False, (40, 62, 100, 58)),
+    ("l2", rp.tr("Left level II"), "II", False, (320, 62, 100, 58)),
+    ("r3", rp.tr("Right level III"), "III", False, (40, 124, 100, 58)),
+    ("l3", rp.tr("Left level III"), "III", False, (320, 124, 100, 58)),
+    ("r4", rp.tr("Right level IV"), "IV", False, (40, 186, 100, 58)),
+    ("l4", rp.tr("Left level IV"), "IV", False, (320, 186, 100, 58)),
+    ("r5", rp.tr("Right level V"), "V", False, (4, 62, 32, 182)),
+    ("l5", rp.tr("Left level V"), "V", False, (424, 62, 32, 182)),
+    ("c6", rp.tr("Level VI (central)"), "VI", True, (160, 226, 140, 34)),
+    ("c7", rp.tr("Level VII (upper mediastinum)"), "VII", True, (160, 266, 140, 34)),
 ]
+HILUM = ("hilum", rp.tr("Fatty hilum present"))
+SIGNS = [  # ETA 2013 suspicious features: any one makes the node suspicious
+    ("micro", rp.tr("Microcalcifications")),
+    ("cystic", rp.tr("Cystic change")),
+    ("vasc", rp.tr("Peripheral or diffuse increased vascularity")),
+    ("hyper", rp.tr("Hyperechoic tissue like thyroid")),
+]
+OTHER = [("round", rp.tr("Round shape")), ("cvasc", rp.tr("Increased central vascularity"))]  # reported, not scored
+
+NODULE_KEYS = [k for k, _ in DIAMETERS] + [k for k, _, _ in FEATURES] + [k for k, _, _ in FOCI]
+NODE_KEYS = ["short", HILUM[0]] + [k for k, _ in SIGNS + OTHER]
 
 STAGING = [rp.tr("Not staged"), rp.tr("Differentiated thyroid carcinoma (AJCC 8th edition)")]
 EXTENSION = [
@@ -123,9 +141,8 @@ def t_category(size, extension):
     return "T1a" if size <= 10 else "T1b" if size <= 20 else "T2" if size <= 40 else "T3a"
 
 
-def n_category(states):
-    """cN from {level control name: state English id}: suspicious lateral nodes N1b, else central N1a, else N0."""
-    suspicious = [central for name, _, central in NODE_LEVELS if states.get(name) == "Suspicious"]
+def n_category(suspicious):
+    """cN from the `central` flags of the suspicious nodes: a lateral one N1b, else a central one N1a, else N0."""
     return "N1b" if False in suspicious else "N1a" if suspicious else "N0"
 
 
@@ -144,154 +161,228 @@ def stage(t, n, old, m1):
     return "I"
 
 
+def locate(x, y):
+    """("nodule", location index) on a lobe or the isthmus, ("node", NODE_LEVELS entry) in a level, else (None, None)."""
+    for side, cx in enumerate(LOBES):
+        if ((x - cx) / 26) ** 2 + ((y - 140) / 62) ** 2 <= 1:
+            return "nodule", side * 4 + (0 if y < THIRDS[0] else 1 if y < THIRDS[1] else 2)
+    ix, iy, iw, ih = ISTHMUS
+    if ix <= x <= ix + iw and iy <= y <= iy + ih:
+        return "nodule", 3
+    for entry in NODE_LEVELS:
+        lx, ly, lw, lh = entry[4]
+        if lx <= x <= lx + lw and ly <= y <= ly + lh:
+            return "node", entry
+    return None, None
+
+
+def node_state(data):
+    """ETA 2013 class of a node's data: any suspicious feature, else no hilum = indeterminate, else normal."""
+    if any(data.get(k) == "1" for k, _ in SIGNS):
+        return "Suspicious"
+    return "Normal" if data.get(HILUM[0], "1") == "1" else "Indeterminate"
+
+
 def pick(c, name, options):
-    """The option whose English id ctx.controls holds for `name`, else the first."""
+    """The option whose English id `c` holds for `name`, else the first."""
     return next((o for o in options if str(o) == c.get(name)), options[0])
 
 
-class Form:
-    """Controls built from ctx.controls and the report rows they produce, in the same order."""
-
-    def __init__(self, c):
-        self.c, self.rows = c, []
-
-    def choice(self, name, label, options, report=True):
-        value = pick(self.c, name, options)
-        if report:
-            self.rows.append([label, value])
-        return rp.Choice(name, label, options, str(value)), value
-
-    def number(self, name, label, lo, hi):
-        value = min(max(float(self.c.get(name, 0.0)), lo), hi)
-        return rp.Number(name, label, value, min=lo, max=hi, step=1), value
+def number(data, key, hi=150):
+    """A diameter in mm from mark data (strings), clamped to 0..hi; anything unreadable is 0."""
+    try:
+        return min(max(float(data.get(key, 0)), 0.0), hi)
+    except (TypeError, ValueError):
+        return 0.0
 
 
-def nodule(f, i):
-    """The controls of nodule `i` (they fill `f.rows`) and its TR level."""
-    c = f.c
-    f.rows.append([rp.tr("Nodule {n}", n=i), ""])
-    where = f.choice("where_%d" % i, rp.tr("Location"), LOCATIONS)[0]
-    sizes = [
-        f.number("%s_%d" % (axis, i), label, 0, 150)
-        for axis, label in (
-            ("ap", rp.tr("Anteroposterior (mm)")),
-            ("tv", rp.tr("Transverse (mm)")),
-            ("cc", rp.tr("Longitudinal (mm)")),
-        )
-    ]
-    dims = [v for _, v in sizes if v > 0]
+def encode(value):
+    """A control value as mark data: one-line strings, booleans as "1" / "0"."""
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    return "%g" % value if isinstance(value, (int, float)) else str(value)
+
+
+def nodule(data, rows):
+    """Report rows of one nodule appended to `rows`; returns its TR level."""
+    dims = [number(data, k) for k, _ in DIAMETERS]
+    dims = [v for v in dims if v > 0]
     if dims:
-        f.rows.append([rp.tr("Size"), " × ".join("%g" % v for v in dims) + " mm"])
-    features = []
+        rows.append([rp.tr("Size"), " × ".join("%g" % v for v in dims) + " mm"])
     ids = []
-    for name, label, table in (
-        ("comp", rp.tr("Composition"), COMPOSITION),
-        ("echo", rp.tr("Echogenicity"), ECHOGENICITY),
-        ("shape", rp.tr("Shape"), SHAPE),
-        ("margin", rp.tr("Margin"), MARGIN),
-    ):
-        ctl, value = f.choice("%s_%d" % (name, i), label, [o for o, _ in table])
-        features.append(ctl)
+    for key, label, table in FEATURES:
+        value = pick(data, key, [o for o, _ in table])
+        rows.append([label, value])
         ids.append(str(value))
-    foci = [name for name, _, _ in FOCI if c.get("%s_%d" % (name, i), False)]
-    boxes = [rp.Checkbox("%s_%d" % (name, i), label, name in foci) for name, label, _ in FOCI]
-    for name, label, _ in FOCI:
-        if name in foci:
-            f.rows.append([rp.tr("Echogenic foci"), label])
-    if not foci:
-        f.rows.append([rp.tr("Echogenic foci"), NO_FOCI])
+    foci = [k for k, _, _ in FOCI if data.get(k) == "1"]
+    rows += [[rp.tr("Echogenic foci"), label] for k, label, _ in FOCI if k in foci] or [[rp.tr("Echogenic foci"), NO_FOCI]]
     score = points(*ids, foci)
     tr = level(score)
     size = max(dims, default=0.0)
     fna, schedule = advice(tr, size)
-    f.rows.append([rp.tr("ACR TI-RADS"), LEVELS[tr][0]])
-    f.rows.append([rp.tr("Points"), score])
+    rows.append([rp.tr("ACR TI-RADS"), LEVELS[tr][0]])
+    rows.append([rp.tr("Points"), score])
     if LEVELS[tr][1] is None:
-        f.rows.append([rp.tr("Recommendation"), rp.tr("No FNA")])
+        rows.append([rp.tr("Recommendation"), rp.tr("No FNA")])
     elif not dims:
-        f.rows.append([rp.tr("Recommendation"), rp.tr("Enter the size to get the recommendation")])
+        rows.append([rp.tr("Recommendation"), rp.tr("Enter the size to get the recommendation")])
     elif fna:
-        f.rows.append([rp.tr("Recommendation"), rp.tr("FNA (from {mm} mm at this level)", mm=LEVELS[tr][1])])
-    elif schedule:
-        f.rows.append([rp.tr("Recommendation"), schedule])
+        rows.append([rp.tr("Recommendation"), rp.tr("FNA (from {mm} mm at this level)", mm=LEVELS[tr][1])])
     else:
-        f.rows.append([rp.tr("Recommendation"), rp.tr("No FNA or follow-up for its size")])
-    blocks = [
-        where,
-        rp.Row([ctl for ctl, _ in sizes]),
-        rp.Row(features[:2]),
-        rp.Row(features[2:]),
-        rp.Section(rp.tr("Echogenic foci (all that apply)"), boxes),
-        rp.Row([rp.Label(rp.trn(score, "{n} point", "{n} points")), rp.Label(LEVELS[tr][0])]),
+        rows.append([rp.tr("Recommendation"), schedule or rp.tr("No FNA or follow-up for its size")])
+    return tr
+
+
+def editor(kind, data, mid):
+    """Controls describing mark `mid`, filled from its data; each is named <data key>_<mark id>."""
+    def n(k):
+        return "%s_%d" % (k, mid)
+
+    if kind == "nodule":
+        def choice(k, label, t):
+            return rp.Choice(n(k), label, [o for o, _ in t], str(pick(data, k, [o for o, _ in t])))
+
+        return [
+            rp.Row([rp.Number(n(k), label, number(data, k), min=0, max=150, step=1) for k, label in DIAMETERS]),
+            rp.Row([choice(*f) for f in FEATURES[:2]]),
+            rp.Row([choice(*f) for f in FEATURES[2:]]),
+            rp.Section(rp.tr("Echogenic foci (all that apply)"),
+                       [rp.Checkbox(n(k), label, data.get(k) == "1") for k, label, _ in FOCI]),
+        ]
+    return [
+        rp.Row([rp.Number(n("short"), rp.tr("Short axis (mm)"), number(data, "short", 100), min=0, max=100, step=1),
+                rp.Checkbox(n(HILUM[0]), HILUM[1], data.get(HILUM[0], "1") == "1")]),
+        rp.Section(rp.tr("Suspicious features (ETA 2013)"),
+                   [rp.Checkbox(n(k), label, data.get(k) == "1") for k, label in SIGNS]),
+        rp.Section(rp.tr("Other findings (reported, not scored)"),
+                   [rp.Checkbox(n(k), label, data.get(k) == "1") for k, label in OTHER]),
     ]
-    return blocks, tr, size
+
+
+def schematic(worst):
+    """The neck drawing: levels tinted by their worst node, the thyroid lobes with third guides, the isthmus."""
+    tint = {"Normal": "area", "Indeterminate": "warn", "Suspicious": "error"}
+    shapes = []
+    for key, _, short, _, (x, y, w, h) in NODE_LEVELS:
+        shapes.append({"kind": "rect", "x": x, "y": y, "w": w, "h": h, "style": tint[worst.get(key, "Normal")]})
+        shapes.append({"kind": "text", "x": x + w / 2, "y": y + 9, "text": short, "style": "muted", "size": 10})
+    for cx in LOBES:
+        shapes.append({"kind": "ellipse", "x": cx, "y": 140, "rx": 26, "ry": 62, "style": "line"})
+        shapes += [{"kind": "line", "points": [[cx - 26, y], [cx + 26, y]], "style": "guide"} for y in THIRDS]
+    ix, iy, iw, ih = ISTHMUS
+    shapes.append({"kind": "rect", "x": ix, "y": iy, "w": iw, "h": ih, "style": "line"})
+    shapes.append({"kind": "text", "x": 80, "y": 34, "text": rp.tr("Right"), "style": "label", "size": 11})
+    shapes.append({"kind": "text", "x": 380, "y": 34, "text": rp.tr("Left"), "style": "label", "size": 11})
+    return shapes
 
 
 @rp.tool("report")
 def report(volume, ctx):
     c = ctx.controls
-    f = Form(c)
-    count = int(min(max(c.get("count", 1), 0), MAX_NODULES))
-    head = [rp.Number("count", rp.tr("Nodules"), count, min=0, max=MAX_NODULES, step=1)]
+    sketch = c.get("neck") or {"marks": [], "selected": None}
+    marks = sorted(sketch.get("marks", []), key=lambda m: m["id"])
+    if ctx.event == "delete":
+        marks = [m for m in marks if m["id"] != sketch.get("selected")]
+        sketch["selected"] = None
+    selected = next((m for m in marks if m["id"] == sketch.get("selected")), None)
+    for m in marks:  # editor controls are named by mark id, so an edit survives a selection change in flight
+        kind = locate(m["x"], m["y"])[0]
+        keys = NODULE_KEYS if kind == "nodule" else NODE_KEYS if kind == "node" else []
+        if any("%s_%d" % (k, m["id"]) in c for k in keys):
+            m["data"] = {k: encode(c["%s_%d" % (k, m["id"])]) for k in keys if "%s_%d" % (k, m["id"]) in c}
 
-    windows = []
-    for i in range(1, count + 1):
-        blocks, _, _ = nodule(f, i)
-        windows.append(
-            rp.Window("nodule_%d" % i, rp.tr("Nodule {n}", n=i), blocks, size=(480, 420), reopen=ctx.event == "count")
-        )
-    if not count:
-        f.rows.append([rp.tr("Thyroid nodules"), rp.tr("None")])
+    rows, nodes, worst, outside = [], [], {}, False
+    nodules = 0
+    for m in marks:
+        kind, where = locate(m["x"], m["y"])
+        data = m.setdefault("data", {})
+        if kind == "nodule":
+            nodules += 1
+            m["form"], m["title"] = "circle", rp.tr("Nodule {n}", n=nodules)
+            rows += [[m["title"], ""], [rp.tr("Location"), LOCATIONS[where]]]
+            tr = nodule(data, rows)
+            m["label"], m["tone"] = "N%d TR%d" % (nodules, tr), "error" if tr == 5 else "warn" if tr == 4 else "accent"
+            m["where"] = LOCATIONS[where]
+        elif kind == "node":
+            nodes.append((m, where))
+        else:
+            outside = True
+            m["label"], m["tone"], m["title"], m["where"] = "?", "muted", None, None
+    if not nodules:
+        rows.append([rp.tr("Thyroid nodules"), rp.tr("None")])
 
-    states = {name: str(pick(c, name, NODE_STATES)) for name, _, _ in NODE_LEVELS}
-    levels = [f.choice(name, label, NODE_STATES, report=False)[0] for name, label, _ in NODE_LEVELS]
-    abnormal = [(label, pick(c, name, NODE_STATES)) for name, label, _ in NODE_LEVELS if states[name] != "Normal"]
-    f.rows += [[label, state] for label, state in abnormal] or [
-        [rp.tr("Cervical lymph nodes"), rp.tr("No indeterminate or suspicious lymph nodes in levels I to VII")]
-    ]
-    neck = rp.Section(
-        rp.tr("Cervical lymph nodes by level"),
-        [rp.Row(levels[k : k + 2]) for k in range(0, len(levels) - 2, 2)]
-        + [
-            rp.Row(levels[-2:]),
-            rp.Label(
-                rp.tr(
-                    "Suspicious: microcalcifications, cystic change, peripheral or diffuse increased vascularity, or "
-                    "hyperechoic tissue like thyroid. Indeterminate: no hilum and none of these. Normal: hilum present "
-                    "(ETA 2013)."
-                ),
-                weak=True,
-            ),
-        ],
-    )
+    rank = {"Normal": 0, "Indeterminate": 1, "Suspicious": 2}
+    suspicious = []
+    for k, (m, (key, label, _, central, _)) in enumerate(nodes, 1):
+        data, state = m["data"], node_state(m["data"])
+        if rank[state] > rank[worst.get(key, "Normal")]:
+            worst[key] = state
+        if state == "Suspicious":
+            suspicious.append(central)
+        m["form"], m["title"], m["where"] = "square", rp.tr("Lymph node {n}", n=k), label
+        m["label"] = ("L%d %s" % (k, {"Normal": "", "Indeterminate": "I", "Suspicious": "S"}[state])).strip()
+        m["tone"] = {"Normal": "ok", "Indeterminate": "warn", "Suspicious": "error"}[state]
+        rows += [[m["title"], ""], [rp.tr("Level"), label]]
+        if number(data, "short", 100):
+            rows.append([rp.tr("Short axis"), "%g mm" % number(data, "short", 100)])
+        rows.append([rp.tr("ETA 2013"), NODE_STATES[rank[state]]])
+        rows += [[rp.tr("Suspicious feature"), lb] for s, lb in SIGNS if data.get(s) == "1"]
+        rows += [[rp.tr("Other finding"), lb] for s, lb in OTHER if data.get(s) == "1"]
+    if not nodes:
+        rows.append([rp.tr("Cervical lymph nodes"), rp.tr("No indeterminate or suspicious lymph nodes in levels I to VII")])
 
     staged = pick(c, "staging", STAGING)
     staging = [rp.Choice("staging", rp.tr("TNM staging"), STAGING, str(staged))]
     if str(staged) != "Not staged":
-        size_ctl, size = f.number("t_size", rp.tr("Tumour largest diameter (mm)"), 0, 200)
-        ext_ctl, ext = f.choice("t_ext", rp.tr("Extension"), EXTENSION, report=False)
-        age_ctl, age = f.choice("age", rp.tr("Age at diagnosis"), AGES, report=False)
-        m_ctl, m = f.choice("m", rp.tr("Distant metastases"), METASTASES, report=False)
+        size = min(max(float(c.get("t_size", 0.0)), 0), 200)
+        ext, age, m_ = pick(c, "t_ext", EXTENSION), pick(c, "age", AGES), pick(c, "m", METASTASES)
         t = t_category(size, str(ext))
-        n = n_category(states)
-        m_code = "M1" if str(m).startswith("M1") else "M0"
+        n = n_category(suspicious)
+        m_code = "M1" if str(m_).startswith("M1") else "M0"
         group = stage(t, n, str(age) == "55 years or older", m_code == "M1")
-        staging += [rp.Row([size_ctl, age_ctl]), ext_ctl, m_ctl]
-        f.rows += [
+        staging += [
+            rp.Row([rp.Number("t_size", rp.tr("Tumour largest diameter (mm)"), size, min=0, max=200, step=1),
+                    rp.Choice("age", rp.tr("Age at diagnosis"), AGES, str(age))]),
+            rp.Choice("t_ext", rp.tr("Extension"), EXTENSION, str(ext)),
+            rp.Choice("m", rp.tr("Distant metastases"), METASTASES, str(m_)),
+        ]
+        rows += [
             [rp.tr("Clinical TNM (AJCC 8th edition)"), "c%s c%s c%s" % (t, n, m_code)],
             [rp.tr("Stage (differentiated thyroid carcinoma)"), group],
         ]
 
     comment = str(c.get("comment", "")).strip()
     if comment:
-        f.rows.append([rp.tr("Comment"), comment])
-    blocks = head + [
-        neck,
+        rows.append([rp.tr("Comment"), comment])
+
+    value = {"marks": [{k: m[k] for k in ("id", "x", "y", "r", "label", "tone", "form", "data")} for m in marks],
+             "selected": selected["id"] if selected is not None else None}
+    blocks = [
+        rp.Sketch("neck", rp.tr("Thyroid and cervical lymph node levels"), W, H, schematic(worst), value=value,
+                  max_marks=16),
+        rp.Label(rp.tr("Drag on a lobe to draw a nodule, or inside a level to draw a lymph node; click a mark to "
+                       "describe it."), weak=True),
+    ]
+    if outside:
+        blocks.append(rp.Label(rp.tr("A mark outside the thyroid and the lymph node levels is not reported: move it "
+                                     "or delete it."), weak=True))
+    if value["selected"] is not None:
+        kind = locate(selected["x"], selected["y"])[0]
+        head = [rp.Label(selected["title"] or rp.tr("Outside the schematic")), rp.Button("delete", rp.tr("Delete"),
+                                                                                         icon="trash")]
+        if selected["where"] is not None:
+            head.insert(1, rp.Label(selected["where"], weak=True))
+        blocks += [rp.Separator(), rp.Row(head)] + (editor(kind, selected["data"], selected["id"]) if kind else [])
+    blocks += [
+        rp.Section(rp.tr("Cervical lymph node classes"), [rp.Label(rp.tr(
+            "Suspicious: microcalcifications, cystic change, peripheral or diffuse increased vascularity, or "
+            "hyperechoic tissue like thyroid. Indeterminate: no hilum and none of these. Normal: hilum present "
+            "(ETA 2013)."), weak=True)], open=False),
         rp.Section(rp.tr("Staging"), staging),
         rp.TextField("comment", rp.tr("Comment"), comment, max_length=500),
         rp.Separator(),
         rp.Label(rp.tr("Report")),
-        rp.Table(f.rows),
+        rp.Table(rows),
         rp.Label(
             rp.tr(
                 "ACR TI-RADS (Tessler et al., JACR 2017); lymph nodes: ETA 2013; TNM: AJCC 8th "
@@ -301,4 +392,4 @@ def report(volume, ctx):
             weak=True,
         ),
     ]
-    return rp.Result(windows=[rp.Window("main", rp.tr("TI-RADS report"), blocks, size=(560, 760))] + windows)
+    return rp.Result(windows=[rp.Window("main", rp.tr("TI-RADS report"), blocks, size=(560, 900))])

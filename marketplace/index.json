@@ -34,6 +34,28 @@
       "first_run_download": "Downloads the weights of a model the first time it runs, or from its Segmentation models window: TotalSegmentator 135 MB (converted to a 65 MB ONNX file), MONAI 71 MB per resolution, CADS about 762 MB per group and weight set."
     },
     {
+      "id": "org.radspider.birads",
+      "name": "BI-RADS report",
+      "version": "2.0.0",
+      "api": 8,
+      "description": "Structured breast imaging report with the BI-RADS lexicon (mammography, ultrasound, MRI): breast composition, findings drawn on a schematic of both breasts (breast and clock position from the drawing), the reader's assessment categories, the overall assessment with its management. Not a medical device.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.birads-2.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.birads-v2.0.0/org.radspider.birads-2.0.0.zip",
+        "sha256": "ce6d22f6453b73834e3d139c0053ef767d0d06378d6e0580b56c97c10424659e",
+        "size": 42754
+      },
+      "tag": "org.radspider.birads-v2.0.0",
+      "second_volume": false,
+      "icon": "clipboard-text"
+    },
+    {
       "id": "org.radspider.examples",
       "name": "Examples",
       "version": "1.1.1",
@@ -54,6 +76,28 @@
       "tag": "org.radspider.examples-v1.1.1",
       "second_volume": false,
       "icon": "book-open"
+    },
+    {
+      "id": "org.radspider.lirads",
+      "name": "LI-RADS report",
+      "version": "2.0.0",
+      "api": 8,
+      "description": "Structured liver CT/MRI report for patients at high risk for HCC: observations drawn on a Couinaud schematic (segment from where they sit) with size and major features, the LI-RADS v2018 category (diagnostic table and ancillary features, or the reader's LR-NC, LR-TIV, LR-1, LR-2, LR-M) and its management. Not a medical device.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.lirads-2.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.lirads-v2.0.0/org.radspider.lirads-2.0.0.zip",
+        "sha256": "4cdb505502d99afaa89500705d7e607ad419ef3dd6163943cd06ddf37268c0ae",
+        "size": 31644
+      },
+      "tag": "org.radspider.lirads-v2.0.0",
+      "second_volume": false,
+      "icon": "clipboard-text"
     },
     {
       "id": "org.radspider.lung-ct-analyzer",
@@ -79,6 +123,28 @@
       "tag": "org.radspider.lung-ct-analyzer-v1.2.0",
       "second_volume": false,
       "icon": "wind"
+    },
+    {
+      "id": "org.radspider.lungrads",
+      "name": "Lung-RADS report",
+      "version": "2.0.0",
+      "api": 8,
+      "description": "Structured lung cancer screening CT report: nodules or atypical cysts drawn on a lung schematic (lobe from where they sit), with type, behaviour and mean diameters, the Lung-RADS v2022 category of each (computed, or assigned where the rules give none), 4X and S modifiers, category 0 and management. Not a medical device.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.lungrads-2.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.lungrads-v2.0.0/org.radspider.lungrads-2.0.0.zip",
+        "sha256": "e6ed741a542de84319703d676da74b29b9d40bde449fb63e86577d0effd73e42",
+        "size": 35273
+      },
+      "tag": "org.radspider.lungrads-v2.0.0",
+      "second_volume": false,
+      "icon": "clipboard-text"
     },
     {
       "id": "org.radspider.measurement-reference",
@@ -127,6 +193,28 @@
       "tag": "org.radspider.numpy-demo-v1.1.1",
       "second_volume": false,
       "icon": "function"
+    },
+    {
+      "id": "org.radspider.pirads",
+      "name": "PI-RADS report",
+      "version": "2.0.0",
+      "api": 8,
+      "description": "Structured prostate MRI report: prostate volume and PSA density, lesions drawn on an axial sector map with size and T2W, DWI and DCE scores, the PI-RADS v2.1 category of each (computed), local staging and the overall category. Not a medical device.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.pirads-2.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.pirads-v2.0.0/org.radspider.pirads-2.0.0.zip",
+        "sha256": "8e1a9ea29d4c572b41621f9da9a4b47c2af46e4a1025d1d1dea8d9f4bee3a6c1",
+        "size": 29747
+      },
+      "tag": "org.radspider.pirads-v2.0.0",
+      "second_volume": false,
+      "icon": "clipboard-text"
     },
     {
       "id": "org.radspider.radiomics",
@@ -306,6 +394,28 @@
       "tag": "org.radspider.testkit-v1.3.1",
       "second_volume": false,
       "icon": "flask"
+    },
+    {
+      "id": "org.radspider.tirads",
+      "name": "TI-RADS report",
+      "version": "2.0.0",
+      "api": 8,
+      "description": "Structured thyroid ultrasound report: nodules and lymph nodes drawn on a neck schematic; nodules scored with ACR TI-RADS (points, level, FNA or follow-up by size), lymph nodes classed by level and side (ETA 2013), optional clinical TNM stage of differentiated carcinoma (AJCC 8th edition). Not a medical device.",
+      "entries": {
+        "synth_node": 0,
+        "segmentation": 0,
+        "tool": 1
+      },
+      "requirements": [],
+      "package": {
+        "file": "org.radspider.tirads-2.0.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.tirads-v2.0.0/org.radspider.tirads-2.0.0.zip",
+        "sha256": "7d950a11c1eca3b41cfced3b470dee7eff04e1f47671dfd201c2327364b279ce",
+        "size": 41276
+      },
+      "tag": "org.radspider.tirads-v2.0.0",
+      "second_volume": false,
+      "icon": "clipboard-text"
     },
     {
       "id": "org.radspider.volume-tools",

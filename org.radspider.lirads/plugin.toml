@@ -1,17 +1,17 @@
 # LI-RADS structured liver CT/MRI report: observations through the LI-RADS v2018 diagnostic algorithm.
 id = "org.radspider.lirads"
 name = "LI-RADS report"
-version = "1.0.0"
-api = 6                        # 6: input = "image", windows, translations (lang/)
+version = "2.0.0"
+api = 8                        # 8: sketch (observations drawn on a Couinaud schematic); 6: input = "image", windows
 icon = "clipboard-text"
-description = "Structured liver CT/MRI report for patients at high risk for HCC: up to five observations with segment, size and major features, the LI-RADS v2018 category (diagnostic table and ancillary features, or the reader's LR-NC, LR-TIV, LR-1, LR-2, LR-M) and its management. Not a medical device."
+description = "Structured liver CT/MRI report for patients at high risk for HCC: observations drawn on a Couinaud schematic (segment from where they sit) with size and major features, the LI-RADS v2018 category (diagnostic table and ancillary features, or the reader's LR-NC, LR-TIV, LR-1, LR-2, LR-M) and its management. Not a medical device."
 module = "lirads"
 
 [[tool]]
 name = "report"
 label = "LI-RADS report"
-description = "Opens a form: exam, risk population, observations with their features and categories. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
+description = "Opens a liver schematic: drag on a segment to draw an observation, then describe the selected one (features or category); exam and risk population above. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
 icon = "clipboard-text"
 # An image tool only because a tool must run on something: one image costs far less per change than a whole volume.
 input = "image"
-window = { title = "LI-RADS report", width = 560, height = 640, reuse = true }
+window = { title = "LI-RADS report", width = 560, height = 900, reuse = true }

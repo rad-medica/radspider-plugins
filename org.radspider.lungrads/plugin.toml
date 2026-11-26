@@ -1,17 +1,17 @@
 # Lung-RADS structured lung cancer screening report: nodule and cyst categories of Lung-RADS v2022, modifiers.
 id = "org.radspider.lungrads"
 name = "Lung-RADS report"
-version = "1.0.0"
-api = 6                        # 6: input = "image", windows, translations (lang/)
+version = "2.0.0"
+api = 8                        # 8: sketch (nodules drawn on a lung schematic); 6: input = "image", windows
 icon = "clipboard-text"
-description = "Structured lung cancer screening CT report: up to six nodules or atypical cysts with lobe, type, behaviour and mean diameters, the Lung-RADS v2022 category of each (computed, or assigned where the rules give none), 4X and S modifiers, category 0 and management. Not a medical device."
+description = "Structured lung cancer screening CT report: nodules or atypical cysts drawn on a lung schematic (lobe from where they sit), with type, behaviour and mean diameters, the Lung-RADS v2022 category of each (computed, or assigned where the rules give none), 4X and S modifiers, category 0 and management. Not a medical device."
 module = "lungrads"
 
 [[tool]]
 name = "report"
 label = "Lung-RADS report"
-description = "Opens a form: nodules with their type, behaviour since the prior exam and size; incomplete exam; S modifier. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
+description = "Opens a lung schematic: drag on a lobe to draw a nodule or cyst, then describe the selected one; incomplete exam; S modifier. The report table updates on every change; Copy table puts it on the clipboard. Reads no pixel data."
 icon = "clipboard-text"
 # An image tool only because a tool must run on something: one image costs far less per change than a whole volume.
 input = "image"
-window = { title = "Lung-RADS report", width = 560, height = 640, reuse = true }
+window = { title = "Lung-RADS report", width = 560, height = 900, reuse = true }
