@@ -10,7 +10,7 @@ TL;DR: each plugin carries a semver `version`; `marketplace/index.json` is the c
 |---|---|
 | `id`, `name`, `description` | From `plugin.toml` |
 | `version` | Semver from `plugin.toml` |
-| `api` | radspider plugin API level the plugin needs (1-6, 8). A client on an older API must not offer it |
+| `api` | radspider plugin API level the plugin needs (1-9). A client on an older API must not offer it |
 | `entries` | Count of `synth_node`, `segmentation` and `tool` entries |
 | `requirements` | Lines of `requirements.txt` (without comments) |
 | `package.file` / `package.url` | `<id>-<version>.zip`, a GitHub release asset of tag `<id>-v<version>` |

@@ -420,8 +420,8 @@
     {
       "id": "org.radspider.volume-tools",
       "name": "Volume tools",
-      "version": "1.1.1",
-      "api": 6,
+      "version": "1.2.0",
+      "api": 7,
       "description": "Invert, scale / normalize to a region, ΔR2 map of two series, tag grid from two tagged series, rigid mutual-information registration.",
       "entries": {
         "synth_node": 2,
@@ -433,12 +433,12 @@
         "scipy>=1.11"
       ],
       "package": {
-        "file": "org.radspider.volume-tools-1.1.1.zip",
-        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.volume-tools-v1.1.1/org.radspider.volume-tools-1.1.1.zip",
-        "sha256": "c1dfbf8b14ab5328c460ecfde181f1d5060af65e429996e87824e5fffbcdf69e",
-        "size": 63247
+        "file": "org.radspider.volume-tools-1.2.0.zip",
+        "url": "https://github.com/rad-medica/radspider-plugins/releases/download/org.radspider.volume-tools-v1.2.0/org.radspider.volume-tools-1.2.0.zip",
+        "sha256": "447359dd9987ff14f6389957629cbe653d417c5f866c968fa7559c820b087b0f",
+        "size": 64735
       },
-      "tag": "org.radspider.volume-tools-v1.1.1",
+      "tag": "org.radspider.volume-tools-v1.2.0",
       "second_volume": true,
       "icon": "cube"
     }

@@ -210,6 +210,12 @@ class InputKey(unittest.TestCase):
             errors = self.errors(f"input = {value}", api=5)
             self.assertTrue(any("input needs api >= 6" in e for e in errors), (value, errors))
 
+    def test_api_is_1_to_9(self):
+        for api in (6, 7, 8, 9):
+            self.assertEqual(self.errors("", api=api), [], api)
+        for api in (0, 10):
+            self.assertTrue(any("api must be 1 to 9" in e for e in self.errors("", api=api)), api)
+
 
 class NativePlugin(unittest.TestCase):
     """A plugin with ``command``: Rust registrations, an executable, no module or requirements."""

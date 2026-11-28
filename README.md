@@ -7,7 +7,7 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 
 - One folder per plugin, named exactly as its id: `plugin.toml` + a Python module (+ `requirements.txt`), or, for a native plugin, Rust source and its executables in `bin/<os>-<arch>/`.
 - Install one: copy its folder into `<config>/plugins/` (beside `settings.toml`) or in radspider Settings → Modules → *Install folder…* (or *Install .zip…* of the folder). radspider makes the venv and pip-installs `requirements.txt`.
-- How plugins work (manifest, SDK, protocol, API 1-6): `docs/PLUGINS.md` in the radspider repository. Summary of what this repo relies on: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- How plugins work (manifest, SDK, protocol, API 1-9): `docs/PLUGINS.md` in the radspider repository. Summary of what this repo relies on: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Plugin folders stay at the repository root on purpose: radspider's `tests/plugins.rs` resolves `../radspider-plugins/<id>`.
 
 ## Plugins
@@ -23,7 +23,7 @@ Proprietary, © 2026 Alberto Rojas Astorga, RadMedica E.I.R.L. All rights reserv
 | `org.radspider.lung-ct-analyzer` | 6 | numpy, scipy | Lung CT analysis by HU range (emphysema, inflated, infiltrated, collapsed) per lung, a threshold lung segmentation, and five density classes of a Gaussian mixture with their volumes. After Slicer's LungCTAnalyzer and DensityLungSegmentation; replaces `density-lung-segmentation` | [README](org.radspider.lung-ct-analyzer/README.md) |
 | `org.radspider.radiomics` | 6 | pyradiomics (from GitHub, compiled: needs git and a C compiler), SimpleITK | pyradiomics features of the series' segments in an interactive window. After SlicerRadiomics | [README](org.radspider.radiomics/README.md) |
 | `org.radspider.roi-tools` | 6 | numpy, scipy | Eight measurement tools: ROI export, rotation, point interpolation, sphere volumes, ROIs to segments, sector statistics, point counts, region growing | [README](org.radspider.roi-tools/README.md) |
-| `org.radspider.volume-tools` | 6 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [README](org.radspider.volume-tools/README.md) |
+| `org.radspider.volume-tools` | 7 | numpy, scipy | Invert and scale nodes, normalize to a ROI, ΔR2 map, tag-grid merge, rigid registration by mutual information | [README](org.radspider.volume-tools/README.md) |
 | `org.radspider.skeletal-radiology` | 6 | numpy, scipy | Automatic and hybrid interactive skeletal radiography measurements: spine (Cobb, balance, wedging), lower-limb alignment (HKA, MAD, mLDFA, MPTA, JLCA, LLD), hip/pelvis (LCEA, Tönnis, CCD), diaphyseal cortical morphometry and foot/hand goniometry | [README](org.radspider.skeletal-radiology/README.md) |
 | `org.radspider.measurement-reference` | 6 | Pillow | Searchable guide of radiological measurements (71 entries: how to draw each, reference values, source, a picture). Entries are Markdown files; the user adds or replaces them in `~/radspider-references` | [README](org.radspider.measurement-reference/README.md) |
 | `org.radspider.series-identifier` | 6 | numpy, onnxruntime | Says what the image on screen is: series kind, plane or projection, region, laterality, contrast, each with its evidence and a plain explanation (English, Spanish). Rules for every modality; on MR a second opinion from the dcm-classifier ONNX. Educational aid | [README](org.radspider.series-identifier/README.md) |

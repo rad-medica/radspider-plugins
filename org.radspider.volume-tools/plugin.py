@@ -718,9 +718,15 @@ def rigid_register(volume, ctx):
                 evaluations=evaluations, before="%.4f" % before, after="%.4f" % after,
             ),
         ])
+    # q = R (p - c) + c + t as a 4 x 4, fixed -> moving patient mm: radspider moves the fusion layer with it (api 7).
+    centre = np.asarray(found["centre"], dtype=np.float64)
+    transform = np.eye(4)
+    transform[:3, :3] = rotation
+    transform[:3, 3] = centre + np.asarray(t, dtype=np.float64) - rotation @ centre
     return rp.Result(
         volume=out,
         volume_name=rp.tr("Registered (rigid)"),
+        transform=transform,
         table=table,
         message=rp.tr(
             "Rotation {rx}, {ry}, {rz}°; translation {tx}, {ty}, {tz} mm; mutual information {before} → {after}",

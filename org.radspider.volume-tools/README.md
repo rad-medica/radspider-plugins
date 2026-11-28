@@ -16,6 +16,13 @@ the active series is the first / fixed one, the result is a new series on its gr
 | *Cardiac Tagging MRI* `merge_tag_grids` | two-volume tool | Product of two tagged series, slice maxima equalised | Cardiac Tagging MRI |
 | *PetSpectFusion* `rigid_register` | two-volume tool | 6-parameter rigid registration by mutual information, multi-resolution | PetSpectFusion |
 
+## API 7 (1.2.0)
+
+| Item | |
+|---|---|
+| API | `api = 7` (was 6): *PetSpectFusion* also returns its transform (`Result(transform=…)`, the 4 × 4 of `q = R (p − c) + c + t`). radspider (plugin API 7) moves the fusion layer of the second series over the active one with it, when that fusion exists; otherwise the window says *Transform not applied*. The registered series is still returned. A radspider older than plugin API 7 refuses the plugin |
+| Verified | The transform through the SDK request path (`radspider_plugin._handle`, radspider SDK of 2026-11-27, numpy 2.5.5, scipy 1.18.1, Python 3.13, **Windows**): 64 × 64 × 48 phantom of 12 Gaussian blobs at 2 mm, moving copy moved by (4, −3, 6)° and (7, −5, 6) mm on the same grid and Frame of Reference: the returned matrix maps 5 random points to their moved place within 0.018 mm, rotation error 0.026°. **Not run in radspider** (neither the host nor the GUI), no real data; the other entries not rerun |
+
 ## API 6 (1.1.0)
 
 | Item | |
@@ -74,7 +81,7 @@ the active series is the first / fixed one, the result is a new series on its gr
 | Pyramid | *Pyramid levels* copies by block means; the finest has voxels of max(smallest fixed voxel, ∛(volume / 2 M)) mm, each coarser level twice that. Work is on these copies, never on the full volume |
 | Search | `scipy.optimize.minimize(method="Powell")` per level, ≤ 500 evaluations, parameters scaled so one unit moves the image edge by one voxel of the level. Progress per level |
 | Start | Same Frame of Reference: identity (patient coordinates). Otherwise, or *Start* = centres of mass: the centres of mass laid on each other |
-| Output | Series *Registered (rigid)*: the second series on the active grid (trilinear, NaN outside, z bands), unit of the second series (`keep`). Table: angles, translation, MI before and after on the finest copies, coverage, one row per level |
+| Output | Series *Registered (rigid)*: the second series on the active grid (trilinear, NaN outside, z bands), unit of the second series (`keep`). The transform as a 4 × 4 fixed → moving (api 7: moves the fusion layer). Table: angles, translation, MI before and after on the finest copies, coverage, one row per level |
 | Differences | The original runs ITK: Mattes MI with B-spline Parzen windows (75 bins, 70 % of voxels), versor rigid transform, regular-step gradient descent (≤ 250 iterations), multi-resolution optional (3 levels from shrink 8), start from the geometric centres, and manual nudging of the transform in its window. Here: linear Parzen windows, Euler angles, Powell, multi-resolution always, start from patient coordinates or centres of mass, no manual nudging. Results are not numerically comparable with ITK's |
 | Limits | Rigid only: no scaling, no deformation. A start more than about a quarter of the image away or rotated by tens of degrees is not found. Accuracy is bounded by the finest copy (2.7 mm voxels on a 512 × 512 × 300, 0.7 mm CT). `spacing[2]` is the mean slice step: gantry-tilted or uneven stacks are approximate. NaN in the moving image grows by one voxel when resampled |
 
